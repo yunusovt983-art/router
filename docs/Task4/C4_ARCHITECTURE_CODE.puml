@@ -1,0 +1,125 @@
+@startuml Task4_Code_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation - Code Diagram (Task 4: Production-Ready Implementation Details)
+
+System_Boundary(gateway_implementation, "Apollo Gateway Production Implementation") {
+    
+    System_Boundary(gateway_core, "Gateway Core Classes") {
+        Component(gateway_server, "GatewayServer", "TypeScript Class", "class GatewayServer {\n  +start(): Promise<void>\n  +stop(): Promise<void>\n  +getSchema(): GraphQLSchema\n  +executeQuery(query: string): Promise<ExecutionResult>\n  -setupMiddleware(): void\n  -configurePlugins(): void\n}")
+        
+        Component(query_planner_impl, "OptimizedQueryPlanner", "TypeScript Class", "class OptimizedQueryPlanner {\n  +planQuery(query: DocumentNode): QueryPlan\n  +getCachedPlan(queryHash: string): QueryPlan\n  +cachePlan(queryHash: string, plan: QueryPlan): void\n  -analyzeComplexity(query: DocumentNode): number\n  -optimizeBatching(plan: QueryPlan): QueryPlan\n}")
+        
+        Component(execution_engine, "FederatedExecutionEngine", "TypeScript Class", "class FederatedExecutionEngine {\n  +execute(plan: QueryPlan, context: ExecutionContext): Promise<ExecutionResult>\n  +executeSubgraphQuery(subgraph: string, query: string): Promise<any>\n  -composeResults(results: SubgraphResult[]): ExecutionResult\n  -handleErrors(errors: GraphQLError[]): GraphQLError[]\n}")
+        
+        Component(cache_manager, "CacheManager", "TypeScript Class", "class CacheManager {\n  +get<T>(key: string): Promise<T | null>\n  +set<T>(key: string, value: T, ttl?: number): Promise<void>\n  +invalidate(pattern: string): Promise<void>\n  +warmCache(queries: string[]): Promise<void>\n  -generateCacheKey(query: string, variables: any): string\n}")
+    }
+    
+    System_Boundary(middleware_layer, "Middleware & Plugins") {
+        Component(auth_plugin, "AuthenticationPlugin", "Apollo Plugin", "class AuthenticationPlugin {\n  +requestDidStart(): GraphQLRequestListener\n  +willSendResponse(context: GraphQLRequestContext): void\n  -validateToken(token: string): Promise<User>\n  -extractUserContext(request: GraphQLRequest): UserContext\n}")
+        
+        Component(rate_limit_plugin, "RateLimitPlugin", "Apollo Plugin", "class RateLimitPlugin {\n  +requestDidStart(): GraphQLRequestListener\n  +didResolveOperation(context: GraphQLRequestContext): void\n  -checkRateLimit(userId: string, operation: string): Promise<boolean>\n  -incrementCounter(key: string): Promise<number>\n}")
+        
+        Component(metrics_plugin, "MetricsPlugin", "Apollo Plugin", "class MetricsPlugin {\n  +requestDidStart(): GraphQLRequestListener\n  +willSendResponse(context: GraphQLRequestContext): void\n  -recordMetric(name: string, value: number, labels: Record<string, string>): void\n  -createHistogram(name: string, buckets: number[]): Histogram\n}")
+        
+        Component(tracing_plugin, "TracingPlugin", "Apollo Plugin", "class TracingPlugin {\n  +requestDidStart(): GraphQLRequestListener\n  +didResolveOperation(context: GraphQLRequestContext): void\n  -createSpan(operationName: string): Span\n  -finishSpan(span: Span, result: ExecutionResult): void\n}")
+    }
+    
+    System_Boundary(optimization_layer, "Performance Optimization") {
+        Component(dataloader_factory, "DataLoaderFactory", "TypeScript Class", "class DataLoaderFactory {\n  +createLoader<K, V>(batchFn: BatchLoadFn<K, V>): DataLoader<K, V>\n  +createCachedLoader<K, V>(batchFn: BatchLoadFn<K, V>, ttl: number): DataLoader<K, V>\n  -configureBatching(options: DataLoaderOptions): DataLoaderOptions\n  -setupCaching(loader: DataLoader, ttl: number): void\n}")
+        
+        Component(query_optimizer, "QueryOptimizer", "TypeScript Class", "class QueryOptimizer {\n  +optimizeQuery(query: DocumentNode): DocumentNode\n  +analyzeComplexity(query: DocumentNode): ComplexityAnalysis\n  +rewriteQuery(query: DocumentNode, optimizations: Optimization[]): DocumentNode\n  -detectN1Problems(query: DocumentNode): N1Problem[]\n  -suggestBatching(query: DocumentNode): BatchingSuggestion[]\n}")
+        
+        Component(connection_pool, "ConnectionPoolManager", "TypeScript Class", "class ConnectionPoolManager {\n  +getConnection(subgraph: string): Promise<Connection>\n  +releaseConnection(connection: Connection): void\n  +healthCheck(): Promise<HealthStatus>\n  -createConnection(config: ConnectionConfig): Promise<Connection>\n  -validateConnection(connection: Connection): boolean\n}")
+    }
+}
+
+System_Boundary(subgraph_implementation, "Subgraph Production Implementation") {
+    
+    System_Boundary(user_subgraph_code, "User Subgraph Classes") {
+        Component(user_resolver_class, "UserResolver", "TypeScript Class", "class UserResolver {\n  @Query() user(@Arg('id') id: string): Promise<User>\n  @Query() users(@Args() args: UsersArgs): Promise<UserConnection>\n  @Mutation() createUser(@Arg('input') input: CreateUserInput): Promise<User>\n  @Mutation() updateUser(@Arg('id') id: string, @Arg('input') input: UpdateUserInput): Promise<User>\n  @FieldResolver() reviews(@Root() user: User): Promise<Review[]>\n}")
+        
+        Component(user_service_class, "UserService", "TypeScript Class", "class UserService {\n  +findById(id: string): Promise<User | null>\n  +findByIds(ids: string[]): Promise<User[]>\n  +create(input: CreateUserInput): Promise<User>\n  +update(id: string, input: UpdateUserInput): Promise<User>\n  +delete(id: string): Promise<boolean>\n  -validateInput(input: any): ValidationResult\n  -hashPassword(password: string): Promise<string>\n}")
+        
+        Component(user_repository_class, "UserRepository", "TypeScript Class", "class UserRepository {\n  +findById(id: string): Promise<User | null>\n  +findByIds(ids: string[]): Promise<User[]>\n  +findByEmail(email: string): Promise<User | null>\n  +create(data: CreateUserData): Promise<User>\n  +update(id: string, data: UpdateUserData): Promise<User>\n  +delete(id: string): Promise<boolean>\n  -buildQuery(filters: UserFilters): QueryBuilder\n}")
+    }
+    
+    System_Boundary(offer_subgraph_code, "Offer Subgraph Classes") {
+        Component(offer_resolver_class, "OfferResolver", "TypeScript Class", "class OfferResolver {\n  @Query() offer(@Arg('id') id: string): Promise<Offer>\n  @Query() offers(@Args() args: OffersArgs): Promise<OfferConnection>\n  @Query() searchOffers(@Args() args: SearchArgs): Promise<SearchResult>\n  @Mutation() createOffer(@Arg('input') input: CreateOfferInput): Promise<Offer>\n  @FieldResolver() seller(@Root() offer: Offer): Promise<User>\n  @FieldResolver() reviews(@Root() offer: Offer): Promise<Review[]>\n}")
+        
+        Component(search_service_class, "SearchService", "TypeScript Class", "class SearchService {\n  +search(query: SearchQuery): Promise<SearchResult>\n  +suggest(term: string): Promise<Suggestion[]>\n  +indexOffer(offer: Offer): Promise<void>\n  +deleteFromIndex(offerId: string): Promise<void>\n  -buildElasticsearchQuery(query: SearchQuery): ElasticsearchQuery\n  -parseSearchResults(response: ElasticsearchResponse): SearchResult\n}")
+        
+        Component(offer_service_class, "OfferService", "TypeScript Class", "class OfferService {\n  +findById(id: string): Promise<Offer | null>\n  +findByIds(ids: string[]): Promise<Offer[]>\n  +search(criteria: SearchCriteria): Promise<OfferConnection>\n  +create(input: CreateOfferInput): Promise<Offer>\n  +update(id: string, input: UpdateOfferInput): Promise<Offer>\n  +delete(id: string): Promise<boolean>\n  -validateOffer(offer: Offer): ValidationResult\n  -processImages(images: FileUpload[]): Promise<string[]>\n}")
+    }
+    
+    System_Boundary(review_subgraph_code, "Review Subgraph Classes") {
+        Component(review_resolver_class, "ReviewResolver", "TypeScript Class", "class ReviewResolver {\n  @Query() review(@Arg('id') id: string): Promise<Review>\n  @Query() reviews(@Args() args: ReviewsArgs): Promise<ReviewConnection>\n  @Mutation() createReview(@Arg('input') input: CreateReviewInput): Promise<Review>\n  @Mutation() updateReview(@Arg('id') id: string, @Arg('input') input: UpdateReviewInput): Promise<Review>\n  @FieldResolver() user(@Root() review: Review): Promise<User>\n  @FieldResolver() offer(@Root() review: Review): Promise<Offer>\n}")
+        
+        Component(moderation_service_class, "ModerationService", "TypeScript Class", "class ModerationService {\n  +moderateReview(review: Review): Promise<ModerationResult>\n  +detectSpam(content: string): Promise<SpamDetectionResult>\n  +analyzeSentiment(content: string): Promise<SentimentAnalysis>\n  +autoModerate(review: Review): Promise<AutoModerationResult>\n  -applyContentFilters(content: string): FilterResult\n  -checkBlacklist(content: string): boolean\n}")
+        
+        Component(rating_service_class, "RatingService", "TypeScript Class", "class RatingService {\n  +calculateAverageRating(offerId: string): Promise<number>\n  +updateRatingCache(offerId: string, rating: number): Promise<void>\n  +getRatingDistribution(offerId: string): Promise<RatingDistribution>\n  +recalculateRatings(offerId: string): Promise<void>\n  -weightedAverage(ratings: Rating[]): number\n  -invalidateCache(offerId: string): Promise<void>\n}")
+    }
+}
+
+System_Boundary(infrastructure_code, "Infrastructure & Utilities") {
+    
+    System_Boundary(monitoring_code, "Monitoring Implementation") {
+        Component(metrics_collector_class, "MetricsCollector", "TypeScript Class", "class MetricsCollector {\n  +recordRequestDuration(duration: number, labels: Labels): void\n  +incrementCounter(name: string, labels: Labels): void\n  +recordHistogram(name: string, value: number, labels: Labels): void\n  +createGauge(name: string, help: string): Gauge\n  -formatLabels(labels: Labels): string\n}")
+        
+        Component(tracer_class, "DistributedTracer", "TypeScript Class", "class DistributedTracer {\n  +startSpan(operationName: string, parentSpan?: Span): Span\n  +finishSpan(span: Span, tags?: Tags): void\n  +injectHeaders(span: Span, headers: Headers): void\n  +extractSpan(headers: Headers): Span | null\n  -createSpanContext(span: Span): SpanContext\n}")
+        
+        Component(logger_class, "StructuredLogger", "TypeScript Class", "class StructuredLogger {\n  +info(message: string, meta?: LogMeta): void\n  +error(message: string, error: Error, meta?: LogMeta): void\n  +warn(message: string, meta?: LogMeta): void\n  +debug(message: string, meta?: LogMeta): void\n  -formatLogEntry(level: LogLevel, message: string, meta: LogMeta): LogEntry\n}")
+    }
+    
+    System_Boundary(testing_code, "Testing Infrastructure") {
+        Component(integration_test_class, "IntegrationTestSuite", "TypeScript Class", "class IntegrationTestSuite {\n  +setupTestEnvironment(): Promise<void>\n  +teardownTestEnvironment(): Promise<void>\n  +testFederatedQuery(query: string, variables?: any): Promise<TestResult>\n  +testCrossSubgraphQuery(query: string): Promise<TestResult>\n  -createTestClient(): ApolloServerTestClient\n  -seedTestData(): Promise<void>\n}")
+        
+        Component(load_test_class, "LoadTestRunner", "TypeScript Class", "class LoadTestRunner {\n  +runLoadTest(config: LoadTestConfig): Promise<LoadTestResult>\n  +generateTestQueries(count: number): GraphQLQuery[]\n  +analyzeResults(results: TestResult[]): PerformanceReport\n  -createVirtualUsers(count: number): VirtualUser[]\n  -measurePerformance(query: GraphQLQuery): PerformanceMetrics\n}")
+        
+        Component(chaos_test_class, "ChaosTestRunner", "TypeScript Class", "class ChaosTestRunner {\n  +runChaosTest(scenario: ChaosScenario): Promise<ChaosTestResult>\n  +simulateNetworkFailure(duration: number): Promise<void>\n  +simulateHighLatency(latency: number): Promise<void>\n  +simulateServiceFailure(service: string): Promise<void>\n  -measureResilience(scenario: ChaosScenario): ResilienceMetrics\n}")
+    }
+}
+
+' Gateway Core Relationships
+Rel(gateway_server, query_planner_impl, "uses", "composition")
+Rel(gateway_server, execution_engine, "uses", "composition")
+Rel(gateway_server, cache_manager, "uses", "composition")
+Rel(query_planner_impl, cache_manager, "caches plans", "method call")
+Rel(execution_engine, connection_pool, "gets connections", "method call")
+
+' Plugin Relationships
+Rel(gateway_server, auth_plugin, "registers", "plugin system")
+Rel(gateway_server, rate_limit_plugin, "registers", "plugin system")
+Rel(gateway_server, metrics_plugin, "registers", "plugin system")
+Rel(gateway_server, tracing_plugin, "registers", "plugin system")
+
+' Optimization Layer
+Rel(execution_engine, dataloader_factory, "creates loaders", "factory pattern")
+Rel(query_planner_impl, query_optimizer, "optimizes queries", "method call")
+
+' Subgraph Relationships
+Rel(user_resolver_class, user_service_class, "delegates to", "method call")
+Rel(user_service_class, user_repository_class, "uses", "composition")
+Rel(offer_resolver_class, offer_service_class, "delegates to", "method call")
+Rel(offer_resolver_class, search_service_class, "uses for search", "method call")
+Rel(review_resolver_class, moderation_service_class, "moderates with", "method call")
+Rel(review_resolver_class, rating_service_class, "calculates ratings", "method call")
+
+' Cross-Subgraph Federation
+Rel(user_resolver_class, offer_resolver_class, "federated reference", "@key directive")
+Rel(offer_resolver_class, user_resolver_class, "federated reference", "@key directive")
+Rel(review_resolver_class, user_resolver_class, "federated reference", "@key directive")
+Rel(review_resolver_class, offer_resolver_class, "federated reference", "@key directive")
+
+' Monitoring Integration
+Rel(gateway_server, metrics_collector_class, "collects metrics", "method call")
+Rel(gateway_server, tracer_class, "creates traces", "method call")
+Rel(gateway_server, logger_class, "logs events", "method call")
+
+' Testing Integration
+Rel(integration_test_class, gateway_server, "tests", "test client")
+Rel(load_test_class, gateway_server, "load tests", "HTTP requests")
+Rel(chaos_test_class, gateway_server, "chaos tests", "failure injection")
+
+SHOW_LEGEND()
+@enduml

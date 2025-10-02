@@ -1,0 +1,264 @@
+# Apollo Router Configuration for Auto.ru GraphQL Federation
+supergraph:
+  # Router listens on port 4000
+  listen: 0.0.0.0:4000
+  # Enable introspection for development (disable in production)
+  introspection: false
+  # Path for GraphQL endpoint
+  path: /graphql
+  # Supergraph schema path (composed from subgraphs)
+  supergraph_path: ./supergraph.graphql
+  # Enable query planning cache
+  query_planning:
+    cache:
+      in_memory:
+        limit: 512
+    # Enable query plan caching for better performance
+    experimental_plans_cache:
+      enabled: true
+      limit: 1000
+
+# Subgraph configurations
+subgraphs:
+  ugc:
+    routing_url: http://ugc-subgraph:4001/graphql
+    timeout: 30s
+    retry:
+      min_per_sec: 10
+      ttl: 10s
+  
+  users:
+    routing_url: http://users-subgraph:4002/graphql
+    timeout: 30s
+    retry:
+      min_per_sec: 10
+      ttl: 10s
+  
+  offers:
+    routing_url: http://offers-subgraph:4004/graphql
+    timeout: 30s
+    retry:
+      min_per_sec: 10
+      ttl: 10s
+  
+  catalog:
+    routing_url: http://catalog-subgraph:4003/graphql
+    timeout: 30s
+    retry:
+      min_per_sec: 10
+      ttl: 10s
+  
+  search:
+    routing_url: http://search-subgraph:4005/graphql
+    timeout: 30s
+    retry:
+      min_per_sec: 10
+      ttl: 10s
+
+# CORS configuration
+cors:
+  origins:
+    - https://auto.ru
+    - https://www.auto.ru
+    - http://localhost:3000
+    - http://localhost:8080
+  methods:
+    - GET
+    - POST
+    - OPTIONS
+  headers:
+    - Content-Type
+    - Authorization
+  allow_credentials: true
+
+# Headers configuration
+headers:
+  all:
+    request:
+      # Propagate authentication and tracing headers
+      - propagate:
+          named: "authorization"
+      - propagate:
+          named: "x-correlation-id"
+      - propagate:
+          named: "x-user-id"
+      - propagate:
+          named: "x-request-id"
+      - propagate:
+          named: "user-agent"
+      # Propagate W3C/OTEL tracing headers for better observability
+      - propagate:
+          named: "traceparent"
+      - propagate:
+          named: "tracestate"
+      - propagate:
+          named: "baggage"
+    response:
+      # Security headers
+      - insert:
+          name: "x-powered-by"
+          value: "Apollo Router"
+      - insert:
+          name: "x-content-type-options"
+          value: "nosniff"
+      - insert:
+          name: "x-frame-options"
+          value: "DENY"
+      - insert:
+          name: "x-xss-protection"
+          value: "1; mode=block"
+      - insert:
+          name: "referrer-policy"
+          value: "strict-origin-when-cross-origin"
+      - insert:
+          name: "content-security-policy"
+          value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+
+# Telemetry configuration
+telemetry:
+  # Metrics configuration
+  metrics:
+    prometheus:
+      enabled: true
+      listen: 0.0.0.0:9090
+      path: /metrics
+    common:
+      service_name: "apollo-router"
+      service_version: "1.0.0"
+      attributes:
+        supergraph:
+          static:
+            - name: "environment"
+              value: "development"
+            - name: "datacenter"
+              value: "local"
+        subgraph:
+          all:
+            static:
+              - name: "environment"
+                value: "development"
+    
+  # Distributed tracing configuration
+  tracing:
+    trace_config:
+      service_name: "apollo-router"
+      service_version: "1.0.0"
+      sampler: 1.0  # Sample 100% of traces in development
+      parent_based_sampler: true
+      max_events_per_span: 128
+      max_attributes_per_span: 128
+      max_links_per_span: 128
+    
+    # Jaeger exporter (disabled in favor of OTLP)
+    jaeger:
+      enabled: false
+      endpoint: http://jaeger:14268/api/traces
+
+    # OTLP exporter
+    otlp:
+      enabled: true
+      endpoint: http://otel-collector:4317
+      protocol: grpc
+      batch_processor:
+        max_export_batch_size: 512
+        max_export_timeout: 30s
+        max_queue_size: 2048
+        scheduled_delay: 5s
+      
+  # Logging configuration
+  apollo:
+    # Send telemetry to Apollo Studio (disabled for local development)
+    graph_ref: "auto-ru-federation@development"
+    key: "${APOLLO_KEY:-}"
+    schema_reporting:
+      enabled: false
+    usage_reporting:
+      enabled: false
+
+
+# Health check
+health_check:
+  enabled: true
+  path: /health
+
+# Sandbox (GraphQL Playground) - only for development
+sandbox:
+  enabled: false
+
+# Security configuration
+security:
+  # Redact subgraph errors in production
+  subgraph_error_redaction: true
+
+# Authentication configuration
+authentication:
+  router:
+    jwt:
+      # JWT validation configuration
+      jwks:
+        # In production, this should point to your Identity Provider (e.g., Auth0, Keycloak)
+        - url: "https://idp.auto.ru/.well-known/jwks.json"
+          algorithms: ["RS256"]
+          poll_interval: 60s
+      header_name: "authorization"
+      header_value_prefix: "Bearer "
+
+# Authorization configuration  
+authorization:
+  require_authentication: true  # Set to true in production
+  
+# Traffic shaping & Rate limiting
+traffic_shaping:
+  router:
+    # Global rate limiting
+    global_rate_limit:
+      capacity: 1000
+      interval: 60s
+  all:
+    timeout: 30s
+    experimental_retry:
+      min_per_sec: 10
+      ttl: 10s
+    # Per-subgraph rate limiting
+    rate_limit:
+      capacity: 100
+      interval: 60s
+
+# Limits & Query complexity analysis
+limits:
+  max_depth: 15
+  max_height: 200
+  max_aliases: 30
+  max_root_fields: 20
+  # Query complexity scoring
+  experimental_query_complexity:
+    max_complexity: 1000
+    default_cost: 1
+    scalar_cost: 1
+    object_cost: 2
+    list_factor: 10
+    introspection_cost: 1000
+
+# Caching configuration
+supergraph_sdl:
+  # Cache the supergraph SDL
+  cache_control:
+    enabled: true
+
+# Automatic Persisted Queries (APQ) configuration
+persisted_queries:
+  # Enable APQ
+  enabled: true
+  # Redis cache for APQ
+  redis:
+    url: "redis://redis:6379"
+
+# Response Caching configuration
+response_cache:
+  # Enable response caching
+  enabled: true
+  # Redis cache for responses
+  redis:
+    url: "redis://redis:6379"
+  # Default TTL for cached responses
+  default_ttl: 300s

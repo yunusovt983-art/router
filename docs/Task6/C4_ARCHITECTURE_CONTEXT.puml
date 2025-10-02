@@ -1,0 +1,84 @@
+@startuml Task6_Context_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Auto.ru Federation - Context Diagram (Task 6: Authentication & Authorization System)
+
+Person(user, "Пользователь Auto.ru", "Использует систему с\nаутентификацией через JWT\nи ролевой авторизацией")
+Person(moderator, "Модератор", "Модерирует контент\nс расширенными правами\nдоступа к системе")
+Person(admin, "Администратор", "Управляет системой\nс полными правами\nи доступом к аудиту")
+Person(developer, "Разработчик", "Интегрируется с API\nчерез OAuth2 и JWT\nтокены")
+
+System_Boundary(auth_federation, "Auto.ru Authenticated Federation System") {
+    System(apollo_gateway_auth, "Apollo Gateway with Auth", "Федеративный GraphQL Gateway\nс JWT аутентификацией\nи ролевой авторизацией")
+    System(auth_service, "Authentication Service", "Центральный сервис аутентификации\nс JWT токенами, OAuth2\nи управлением сессиями")
+    System(ugc_subgraph_secured, "UGC Subgraph (Secured)", "Подграф пользовательского контента\nс защищенными операциями\nи GDPR compliance")
+    System(user_subgraph_secured, "User Subgraph (Secured)", "Подграф пользователей\nс контролем доступа\nк персональным данным")
+    System(offer_subgraph_secured, "Offer Subgraph (Secured)", "Подграф объявлений\nс авторизацией операций\nи rate limiting")
+}
+
+System_Boundary(security_infrastructure, "Security Infrastructure") {
+    System(audit_service, "Security Audit Service", "Система аудита безопасности\nс логированием событий\nи мониторингом угроз")
+    System(rate_limiter, "Rate Limiting Service", "Защита от злоупотреблений\nс адаптивными лимитами\nи блокировкой атак")
+    System(gdpr_compliance, "GDPR Compliance Service", "Соблюдение требований GDPR\nс контролем доступа к данным\nи правом на забвение")
+}
+
+System_Ext(external_auth_providers, "External Auth Providers", "OAuth2 провайдеры:\nGoogle, GitHub, VK\nдля социальной аутентификации")
+System_Ext(jwt_issuer, "JWT Issuer Service", "Внешний сервис выдачи JWT\nс поддержкой JWKS\nи ротацией ключей")
+System_Ext(user_directory, "User Directory (LDAP/AD)", "Корпоративная директория\nпользователей для\nenterprise интеграции")
+
+System_Ext(redis_auth_cache, "Redis Auth Cache", "Кеширование аутентификации\nи сессий для повышения\nпроизводительности")
+System_Ext(postgres_auth_db, "PostgreSQL Auth DB", "База данных аутентификации\nс пользователями, ролями\nи разрешениями")
+System_Ext(elasticsearch_audit, "Elasticsearch Audit", "Хранилище аудит логов\nдля анализа безопасности\nи соответствия требованиям")
+
+System_Ext(prometheus_security, "Prometheus Security", "Мониторинг безопасности\nс метриками аутентификации\nи алертами")
+System_Ext(grafana_security, "Grafana Security", "Дашборды безопасности\nс визуализацией угроз\nи статистикой доступа")
+System_Ext(jaeger_auth_tracing, "Jaeger Auth Tracing", "Трассировка запросов\nаутентификации для\nотладки и мониторинга")
+
+' User interactions with authentication
+Rel(user, apollo_gateway_auth, "GraphQL запросы с\nJWT токеном", "HTTPS/GraphQL")
+Rel(moderator, apollo_gateway_auth, "Модерация контента\nс расширенными правами", "HTTPS/GraphQL")
+Rel(admin, apollo_gateway_auth, "Администрирование\nс полными правами", "HTTPS/GraphQL")
+Rel(developer, auth_service, "OAuth2 аутентификация\nи получение JWT", "HTTPS/REST")
+
+' Authentication flow
+Rel(apollo_gateway_auth, auth_service, "Валидация JWT токенов\nи проверка разрешений", "HTTP/gRPC")
+Rel(auth_service, external_auth_providers, "OAuth2 аутентификация\nчерез социальные сети", "HTTPS/OAuth2")
+Rel(auth_service, jwt_issuer, "Получение JWKS ключей\nдля валидации токенов", "HTTPS/REST")
+Rel(auth_service, user_directory, "Корпоративная аутентификация\nчерез LDAP/AD", "LDAP/SASL")
+
+' Gateway to secured subgraphs
+Rel(apollo_gateway_auth, ugc_subgraph_secured, "Федеративные запросы\nс пользовательским контекстом", "HTTP/GraphQL")
+Rel(apollo_gateway_auth, user_subgraph_secured, "Запросы пользователей\nс проверкой прав доступа", "HTTP/GraphQL")
+Rel(apollo_gateway_auth, offer_subgraph_secured, "Запросы объявлений\nс авторизацией", "HTTP/GraphQL")
+
+' Security services integration
+Rel(apollo_gateway_auth, audit_service, "Логирование событий\nбезопасности", "HTTP/gRPC")
+Rel(apollo_gateway_auth, rate_limiter, "Проверка лимитов\nзапросов", "HTTP/gRPC")
+Rel(ugc_subgraph_secured, gdpr_compliance, "GDPR проверки\nперсональных данных", "HTTP/gRPC")
+Rel(user_subgraph_secured, gdpr_compliance, "Контроль доступа\nк чувствительным данным", "HTTP/gRPC")
+
+' Data storage for authentication
+Rel(auth_service, redis_auth_cache, "Кеширование JWT токенов\nи пользовательских сессий", "Redis Protocol")
+Rel(auth_service, postgres_auth_db, "Хранение пользователей,\nролей и разрешений", "PostgreSQL")
+Rel(audit_service, elasticsearch_audit, "Индексирование аудит логов\nдля поиска и анализа", "HTTP/REST")
+
+' Monitoring and observability
+Rel(auth_service, prometheus_security, "Метрики аутентификации\nи производительности", "HTTP")
+Rel(audit_service, prometheus_security, "Метрики безопасности\nи нарушений", "HTTP")
+Rel(rate_limiter, prometheus_security, "Метрики rate limiting\nи блокировок", "HTTP")
+
+Rel(prometheus_security, grafana_security, "Визуализация метрик\nбезопасности", "HTTP")
+Rel(apollo_gateway_auth, jaeger_auth_tracing, "Трассировка запросов\nаутентификации", "HTTP")
+Rel(auth_service, jaeger_auth_tracing, "Трассировка JWT валидации\nи OAuth2 потоков", "HTTP")
+
+' Security audit and compliance
+Rel(gdpr_compliance, audit_service, "Аудит доступа к\nперсональным данным", "HTTP/gRPC")
+Rel(rate_limiter, audit_service, "Логирование превышений\nлимитов и атак", "HTTP/gRPC")
+
+' Data flows for security analysis
+Rel(ugc_subgraph_secured, audit_service, "События создания/изменения\nпользовательского контента", "HTTP/gRPC")
+Rel(user_subgraph_secured, audit_service, "События доступа к\nпользовательским данным", "HTTP/gRPC")
+Rel(offer_subgraph_secured, audit_service, "События операций\nс объявлениями", "HTTP/gRPC")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,78 @@
+@startuml Task8_Context_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Auto.ru Federation - Context Diagram (Task 8: Telemetry & Monitoring System)
+
+Person(developer, "Разработчик", "Мониторит производительность\nи анализирует метрики\nчерез дашборды")
+Person(sre_engineer, "SRE Инженер", "Управляет мониторингом,\nнастраивает алерты\nи анализирует инциденты")
+Person(business_analyst, "Бизнес-аналитик", "Анализирует бизнес-метрики:\nколичество отзывов,\nрейтинги, активность")
+
+System_Boundary(telemetry_federation, "Auto.ru Telemetry & Monitoring Federation") {
+    System(ugc_telemetry, "UGC Subgraph (Instrumented)", "GraphQL подграф с полной\nинструментацией: OpenTelemetry,\nPrometheus метрики, JSON логи")
+    System(apollo_router_telemetry, "Apollo Router (Telemetry)", "Федеративный роутер с\nвстроенной телеметрией:\nметрики, трассировка, логи")
+    System(telemetry_collector, "Telemetry Collector", "Централизованный сбор\nи обработка телеметрии\nот всех компонентов системы")
+}
+
+System_Boundary(monitoring_infrastructure, "Monitoring & Observability Infrastructure") {
+    System_Ext(jaeger_system, "Jaeger Tracing", "Distributed tracing система:\n- Сбор и хранение трассировок\n- Анализ производительности\n- Dependency mapping")
+    System_Ext(prometheus_system, "Prometheus Metrics", "Система сбора метрик:\n- Time-series database\n- PromQL запросы\n- Alerting rules")
+    System_Ext(grafana_system, "Grafana Dashboards", "Визуализация и дашборды:\n- Real-time метрики\n- Business intelligence\n- Custom dashboards")
+}
+
+System_Boundary(logging_infrastructure, "Logging & Analysis Infrastructure") {
+    System_Ext(elasticsearch_logs, "Elasticsearch Logs", "Поиск и анализ логов:\n- Structured JSON logs\n- Full-text search\n- Log aggregation")
+    System_Ext(kibana_logs, "Kibana Log Analysis", "Анализ и визуализация логов:\n- Log patterns\n- Error analysis\n- Business events")
+    System_Ext(logstash_processor, "Logstash Processor", "Обработка и обогащение логов:\n- Log parsing\n- Field extraction\n- Data transformation")
+}
+
+System_Boundary(alerting_infrastructure, "Alerting & Notification Infrastructure") {
+    System_Ext(alertmanager_system, "AlertManager", "Управление алертами:\n- Alert routing\n- Notification channels\n- Escalation policies")
+    System_Ext(notification_channels, "Notification Channels", "Каналы уведомлений:\n- Slack integration\n- Email notifications\n- PagerDuty integration")
+}
+
+System_Boundary(external_services_monitored, "Monitored External Services") {
+    System_Ext(users_service_monitored, "Users Service (Monitored)", "Внешний сервис пользователей\nс мониторингом вызовов\nи circuit breaker метриками")
+    System_Ext(offers_service_monitored, "Offers Service (Monitored)", "Внешний сервис объявлений\nс трассировкой запросов\nи performance метриками")
+    System_Ext(database_monitored, "PostgreSQL (Monitored)", "База данных с мониторингом:\n- Connection pool metrics\n- Query performance\n- Error tracking")
+}
+
+' User interactions with telemetry system
+Rel(developer, grafana_system, "Анализ метрик", "HTTPS\nReal-time дашборды")
+Rel(developer, jaeger_system, "Анализ трассировок", "HTTPS\nPerformance debugging")
+Rel(sre_engineer, prometheus_system, "Настройка алертов", "HTTPS\nPromQL queries")
+Rel(sre_engineer, alertmanager_system, "Управление алертами", "HTTPS\nAlert configuration")
+Rel(business_analyst, kibana_logs, "Анализ бизнес-событий", "HTTPS\nBusiness metrics")
+
+' Internal telemetry flow
+Rel(ugc_telemetry, telemetry_collector, "Отправка телеметрии", "OTLP/HTTP\nMetrics + Traces + Logs")
+Rel(apollo_router_telemetry, telemetry_collector, "Router телеметрия", "OTLP/HTTP\nFederation metrics")
+
+' Telemetry collector to infrastructure
+Rel(telemetry_collector, jaeger_system, "Трассировки", "OTLP\nDistributed traces")
+Rel(telemetry_collector, prometheus_system, "Метрики", "HTTP\nTime-series data")
+Rel(telemetry_collector, logstash_processor, "Логи", "HTTP\nStructured JSON")
+
+' Monitoring infrastructure integration
+Rel(prometheus_system, grafana_system, "Данные для дашбордов", "HTTP\nPromQL queries")
+Rel(prometheus_system, alertmanager_system, "Триггеры алертов", "HTTP\nAlert rules")
+Rel(logstash_processor, elasticsearch_logs, "Обработанные логи", "HTTP\nIndexed logs")
+Rel(elasticsearch_logs, kibana_logs, "Поиск по логам", "HTTP\nElasticsearch API")
+
+' Alerting flow
+Rel(alertmanager_system, notification_channels, "Уведомления", "HTTP/SMTP\nAlert notifications")
+
+' External services monitoring
+Rel(ugc_telemetry, users_service_monitored, "Мониторинг вызовов", "HTTP\nInstrumented calls")
+Rel(ugc_telemetry, offers_service_monitored, "Трассировка запросов", "HTTP\nTraced requests")
+Rel(ugc_telemetry, database_monitored, "DB метрики", "PostgreSQL\nConnection metrics")
+
+' Feedback loops
+Rel(grafana_system, ugc_telemetry, "Performance insights", "Insights\nOptimization feedback")
+Rel(kibana_logs, telemetry_collector, "Log analysis insights", "Insights\nConfiguration tuning")
+
+' Business metrics flow
+Rel(ugc_telemetry, prometheus_system, "Бизнес-метрики", "HTTP\nReviews, ratings, users")
+Rel(ugc_telemetry, elasticsearch_logs, "Бизнес-события", "HTTP\nBusiness event logs")
+
+SHOW_LEGEND()
+@enduml

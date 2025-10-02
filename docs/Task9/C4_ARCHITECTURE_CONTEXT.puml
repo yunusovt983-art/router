@@ -1,0 +1,66 @@
+@startuml Task9_Context_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Auto.ru Federation - Context Diagram (Task 9: Caching & Performance Optimization)
+
+Person(developer, "Разработчик", "Оптимизирует производительность\nи настраивает кеширование\nдля GraphQL запросов")
+Person(user, "Пользователь", "Получает быстрые ответы\nна GraphQL запросы\nблагодаря кешированию")
+Person(admin, "Администратор", "Мониторит производительность\nи управляет кешем\nчерез метрики")
+
+System_Boundary(performance_optimized_federation, "Auto.ru Performance-Optimized Federation") {
+    System(ugc_cached, "UGC Subgraph (Cached)", "GraphQL подграф с Redis кешированием,\nDataLoader оптимизацией,\nи query complexity limiting")
+    System(apollo_router_optimized, "Apollo Router (Optimized)", "Федеративный роутер с\nquery complexity analysis,\ndepth limiting, rate limiting")
+    System(cache_layer, "Distributed Cache Layer", "Redis кластер для кеширования\nчасто запрашиваемых данных\nи агрегированных рейтингов")
+}
+
+System_Boundary(performance_infrastructure, "Performance & Monitoring Infrastructure") {
+    System_Ext(redis_cluster, "Redis Cluster", "Distributed caching система:\n- Query result caching\n- Aggregated ratings cache\n- Session-based cache\n- Cache invalidation")
+    System_Ext(performance_monitoring, "Performance Monitoring", "Мониторинг производительности:\n- Query execution time\n- Cache hit/miss rates\n- N+1 query detection\n- Resource utilization")
+    System_Ext(query_analyzer, "Query Complexity Analyzer", "Анализ сложности запросов:\n- Depth analysis\n- Complexity scoring\n- Rate limiting rules\n- Performance predictions")
+}
+
+System_Boundary(data_optimization, "Data Access Optimization") {
+    System_Ext(dataloader_service, "DataLoader Service", "Батчинг и оптимизация:\n- N+1 query elimination\n- Batch data loading\n- Request deduplication\n- Connection pooling")
+    System_Ext(database_optimized, "PostgreSQL (Optimized)", "Оптимизированная БД:\n- Performance indexes\n- Query optimization\n- Connection pooling\n- Slow query monitoring")
+    System_Ext(external_services_cached, "External Services (Cached)", "Внешние сервисы с кешированием:\n- Response caching\n- Circuit breaker\n- Retry with backoff\n- Fallback mechanisms")
+}
+
+System_Boundary(rate_limiting_system, "Rate Limiting & Security") {
+    System_Ext(rate_limiter, "Rate Limiter", "Ограничение нагрузки:\n- User-based rate limiting\n- Query complexity limits\n- Depth limiting\n- Resource protection")
+    System_Ext(security_monitor, "Security Monitor", "Мониторинг безопасности:\n- Abuse detection\n- Query pattern analysis\n- Anomaly detection\n- DDoS protection")
+}
+
+' User interactions with optimized system
+Rel(user, apollo_router_optimized, "Быстрые GraphQL запросы", "HTTPS\nOptimized responses")
+Rel(developer, ugc_cached, "Настройка кеширования", "HTTPS\nCache configuration")
+Rel(admin, performance_monitoring, "Мониторинг производительности", "HTTPS\nPerformance dashboards")
+
+' Internal optimization flow
+Rel(apollo_router_optimized, query_analyzer, "Анализ сложности", "Query complexity analysis")
+Rel(apollo_router_optimized, rate_limiter, "Rate limiting", "Request throttling")
+Rel(ugc_cached, cache_layer, "Кеширование данных", "Redis protocol\nCached queries")
+
+' Cache layer integration
+Rel(cache_layer, redis_cluster, "Distributed caching", "Redis Cluster\nData replication")
+Rel(ugc_cached, dataloader_service, "Batch loading", "N+1 optimization\nData batching")
+
+' Data access optimization
+Rel(dataloader_service, database_optimized, "Оптимизированные запросы", "PostgreSQL\nBatched queries")
+Rel(ugc_cached, external_services_cached, "Кешированные вызовы", "HTTP\nCached responses")
+
+' Performance monitoring integration
+Rel(ugc_cached, performance_monitoring, "Метрики производительности", "Metrics\nPerformance data")
+Rel(cache_layer, performance_monitoring, "Cache метрики", "Cache statistics")
+Rel(dataloader_service, performance_monitoring, "DataLoader метрики", "Batch statistics")
+
+' Security and rate limiting
+Rel(rate_limiter, security_monitor, "Security events", "Rate limit violations")
+Rel(query_analyzer, security_monitor, "Query patterns", "Complexity analysis")
+
+' Feedback loops for optimization
+Rel(performance_monitoring, cache_layer, "Cache optimization", "Performance insights")
+Rel(performance_monitoring, dataloader_service, "Query optimization", "Performance tuning")
+Rel(security_monitor, rate_limiter, "Rate adjustments", "Dynamic limits")
+
+SHOW_LEGEND()
+@enduml

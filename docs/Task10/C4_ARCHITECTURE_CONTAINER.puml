@@ -1,0 +1,114 @@
+@startuml Task10_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Auto.ru Federation - Container Diagram (Task 10: Testing Infrastructure Architecture)
+
+Person(developer, "Разработчик", "Выполняет тесты")
+Person(qa_engineer, "QA Инженер", "Создает тестовые сценарии")
+
+System_Boundary(comprehensive_testing_system, "Comprehensive Testing System") {
+    
+    System_Boundary(unit_testing_layer, "Unit Testing Layer") {
+        Container(unit_test_runner, "Unit Test Runner", "Rust, cargo test", "Выполнение unit тестов:\n- Resolver testing\n- Service logic testing\n- Validation testing\n- Error handling testing")
+        Container(mock_framework, "Mock Framework", "Rust, Mockall", "Создание моков:\n- External service mocks\n- Database mocks\n- Dependency injection\n- Behavior verification")
+        Container(property_testing, "Property Testing", "Rust, Proptest", "Property-based тестирование:\n- Random input generation\n- Invariant checking\n- Edge case discovery\n- Regression testing")
+    }
+    
+    System_Boundary(integration_testing_layer, "Integration Testing Layer") {
+        Container(integration_test_runner, "Integration Test Runner", "Rust, Testcontainers", "Интеграционные тесты:\n- Database integration\n- Service communication\n- Authentication flow\n- Federation queries")
+        Container(test_database_manager, "Test Database Manager", "PostgreSQL, Testcontainers", "Управление тестовой БД:\n- Container lifecycle\n- Schema migrations\n- Test data setup\n- Transaction isolation")
+        Container(service_integration_tester, "Service Integration Tester", "Rust, HTTP clients", "Тестирование сервисов:\n- API endpoint testing\n- Cross-service calls\n- Error propagation\n- Timeout handling")
+    }
+    
+    System_Boundary(contract_testing_layer, "Contract Testing Layer") {
+        Container(pact_consumer_tests, "Pact Consumer Tests", "Rust, Pact Consumer", "Consumer-driven тесты:\n- API contract definition\n- Mock provider setup\n- Contract verification\n- Breaking change detection")
+        Container(schema_compatibility_tester, "Schema Compatibility Tester", "GraphQL, Schema diff", "Тестирование схем:\n- Schema evolution\n- Breaking change detection\n- Backward compatibility\n- Federation compatibility")
+        Container(api_contract_validator, "API Contract Validator", "OpenAPI, JSON Schema", "Валидация контрактов:\n- Request/response validation\n- Schema compliance\n- Version compatibility\n- Contract enforcement")
+    }
+    
+    System_Boundary(e2e_testing_layer, "End-to-End Testing Layer") {
+        Container(e2e_test_orchestrator, "E2E Test Orchestrator", "Rust, Test scenarios", "Оркестрация E2E тестов:\n- User journey testing\n- Multi-service scenarios\n- Data flow validation\n- Business logic testing")
+        Container(performance_test_runner, "Performance Test Runner", "Rust, Criterion", "Performance тестирование:\n- Benchmark execution\n- Response time measurement\n- Throughput testing\n- Resource usage analysis")
+        Container(chaos_engineering_platform, "Chaos Engineering Platform", "Rust, Failure injection", "Chaos testing:\n- Service failure simulation\n- Network partition testing\n- Recovery validation\n- Resilience measurement")
+    }
+}
+
+System_Boundary(test_infrastructure, "Test Infrastructure") {
+    Container(test_environment_manager, "Test Environment Manager", "Docker Compose, Kubernetes", "Управление окружениями:\n- Environment provisioning\n- Service orchestration\n- Configuration management\n- Resource allocation")
+    Container(test_data_factory, "Test Data Factory", "Rust, Fake data", "Фабрика тестовых данных:\n- Data generation\n- Fixture management\n- Scenario setup\n- Data cleanup")
+    Container(mock_service_registry, "Mock Service Registry", "Wiremock, HTTP mocks", "Реестр мок-сервисов:\n- Service simulation\n- Response configuration\n- Behavior scripting\n- State management")
+}
+
+System_Boundary(ci_cd_testing, "CI/CD Testing Pipeline") {
+    Container(test_pipeline_orchestrator, "Test Pipeline Orchestrator", "GitHub Actions, Workflows", "Оркестрация тестов:\n- Pipeline execution\n- Parallel test jobs\n- Dependency management\n- Result aggregation")
+    Container(test_result_collector, "Test Result Collector", "JUnit, TAP format", "Сбор результатов:\n- Test output parsing\n- Result aggregation\n- Failure analysis\n- Trend tracking")
+    Container(coverage_analyzer, "Coverage Analyzer", "Tarpaulin, LCOV", "Анализ покрытия:\n- Code coverage measurement\n- Branch coverage analysis\n- Coverage reporting\n- Quality gates")
+}
+
+System_Boundary(test_reporting, "Test Reporting & Analytics") {
+    Container(test_dashboard, "Test Dashboard", "Web UI, Charts", "Дашборд тестирования:\n- Real-time test status\n- Coverage visualization\n- Performance trends\n- Quality metrics")
+    Container(quality_gate_engine, "Quality Gate Engine", "Custom rules, Thresholds", "Контроль качества:\n- Coverage thresholds\n- Performance benchmarks\n- Failure rate limits\n- Quality scoring")
+    Container(test_analytics, "Test Analytics", "Data analysis, ML", "Аналитика тестов:\n- Flaky test detection\n- Performance regression\n- Test optimization\n- Predictive analysis")
+}
+
+System_Boundary(external_test_services, "External Test Services") {
+    Container(external_api_simulator, "External API Simulator", "Wiremock, Stub server", "Симуляция внешних API:\n- Users API simulation\n- Offers API simulation\n- Response variation\n- Latency simulation")
+    Container(load_testing_platform, "Load Testing Platform", "Artillery, K6", "Платформа нагрузочного тестирования:\n- Load generation\n- Stress testing\n- Scalability testing\n- Performance profiling")
+}
+
+' User interactions
+Rel(developer, unit_test_runner, "Запуск unit тестов", "cargo test")
+Rel(developer, integration_test_runner, "Интеграционные тесты", "Test execution")
+Rel(qa_engineer, e2e_test_orchestrator, "E2E тестирование", "Scenario execution")
+
+' Unit testing layer
+Rel(unit_test_runner, mock_framework, "Mock creation", "Service mocking")
+Rel(unit_test_runner, property_testing, "Property validation", "Random testing")
+Rel(mock_framework, test_data_factory, "Test data", "Mock data generation")
+
+' Integration testing layer
+Rel(integration_test_runner, test_database_manager, "Database testing", "DB operations")
+Rel(integration_test_runner, service_integration_tester, "Service testing", "API calls")
+Rel(test_database_manager, test_data_factory, "Test data setup", "Database fixtures")
+
+' Contract testing layer
+Rel(pact_consumer_tests, api_contract_validator, "Contract validation", "API compliance")
+Rel(schema_compatibility_tester, api_contract_validator, "Schema validation", "Compatibility check")
+Rel(pact_consumer_tests, mock_service_registry, "Provider mocking", "Contract mocking")
+
+' E2E testing layer
+Rel(e2e_test_orchestrator, performance_test_runner, "Performance testing", "Benchmark execution")
+Rel(e2e_test_orchestrator, chaos_engineering_platform, "Chaos testing", "Failure simulation")
+Rel(performance_test_runner, test_analytics, "Performance data", "Metrics analysis")
+
+' Test infrastructure integration
+Rel(integration_test_runner, test_environment_manager, "Environment setup", "Container management")
+Rel(e2e_test_orchestrator, test_environment_manager, "E2E environment", "Full stack setup")
+Rel(test_environment_manager, mock_service_registry, "Mock services", "Service simulation")
+
+' CI/CD integration
+Rel(test_pipeline_orchestrator, unit_test_runner, "Unit test execution", "Pipeline jobs")
+Rel(test_pipeline_orchestrator, integration_test_runner, "Integration testing", "Pipeline execution")
+Rel(test_pipeline_orchestrator, e2e_test_orchestrator, "E2E testing", "Full pipeline")
+
+Rel(test_result_collector, coverage_analyzer, "Coverage analysis", "Code coverage")
+Rel(test_result_collector, test_dashboard, "Test results", "Result visualization")
+Rel(coverage_analyzer, quality_gate_engine, "Coverage metrics", "Quality validation")
+
+' Reporting and analytics
+Rel(test_dashboard, test_analytics, "Test data", "Analytics processing")
+Rel(quality_gate_engine, test_dashboard, "Quality status", "Gate results")
+Rel(test_analytics, quality_gate_engine, "Insights", "Quality optimization")
+
+' External services integration
+Rel(service_integration_tester, external_api_simulator, "External API testing", "API simulation")
+Rel(performance_test_runner, load_testing_platform, "Load testing", "Performance validation")
+Rel(chaos_engineering_platform, external_api_simulator, "Failure simulation", "Service unavailability")
+
+' Cross-layer interactions
+Rel(pact_consumer_tests, external_api_simulator, "Contract testing", "Provider simulation")
+Rel(schema_compatibility_tester, test_pipeline_orchestrator, "Schema validation", "CI integration")
+Rel(chaos_engineering_platform, test_environment_manager, "Environment chaos", "Infrastructure testing")
+
+SHOW_LEGEND()
+@enduml

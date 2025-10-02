@@ -1,0 +1,116 @@
+@startuml Task7_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Auto.ru Federation - Container Diagram (Task 7: Error Handling & Resilience Architecture)
+
+Person(user, "Пользователь", "Использует систему")
+Person(sre, "SRE", "Мониторит отказоустойчивость")
+
+System_Boundary(resilient_ugc_system, "Resilient UGC System") {
+    
+    System_Boundary(error_handling_layer, "Error Handling Layer") {
+        Container(error_processor, "Error Processor", "Rust, thiserror", "Централизованная обработка ошибок:\n- UgcError enum с типизацией\n- GraphQL Extensions\n- Структурированное логирование\n- Error categorization")
+        Container(error_logger, "Error Logger", "Rust, tracing", "Структурированное логирование:\n- Уровни важности (info/warn/error)\n- Контекстные данные\n- Correlation IDs\n- Business event logging")
+        Container(error_metrics, "Error Metrics Collector", "Rust, prometheus", "Сбор метрик ошибок:\n- Error rates по типам\n- Error categorization stats\n- Recovery time metrics\n- SLA compliance tracking")
+    }
+    
+    System_Boundary(circuit_breaker_layer, "Circuit Breaker Layer") {
+        Container(circuit_breaker_manager, "Circuit Breaker Manager", "Rust, tokio", "Управление Circuit Breaker'ами:\n- Состояния (Closed/Open/HalfOpen)\n- Автоматические переключения\n- Конфигурируемые пороги\n- Health check integration")
+        Container(retry_engine, "Retry Engine", "Rust, exponential backoff", "Retry механизм:\n- Экспоненциальная задержка\n- Jitter для избежания thundering herd\n- Retryable error detection\n- Max attempts configuration")
+        Container(service_health_monitor, "Service Health Monitor", "Rust, async monitoring", "Мониторинг здоровья сервисов:\n- Continuous health checks\n- Failure pattern detection\n- Recovery time tracking\n- Service dependency mapping")
+    }
+    
+    System_Boundary(fallback_layer, "Graceful Degradation Layer") {
+        Container(fallback_provider, "Fallback Data Provider", "Rust, in-memory cache", "Провайдер fallback данных:\n- Кешированные данные\n- Минимальные заглушки\n- TTL management\n- Cache warming strategies")
+        Container(cache_manager, "Cache Manager", "Rust, Redis client", "Управление кешем:\n- Multi-level caching\n- Cache invalidation\n- Expiration policies\n- Cache hit/miss metrics")
+        Container(degradation_controller, "Degradation Controller", "Rust, adaptive logic", "Контроллер деградации:\n- Adaptive degradation levels\n- Feature flag integration\n- Load-based decisions\n- User experience optimization")
+    }
+    
+    System_Boundary(ugc_application_layer, "UGC Application Layer") {
+        Container(ugc_graphql_server, "UGC GraphQL Server", "Rust, async-graphql", "GraphQL сервер с resilience:\n- Error-aware resolvers\n- Circuit breaker integration\n- Fallback data injection\n- Request timeout handling")
+        Container(external_service_client, "External Service Client", "Rust, reqwest + resilience", "Клиент внешних сервисов:\n- Circuit breaker protection\n- Retry logic integration\n- Timeout configuration\n- Fallback response handling")
+        Container(business_logic_service, "Business Logic Service", "Rust, domain logic", "Бизнес-логика с resilience:\n- Error-tolerant operations\n- Partial result handling\n- Compensation transactions\n- State consistency management")
+    }
+}
+
+System_Boundary(external_services, "External Services") {
+    Container(users_service, "Users Service", "External HTTP API", "Сервис пользователей:\n- Нестабильная работа\n- Периодические таймауты\n- Rate limiting\n- Maintenance windows")
+    Container(offers_service, "Offers Service", "External HTTP API", "Сервис объявлений:\n- Высокая нагрузка\n- Временные сбои\n- Dependency failures\n- Performance degradation")
+    Container(notification_service, "Notification Service", "External HTTP API", "Сервис уведомлений:\n- Third-party integrations\n- Quota limitations\n- Network issues\n- Provider outages")
+}
+
+System_Boundary(cache_infrastructure, "Cache Infrastructure") {
+    Container(redis_primary, "Redis Primary", "Redis 7.0 + Persistence", "Основной кеш:\n- Fallback data storage\n- Session caching\n- Circuit breaker state\n- Health check results")
+    Container(redis_replica, "Redis Replica", "Redis 7.0 + Read-only", "Реплика кеша:\n- Read scaling\n- Failover support\n- Data consistency\n- Load distribution")
+    Container(local_cache, "Local Cache", "In-memory LRU", "Локальный кеш:\n- Hot data caching\n- Network failure protection\n- Ultra-low latency\n- Memory management")
+}
+
+System_Boundary(monitoring_infrastructure, "Monitoring Infrastructure") {
+    Container(prometheus_server, "Prometheus Server", "Prometheus + Custom rules", "Сервер метрик:\n- Circuit breaker metrics\n- Error rate monitoring\n- Recovery time tracking\n- SLA compliance metrics")
+    Container(grafana_server, "Grafana Server", "Grafana + Resilience dashboards", "Дашборды мониторинга:\n- Real-time CB status\n- Error trend analysis\n- Service health maps\n- Recovery time charts")
+    Container(alertmanager_server, "AlertManager Server", "AlertManager + Routing", "Управление алертами:\n- Circuit breaker alerts\n- Error threshold alerts\n- Recovery notifications\n- Escalation policies")
+}
+
+System_Boundary(logging_infrastructure, "Logging Infrastructure") {
+    Container(elasticsearch_cluster, "Elasticsearch Cluster", "Elasticsearch + Error indexing", "Кластер логирования:\n- Structured error logs\n- Full-text search\n- Error pattern analysis\n- Historical data retention")
+    Container(logstash_processor, "Logstash Processor", "Logstash + Error parsing", "Обработка логов:\n- Log parsing and enrichment\n- Error categorization\n- Correlation ID tracking\n- Data transformation")
+    Container(kibana_dashboard, "Kibana Dashboard", "Kibana + Error analysis", "Анализ ошибок:\n- Error pattern visualization\n- Root cause analysis\n- Failure correlation\n- Trend identification")
+}
+
+' User interactions
+Rel(user, ugc_graphql_server, "GraphQL запросы", "HTTPS")
+Rel(sre, grafana_server, "Мониторинг", "HTTPS")
+
+' Error handling flow
+Rel(ugc_graphql_server, error_processor, "Обработка ошибок", "Function calls")
+Rel(error_processor, error_logger, "Логирование", "Structured logs")
+Rel(error_processor, error_metrics, "Метрики", "Prometheus metrics")
+
+' Circuit breaker integration
+Rel(external_service_client, circuit_breaker_manager, "CB protection", "State checks")
+Rel(circuit_breaker_manager, retry_engine, "Retry coordination", "Retry policies")
+Rel(circuit_breaker_manager, service_health_monitor, "Health checks", "Health status")
+
+' Fallback mechanisms
+Rel(external_service_client, fallback_provider, "Fallback data", "Cache lookups")
+Rel(fallback_provider, cache_manager, "Cache operations", "Redis operations")
+Rel(degradation_controller, fallback_provider, "Degradation control", "Feature flags")
+
+' Business logic integration
+Rel(ugc_graphql_server, business_logic_service, "Business operations", "Service calls")
+Rel(business_logic_service, external_service_client, "External calls", "HTTP/gRPC")
+
+' External service calls with protection
+Rel(external_service_client, users_service, "Protected calls", "HTTP + CB")
+Rel(external_service_client, offers_service, "Resilient requests", "HTTP + Retry")
+Rel(external_service_client, notification_service, "Fallback-aware calls", "HTTP + Fallback")
+
+' Cache infrastructure
+Rel(cache_manager, redis_primary, "Cache operations", "Redis protocol")
+Rel(cache_manager, redis_replica, "Read operations", "Redis protocol")
+Rel(fallback_provider, local_cache, "Hot data access", "In-memory")
+Rel(redis_primary, redis_replica, "Replication", "Redis replication")
+
+' Monitoring integration
+Rel(error_metrics, prometheus_server, "Error metrics", "HTTP")
+Rel(circuit_breaker_manager, prometheus_server, "CB metrics", "HTTP")
+Rel(service_health_monitor, prometheus_server, "Health metrics", "HTTP")
+Rel(cache_manager, prometheus_server, "Cache metrics", "HTTP")
+
+Rel(prometheus_server, grafana_server, "Metrics visualization", "HTTP")
+Rel(prometheus_server, alertmanager_server, "Alert triggering", "HTTP")
+
+' Logging integration
+Rel(error_logger, logstash_processor, "Structured logs", "Beats/HTTP")
+Rel(circuit_breaker_manager, logstash_processor, "CB events", "Structured logs")
+Rel(service_health_monitor, logstash_processor, "Health events", "Structured logs")
+
+Rel(logstash_processor, elasticsearch_cluster, "Processed logs", "HTTP")
+Rel(elasticsearch_cluster, kibana_dashboard, "Log analysis", "HTTP")
+
+' Feedback loops
+Rel(kibana_dashboard, circuit_breaker_manager, "Pattern insights", "Configuration updates")
+Rel(grafana_server, degradation_controller, "Performance insights", "Adaptive thresholds")
+
+SHOW_LEGEND()
+@enduml

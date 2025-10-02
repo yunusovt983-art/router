@@ -1,0 +1,54 @@
+@startuml C4_Container_Task13
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Task 13: Migration Strategy Implementation - Container Diagram
+
+Person(legacy_client, "Legacy REST Client", "Applications using REST API")
+Person(new_client, "GraphQL Client", "Applications using GraphQL API")
+Person(developer, "Developer", "Migration management")
+
+System_Boundary(migration_system, "Migration System") {
+    Container(rest_adapter, "REST Adapter", "Rust/Axum", "Provides REST API compatibility with GraphQL backend")
+    Container(traffic_router, "Traffic Router", "Rust", "Routes requests based on feature flags")
+    Container(feature_flag_service, "Feature Flag Service", "Rust", "Manages feature flags and rollout logic")
+    Container(ab_test_service, "A/B Test Service", "Rust", "Handles A/B testing and variant assignment")
+    Container(canary_service, "Canary Service", "Rust", "Manages canary deployments and rollbacks")
+    Container(migration_api, "Migration Management API", "Rust/Axum", "REST API for migration management")
+    Container(migration_cli, "Migration CLI", "Rust/Clap", "Command-line tool for migration control")
+    Container(monitoring_service, "Migration Monitoring", "Rust", "Collects and reports migration metrics")
+}
+
+ContainerDb(redis, "Redis Cache", "Redis", "Feature flag cache and session storage")
+ContainerDb(config_store, "Configuration Store", "YAML Files", "Feature flag and migration configuration")
+
+System_Ext(ugc_graphql, "UGC GraphQL Service", "Target GraphQL federation endpoint")
+System_Ext(legacy_rest, "Legacy REST Service", "Original REST API implementation")
+System_Ext(prometheus, "Prometheus", "Metrics collection and storage")
+
+Rel(legacy_client, rest_adapter, "REST requests", "HTTP/JSON")
+Rel(new_client, traffic_router, "GraphQL requests", "HTTP/GraphQL")
+Rel(developer, migration_cli, "Manages migration", "CLI commands")
+Rel(developer, migration_api, "API management", "HTTP/REST")
+
+Rel(rest_adapter, traffic_router, "Routes requests", "Internal calls")
+Rel(traffic_router, feature_flag_service, "Checks flags", "Internal API")
+Rel(traffic_router, ugc_graphql, "GraphQL requests", "HTTP/GraphQL")
+Rel(traffic_router, legacy_rest, "REST fallback", "HTTP/REST")
+
+Rel(feature_flag_service, redis, "Cache flags", "Redis protocol")
+Rel(feature_flag_service, config_store, "Load config", "File I/O")
+
+Rel(ab_test_service, feature_flag_service, "Uses flags", "Internal API")
+Rel(canary_service, feature_flag_service, "Controls rollout", "Internal API")
+
+Rel(migration_cli, migration_api, "API calls", "HTTP/REST")
+Rel(migration_api, feature_flag_service, "Flag management", "Internal API")
+Rel(migration_api, canary_service, "Canary control", "Internal API")
+
+Rel(monitoring_service, prometheus, "Send metrics", "HTTP/Prometheus")
+Rel(monitoring_service, feature_flag_service, "Monitor flags", "Internal API")
+
+SHOW_LEGEND()
+@enduml

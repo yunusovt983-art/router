@@ -1,0 +1,52 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+
+# Database
+*.db
+*.sqlite
+
+# Docker
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build artifacts
+dist/
+build/
+
+# Node modules (if any JS tooling is added)
+node_modules/
+
+# Coverage reports
+coverage/
+*.profraw
+
+# Backup files
+*.bak
+*.backup
+
+# Local development overrides
+docker-compose.override.yml
+router.local.yaml

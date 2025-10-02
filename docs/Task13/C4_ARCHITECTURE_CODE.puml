@@ -1,0 +1,176 @@
+@startuml C4_Code_Task13
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Task 13: Migration Strategy Implementation - Code Level Diagram
+
+System_Boundary(migration_code, "Migration System Code Structure") {
+    Component(feature_flags_rs, "feature_flags.rs", "Rust Module", "
+    pub struct FeatureFlagService {
+        flags: Arc<RwLock<HashMap<String, FeatureFlag>>>,
+        redis_client: Option<redis::Client>,
+    }
+    
+    impl FeatureFlagService {
+        pub async fn is_enabled(&self, flag_name: &str, user_id: &str) -> bool
+        pub async fn update_flag(&self, flag_name: &str, flag: FeatureFlag)
+        pub async fn set_rollout_percentage(&self, flag_name: &str, percentage: f64)
+        async fn evaluate_flag(&self, flag: &FeatureFlag, user_id: &str) -> bool
+        fn hash_user_id(&self, user_id: &str) -> u32
+    }")
+    
+    Component(rest_adapter_rs, "rest_adapter.rs", "Rust Module", "
+    pub struct RestAdapter {
+        schema: Schema,
+        feature_flags: Arc<FeatureFlagService>,
+        metrics: Arc<MigrationMetrics>,
+    }
+    
+    impl RestAdapter {
+        async fn get_reviews() -> Result<Json<RestResponse<Vec<ReviewResponse>>>>
+        async fn create_review() -> Result<Json<RestResponse<ReviewResponse>>>
+        async fn get_reviews_via_graphql() -> Result<Json<RestResponse<Vec<ReviewResponse>>>>
+        async fn get_reviews_legacy() -> Result<Json<RestResponse<Vec<ReviewResponse>>>>
+    }")
+    
+    Component(traffic_router_rs, "traffic_router.rs", "Rust Module", "
+    pub struct TrafficRouter {
+        feature_flags: Arc<FeatureFlagService>,
+        graphql_client: GraphQLClient,
+        rest_client: RestClient,
+    }
+    
+    impl TrafficRouter {
+        pub async fn route_request(&self, request: Request) -> Response
+        async fn should_use_graphql(&self, user_id: &str) -> bool
+        async fn execute_graphql_request(&self, request: Request) -> Response
+        async fn execute_rest_request(&self, request: Request) -> Response
+    }")
+    
+    Component(monitoring_rs, "monitoring.rs", "Rust Module", "
+    pub struct MigrationMetrics {
+        pub rest_request_total: Counter,
+        pub graphql_migration_requests: Counter,
+        pub legacy_rest_requests: Counter,
+        pub graphql_errors: Counter,
+    }
+    
+    impl MigrationMetrics {
+        pub fn new() -> Self
+        pub fn record_request(&self, endpoint: &str, backend: &str)
+        pub fn record_error(&self, operation: &str, error_type: &str)
+    }")
+    
+    Component(management_api_rs, "management_api.rs", "Rust Module", "
+    pub async fn list_flags() -> Json<FlagsResponse>
+    pub async fn get_flag(Path(flag_name): Path<String>) -> Json<FlagResponse>
+    pub async fn enable_flag(Path(flag_name): Path<String>) -> Json<StatusResponse>
+    pub async fn set_rollout(Path(flag_name): Path<String>, Json(payload): Json<RolloutRequest>)
+    pub async fn emergency_rollback(Json(payload): Json<RollbackRequest>) -> Json<StatusResponse>
+    pub async fn get_migration_status() -> Json<StatusResponse>
+    ")
+    
+    Component(migration_cli_rs, "migration-cli.rs", "Rust Binary", "
+    #[derive(Parser)]
+    struct Cli {
+        #[arg(short, long, default_value = \"http://localhost:4001\")]
+        base_url: String,
+        #[command(subcommand)]
+        command: Commands,
+    }
+    
+    #[derive(Subcommand)]
+    enum Commands {
+        List, Get { flag_name: String }, Enable { flag_name: String },
+        Rollout { flag_name: String, percentage: f64 },
+        StartCanary { flag_name: String }, EmergencyRollback { reason: String },
+    }
+    ")
+    
+    Component(config_loader_rs, "config_loader.rs", "Rust Module", "
+    #[derive(Deserialize)]
+    pub struct MigrationConfig {
+        pub feature_flags: HashMap<String, FeatureFlagConfig>,
+        pub ab_tests: HashMap<String, ABTestConfig>,
+        pub canary_deployments: HashMap<String, CanaryConfig>,
+    }
+    
+    impl MigrationConfig {
+        pub fn load_from_file(path: &str) -> Result<Self, ConfigError>
+        pub fn load_from_env() -> Result<Self, ConfigError>
+        pub fn validate(&self) -> Result<(), ValidationError>
+    }")
+}
+
+System_Boundary(config_files, "Configuration Files") {
+    Component(feature_flags_yaml, "feature-flags.yaml", "YAML Configuration", "
+    feature_flags:
+      graphql_reviews_read:
+        enabled: false
+        rollout_percentage: 0.0
+        description: \"Enable GraphQL for reading reviews\"
+        user_whitelist: []
+        user_blacklist: []
+        conditions: []
+    
+    ab_tests:
+      graphql_migration_test:
+        name: \"GraphQL Migration Effectiveness\"
+        variants:
+          control: { name: \"REST API\", traffic_percentage: 50.0 }
+          treatment: { name: \"GraphQL API\", traffic_percentage: 50.0 }
+    ")
+    
+    Component(docker_compose_yaml, "docker-compose.yml", "Docker Configuration", "
+    services:
+      ugc-subgraph:
+        environment:
+          - MIGRATION_CONFIG_PATH=/app/feature-flags.yaml
+          - FF_GRAPHQL_REVIEWS_READ_ENABLED=false
+          - REDIS_URL=redis://redis:6379
+        volumes:
+          - ./feature-flags.yaml:/app/feature-flags.yaml
+    ")
+    
+    Component(migration_md, "MIGRATION.md", "Documentation", "
+    # GraphQL Migration System
+    
+    ## Feature Flags
+    - graphql_reviews_read: Enable GraphQL for read operations
+    - graphql_reviews_write: Enable GraphQL for write operations
+    
+    ## CLI Usage
+    cargo run --bin migration-cli list
+    cargo run --bin migration-cli enable graphql_reviews_read
+    cargo run --bin migration-cli rollout graphql_reviews_read 25.0
+    ")
+}
+
+System_Boundary(external_deps, "External Dependencies") {
+    Component(redis_client, "redis::Client", "Redis Crate", "Feature flag caching and session storage")
+    Component(axum_framework, "axum::Router", "Axum Framework", "HTTP server and routing")
+    Component(clap_parser, "clap::Parser", "Clap Crate", "CLI argument parsing")
+    Component(prometheus_metrics, "prometheus::Counter", "Prometheus Crate", "Metrics collection")
+}
+
+' Code relationships
+Rel(feature_flags_rs, redis_client, "Uses", "Cache operations")
+Rel(rest_adapter_rs, feature_flags_rs, "Uses", "Flag evaluation")
+Rel(traffic_router_rs, feature_flags_rs, "Uses", "Routing decisions")
+Rel(monitoring_rs, prometheus_metrics, "Uses", "Metrics recording")
+Rel(management_api_rs, feature_flags_rs, "Uses", "Flag management")
+Rel(migration_cli_rs, clap_parser, "Uses", "CLI parsing")
+Rel(migration_cli_rs, management_api_rs, "Calls", "HTTP requests")
+Rel(config_loader_rs, feature_flags_yaml, "Reads", "Configuration loading")
+
+' Framework relationships
+Rel(rest_adapter_rs, axum_framework, "Uses", "HTTP routing")
+Rel(management_api_rs, axum_framework, "Uses", "API endpoints")
+
+' Configuration relationships
+Rel(feature_flags_rs, config_loader_rs, "Uses", "Configuration")
+Rel(config_loader_rs, feature_flags_yaml, "Loads", "YAML parsing")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,135 @@
+@startuml Task9_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation - Component Diagram (Task 9: Performance Optimization Components)
+
+Container(client, "GraphQL Client", "Apollo Client", "Клиент с оптимизированными запросами")
+
+System_Boundary(caching_components, "Caching Components") {
+    
+    System_Boundary(redis_integration, "Redis Cache Integration") {
+        Component(redis_client, "Redis Client", "Rust, redis-rs", "Redis клиент:\n- Connection management\n- Command execution\n- Pipeline operations\n- Cluster support")
+        Component(cache_key_generator, "Cache Key Generator", "Rust, custom logic", "Генерация ключей кеша:\n- Query-based keys\n- User-specific keys\n- Hierarchical keys\n- Namespace management")
+        Component(cache_serializer, "Cache Serializer", "Rust, serde + bincode", "Сериализация данных:\n- Binary serialization\n- Compression\n- Type safety\n- Version compatibility")
+    }
+    
+    System_Boundary(cache_strategies, "Cache Strategies") {
+        Component(query_cache, "Query Result Cache", "Rust, TTL-based", "Кеширование результатов:\n- Query result storage\n- TTL management\n- Conditional caching\n- Size limits")
+        Component(aggregation_cache, "Aggregation Cache", "Rust, event-driven", "Кеш агрегаций:\n- Rating aggregations\n- Statistics cache\n- Computed values\n- Incremental updates")
+        Component(session_cache, "Session Cache", "Rust, user-scoped", "Сессионный кеш:\n- User preferences\n- Temporary data\n- Session state\n- Auto-expiration")
+    }
+    
+    System_Boundary(invalidation_system, "Cache Invalidation System") {
+        Component(invalidation_engine, "Invalidation Engine", "Rust, event-driven", "Движок инвалидации:\n- Event processing\n- Pattern matching\n- Cascade invalidation\n- Batch operations")
+        Component(dependency_tracker, "Dependency Tracker", "Rust, graph-based", "Отслеживание зависимостей:\n- Cache dependencies\n- Invalidation chains\n- Relationship mapping\n- Impact analysis")
+        Component(cache_warmer, "Cache Warmer", "Rust, background tasks", "Прогрев кеша:\n- Proactive caching\n- Scheduled warming\n- Popular query detection\n- Background refresh")
+    }
+}
+
+System_Boundary(dataloader_components, "DataLoader Components") {
+    
+    System_Boundary(batch_loading, "Batch Loading System") {
+        Component(dataloader_registry, "DataLoader Registry", "Rust, async-graphql", "Реестр DataLoader'ов:\n- Loader registration\n- Lifecycle management\n- Context sharing\n- Type safety")
+        Component(batch_scheduler, "Batch Scheduler", "Rust, tokio", "Планировщик батчей:\n- Request batching\n- Timing optimization\n- Load balancing\n- Priority queuing")
+        Component(deduplicator, "Request Deduplicator", "Rust, HashMap-based", "Дедупликация запросов:\n- Duplicate detection\n- Result sharing\n- Memory optimization\n- Cache integration")
+    }
+    
+    System_Boundary(query_optimization, "Query Optimization") {
+        Component(sql_optimizer, "SQL Query Optimizer", "Rust, sqlx + custom", "Оптимизация SQL:\n- Query rewriting\n- JOIN optimization\n- Index hints\n- Execution planning")
+        Component(connection_manager, "Connection Manager", "Rust, sqlx Pool", "Управление подключениями:\n- Pool management\n- Health monitoring\n- Load distribution\n- Failover handling")
+        Component(query_analyzer, "Query Performance Analyzer", "Rust, metrics", "Анализ производительности:\n- Execution time tracking\n- Slow query detection\n- Resource usage\n- Bottleneck identification")
+    }
+}
+
+System_Boundary(rate_limiting_components, "Rate Limiting Components") {
+    
+    System_Boundary(complexity_analysis, "Query Complexity Analysis") {
+        Component(ast_analyzer, "AST Analyzer", "Rust, GraphQL parser", "Анализ AST:\n- Syntax tree parsing\n- Field counting\n- Depth calculation\n- Type analysis")
+        Component(complexity_calculator, "Complexity Calculator", "Rust, scoring algorithm", "Расчет сложности:\n- Field weights\n- Depth penalties\n- Argument complexity\n- Custom scoring")
+        Component(depth_limiter, "Depth Limiter", "Rust, validation", "Ограничение глубины:\n- Max depth validation\n- Recursive detection\n- Early termination\n- Error reporting")
+    }
+    
+    System_Boundary(rate_control, "Rate Control System") {
+        Component(token_bucket, "Token Bucket", "Rust, sliding window", "Token bucket алгоритм:\n- Rate limiting\n- Burst handling\n- Token refill\n- Multi-tier limits")
+        Component(user_tracker, "User Request Tracker", "Rust, in-memory + Redis", "Отслеживание пользователей:\n- Request counting\n- User identification\n- History tracking\n- Pattern analysis")
+        Component(throttle_controller, "Throttle Controller", "Rust, dynamic", "Контроль троттлинга:\n- Dynamic limits\n- Load-based adjustment\n- Emergency throttling\n- Graceful degradation")
+    }
+    
+    System_Boundary(security_monitoring, "Security Monitoring") {
+        Component(anomaly_detector, "Anomaly Detector", "Rust, ML-based", "Детектор аномалий:\n- Pattern recognition\n- Behavioral analysis\n- Threat detection\n- Alert generation")
+        Component(abuse_preventer, "Abuse Preventer", "Rust, rule-based", "Предотвращение злоупотреблений:\n- Rule engine\n- Blacklist management\n- Automatic blocking\n- Manual overrides")
+        Component(security_logger, "Security Event Logger", "Rust, structured logging", "Логирование безопасности:\n- Security events\n- Audit trails\n- Compliance logging\n- Forensic data")
+    }
+}
+
+System_Boundary(performance_monitoring, "Performance Monitoring Components") {
+    
+    System_Boundary(metrics_collection, "Metrics Collection") {
+        Component(performance_collector, "Performance Metrics Collector", "Rust, Prometheus", "Сбор метрик производительности:\n- Response times\n- Throughput\n- Error rates\n- Resource usage")
+        Component(cache_metrics, "Cache Metrics Collector", "Rust, custom metrics", "Метрики кеширования:\n- Hit/miss rates\n- Cache size\n- Eviction stats\n- Performance impact")
+        Component(dataloader_metrics, "DataLoader Metrics", "Rust, batch statistics", "Метрики DataLoader:\n- Batch efficiency\n- Load times\n- Deduplication stats\n- N+1 prevention")
+    }
+    
+    System_Boundary(profiling_system, "Profiling System") {
+        Component(cpu_profiler, "CPU Profiler", "Rust, pprof", "Профилирование CPU:\n- Function timing\n- Call graphs\n- Hot spots\n- Optimization hints")
+        Component(memory_profiler, "Memory Profiler", "Rust, heap analysis", "Профилирование памяти:\n- Memory usage\n- Allocation patterns\n- Leak detection\n- GC analysis")
+        Component(query_tracer, "Query Execution Tracer", "Rust, distributed tracing", "Трассировка запросов:\n- Execution flow\n- Performance bottlenecks\n- Cross-service tracing\n- Timeline analysis")
+    }
+}
+
+' Client to rate limiting
+Rel(client, ast_analyzer, "GraphQL queries", "Query parsing")
+Rel(ast_analyzer, complexity_calculator, "AST analysis", "Complexity calculation")
+Rel(complexity_calculator, depth_limiter, "Complexity score", "Depth validation")
+
+' Rate limiting flow
+Rel(depth_limiter, token_bucket, "Validated queries", "Rate limiting")
+Rel(token_bucket, user_tracker, "Rate decisions", "User tracking")
+Rel(user_tracker, throttle_controller, "Usage patterns", "Throttle control")
+
+' Caching flow
+Rel(throttle_controller, cache_key_generator, "Approved requests", "Cache key generation")
+Rel(cache_key_generator, query_cache, "Cache keys", "Query caching")
+Rel(query_cache, redis_client, "Cache operations", "Redis commands")
+
+' Cache serialization
+Rel(query_cache, cache_serializer, "Data serialization", "Binary encoding")
+Rel(aggregation_cache, cache_serializer, "Aggregation data", "Compressed storage")
+Rel(session_cache, cache_serializer, "Session data", "Secure serialization")
+
+' DataLoader integration
+Rel(query_cache, dataloader_registry, "Cache misses", "Batch loading")
+Rel(dataloader_registry, batch_scheduler, "Load requests", "Batch scheduling")
+Rel(batch_scheduler, deduplicator, "Batched requests", "Deduplication")
+
+' Database optimization
+Rel(deduplicator, sql_optimizer, "Optimized requests", "SQL optimization")
+Rel(sql_optimizer, connection_manager, "Optimized queries", "Connection pooling")
+Rel(connection_manager, query_analyzer, "Query execution", "Performance analysis")
+
+' Cache invalidation
+Rel(connection_manager, invalidation_engine, "Data changes", "Invalidation events")
+Rel(invalidation_engine, dependency_tracker, "Invalidation requests", "Dependency analysis")
+Rel(dependency_tracker, redis_client, "Invalidation commands", "Cache cleanup")
+
+' Cache warming
+Rel(query_analyzer, cache_warmer, "Popular queries", "Cache warming")
+Rel(cache_warmer, query_cache, "Proactive caching", "Background refresh")
+
+' Security monitoring
+Rel(user_tracker, anomaly_detector, "User patterns", "Anomaly detection")
+Rel(anomaly_detector, abuse_preventer, "Anomalies", "Abuse prevention")
+Rel(abuse_preventer, security_logger, "Security events", "Event logging")
+
+' Performance monitoring
+Rel(query_analyzer, performance_collector, "Performance data", "Metrics collection")
+Rel(redis_client, cache_metrics, "Cache statistics", "Cache metrics")
+Rel(batch_scheduler, dataloader_metrics, "Batch statistics", "DataLoader metrics")
+
+' Profiling integration
+Rel(sql_optimizer, cpu_profiler, "CPU usage", "Performance profiling")
+Rel(cache_serializer, memory_profiler, "Memory usage", "Memory analysis")
+Rel(query_analyzer, query_tracer, "Query traces", "Execution tracing")
+
+SHOW_LEGEND()
+@enduml

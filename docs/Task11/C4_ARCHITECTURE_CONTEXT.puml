@@ -1,0 +1,85 @@
+@startuml Task11_Context_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Auto.ru Federation - Context Diagram (Task 11: Subgraph Stubs Creation)
+
+Person(frontend_developer, "Frontend Developer", "Разрабатывает клиентские приложения\nиспользуя федеративные GraphQL запросы\nчерез Apollo Router")
+Person(backend_developer, "Backend Developer", "Разрабатывает и поддерживает\nподграфы Users и Offers\nс моковыми данными")
+Person(qa_engineer, "QA Engineer", "Тестирует федеративные запросы\nи интеграцию между подграфами\nчерез заглушки")
+
+System_Boundary(federation_ecosystem, "Auto.ru Federation Ecosystem") {
+    System(apollo_router, "Apollo Router", "Федеративный шлюз:\n- Композиция схем подграфов\n- Маршрутизация запросов\n- Query planning и execution\n- Агрегация результатов")
+    System(users_subgraph_stub, "Users Subgraph (Stub)", "Заглушка пользователей:\n- Базовая GraphQL схема User\n- Моковые данные пользователей\n- Федеративные директивы @key\n- CRUD операции (заглушки)")
+    System(offers_subgraph_stub, "Offers Subgraph (Stub)", "Заглушка объявлений:\n- GraphQL схема Offer и Car\n- Моковые данные объявлений\n- Связи с Users через федерацию\n- CRUD операции с фильтрацией")
+    System(ugc_subgraph, "UGC Subgraph", "Основной подграф отзывов:\n- Полная реализация Review API\n- Интеграция с PostgreSQL\n- Федеративные связи с заглушками\n- Бизнес-логика модерации")
+}
+
+System_Boundary(development_infrastructure, "Development Infrastructure") {
+    System_Ext(mock_data_generator, "Mock Data Generator", "Генерация тестовых данных:\n- Реалистичные пользователи\n- Разнообразные объявления\n- Связанные данные\n- Локализованный контент")
+    System_Ext(schema_registry, "Schema Registry", "Управление схемами:\n- Версионирование схем\n- Валидация композиции\n- Breaking changes detection\n- Schema evolution tracking")
+    System_Ext(federation_validator, "Federation Validator", "Валидация федерации:\n- Проверка @key директив\n- Валидация @extends\n- Entity resolution testing\n- Cross-subgraph queries")
+}
+
+System_Boundary(testing_environment, "Testing Environment") {
+    System_Ext(integration_tests, "Integration Tests", "Интеграционное тестирование:\n- Федеративные запросы\n- Cross-subgraph operations\n- Mock data validation\n- Performance testing")
+    System_Ext(contract_tests, "Contract Tests", "Contract тестирование:\n- API compatibility\n- Schema contracts\n- Consumer-driven tests\n- Breaking change prevention")
+    System_Ext(e2e_scenarios, "E2E Test Scenarios", "End-to-end тестирование:\n- User journey simulation\n- Multi-subgraph workflows\n- Data consistency checks\n- Error handling validation")
+}
+
+System_Boundary(local_development, "Local Development Environment") {
+    System_Ext(docker_compose, "Docker Compose", "Локальная разработка:\n- Все подграфы в контейнерах\n- Изолированные БД\n- Hot reload поддержка\n- Network configuration")
+    System_Ext(graphql_playground, "GraphQL Playground", "Интерактивная разработка:\n- Schema exploration\n- Query testing\n- Federation debugging\n- Documentation browsing")
+    System_Ext(development_tools, "Development Tools", "Инструменты разработки:\n- Rust toolchain\n- GraphQL code generation\n- Schema validation\n- Hot reload")
+}
+
+' User interactions with federation
+Rel(frontend_developer, apollo_router, "Выполняет федеративные запросы", "GraphQL queries\nHTTP/WebSocket")
+Rel(backend_developer, users_subgraph_stub, "Разрабатывает Users API", "Rust development\nGraphQL schema")
+Rel(backend_developer, offers_subgraph_stub, "Разрабатывает Offers API", "Rust development\nMock data")
+Rel(qa_engineer, integration_tests, "Тестирует интеграцию", "Test execution\nValidation")
+
+' Apollo Router federation
+Rel(apollo_router, users_subgraph_stub, "Маршрутизация User запросов", "GraphQL federation\nHTTP")
+Rel(apollo_router, offers_subgraph_stub, "Маршрутизация Offer запросов", "GraphQL federation\nHTTP")
+Rel(apollo_router, ugc_subgraph, "Маршрутизация Review запросов", "GraphQL federation\nHTTP")
+
+' Subgraph interactions through federation
+Rel(ugc_subgraph, users_subgraph_stub, "Получение данных User", "Federation queries\nEntity resolution")
+Rel(ugc_subgraph, offers_subgraph_stub, "Получение данных Offer", "Federation queries\nEntity resolution")
+Rel(offers_subgraph_stub, users_subgraph_stub, "Связь Offer -> User", "Federation reference\nSeller information")
+
+' Development infrastructure integration
+Rel(users_subgraph_stub, mock_data_generator, "Использует моковые данные", "Data seeding\nRealistic content")
+Rel(offers_subgraph_stub, mock_data_generator, "Генерация объявлений", "Mock offers\nCar data")
+Rel(apollo_router, schema_registry, "Композиция схем", "Schema fetching\nValidation")
+Rel(schema_registry, federation_validator, "Валидация федерации", "Schema analysis\nCompatibility check")
+
+' Testing integration
+Rel(integration_tests, apollo_router, "Тестирование федерации", "GraphQL queries\nAssertion validation")
+Rel(contract_tests, users_subgraph_stub, "Contract validation", "API testing\nSchema compliance")
+Rel(contract_tests, offers_subgraph_stub, "Contract validation", "API testing\nSchema compliance")
+Rel(e2e_scenarios, apollo_router, "End-to-end тестирование", "Complete workflows\nUser scenarios")
+
+' Local development setup
+Rel(docker_compose, users_subgraph_stub, "Контейнеризация", "Docker deployment\nService orchestration")
+Rel(docker_compose, offers_subgraph_stub, "Контейнеризация", "Docker deployment\nService orchestration")
+Rel(docker_compose, apollo_router, "Router deployment", "Container orchestration\nNetwork setup")
+Rel(graphql_playground, apollo_router, "Schema exploration", "GraphQL introspection\nQuery testing")
+
+' Development tools integration
+Rel(development_tools, users_subgraph_stub, "Разработка и сборка", "Rust compilation\nHot reload")
+Rel(development_tools, offers_subgraph_stub, "Разработка и сборка", "Rust compilation\nCode generation")
+Rel(federation_validator, development_tools, "Валидация в CI/CD", "Schema validation\nBuild integration")
+
+' Cross-system data flow
+Rel(mock_data_generator, integration_tests, "Тестовые данные", "Consistent test data\nScenario setup")
+Rel(schema_registry, contract_tests, "Schema contracts", "Contract definition\nCompatibility matrix")
+Rel(federation_validator, e2e_scenarios, "Валидация сценариев", "Federation compliance\nQuery validation")
+
+' Feedback loops
+Rel(integration_tests, backend_developer, "Результаты тестов", "Test feedback\nIssue reports")
+Rel(contract_tests, schema_registry, "Contract результаты", "Compatibility status\nBreaking changes")
+Rel(e2e_scenarios, qa_engineer, "E2E результаты", "Scenario validation\nQuality metrics")
+
+SHOW_LEGEND()
+@enduml

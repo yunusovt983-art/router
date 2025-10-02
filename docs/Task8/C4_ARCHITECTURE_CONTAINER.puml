@@ -1,0 +1,112 @@
+@startuml Task8_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Auto.ru Federation - Container Diagram (Task 8: Telemetry & Monitoring Architecture)
+
+Person(developer, "Разработчик", "Анализирует метрики")
+Person(sre, "SRE", "Управляет мониторингом")
+
+System_Boundary(instrumented_ugc_system, "Instrumented UGC System") {
+    
+    System_Boundary(telemetry_layer, "Telemetry Layer") {
+        Container(tracing_service, "Tracing Service", "Rust, OpenTelemetry", "Distributed tracing сервис:\n- OpenTelemetry integration\n- Jaeger exporter\n- Span management\n- Correlation ID tracking")
+        Container(metrics_collector, "Metrics Collector", "Rust, Prometheus", "Сбор метрик Prometheus:\n- HTTP metrics\n- GraphQL metrics\n- Business metrics\n- Infrastructure metrics")
+        Container(logging_service, "Logging Service", "Rust, tracing", "Структурированное логирование:\n- JSON formatter\n- Correlation ID\n- Business events\n- Security events")
+    }
+    
+    System_Boundary(instrumented_application, "Instrumented Application Layer") {
+        Container(ugc_graphql_server, "UGC GraphQL Server", "Rust, async-graphql + telemetry", "GraphQL сервер с инструментацией:\n- Instrumented resolvers\n- Query complexity metrics\n- Error tracking\n- Performance monitoring")
+        Container(telemetry_middleware, "Telemetry Middleware", "Rust, Axum middleware", "Middleware для телеметрии:\n- HTTP metrics collection\n- Request tracing\n- Correlation ID injection\n- Response time measurement")
+        Container(business_metrics_service, "Business Metrics Service", "Rust, async tasks", "Сервис бизнес-метрик:\n- Review creation metrics\n- Rating aggregation\n- User activity tracking\n- Performance KPIs")
+    }
+    
+    System_Boundary(data_layer_instrumented, "Instrumented Data Layer") {
+        Container(database_monitor, "Database Monitor", "Rust, sqlx + metrics", "Мониторинг базы данных:\n- Connection pool metrics\n- Query performance\n- Error tracking\n- Slow query detection")
+        Container(external_service_monitor, "External Service Monitor", "Rust, reqwest + tracing", "Мониторинг внешних сервисов:\n- Circuit breaker metrics\n- Response time tracking\n- Error rate monitoring\n- Dependency health")
+    }
+}
+
+System_Boundary(apollo_router_telemetry, "Apollo Router Telemetry") {
+    Container(router_metrics, "Router Metrics", "Apollo Router + Prometheus", "Метрики роутера:\n- Federation metrics\n- Query planning metrics\n- Subgraph call metrics\n- Cache hit rates")
+    Container(router_tracing, "Router Tracing", "Apollo Router + OTLP", "Трассировка роутера:\n- Request flow tracing\n- Subgraph call tracing\n- Query planning traces\n- Error propagation")
+    Container(router_logging, "Router Logging", "Apollo Router + JSON", "Логирование роутера:\n- Request/response logs\n- Error logs\n- Performance logs\n- Security logs")
+}
+
+System_Boundary(telemetry_infrastructure, "Telemetry Infrastructure") {
+    Container(otel_collector, "OpenTelemetry Collector", "OTEL Collector", "Сбор и обработка телеметрии:\n- Trace collection\n- Metrics aggregation\n- Log processing\n- Data export")
+    Container(jaeger_backend, "Jaeger Backend", "Jaeger + Cassandra", "Хранение трассировок:\n- Trace storage\n- Query interface\n- Dependency analysis\n- Performance analytics")
+    Container(prometheus_server, "Prometheus Server", "Prometheus + TSDB", "Сервер метрик:\n- Time-series storage\n- PromQL engine\n- Alert evaluation\n- Data retention")
+}
+
+System_Boundary(visualization_layer, "Visualization & Analysis Layer") {
+    Container(grafana_server, "Grafana Server", "Grafana + Dashboards", "Дашборды и визуализация:\n- Real-time dashboards\n- Custom panels\n- Alert visualization\n- Business intelligence")
+    Container(jaeger_ui, "Jaeger UI", "Jaeger Query + React", "Интерфейс трассировки:\n- Trace visualization\n- Service map\n- Performance analysis\n- Dependency graph")
+    Container(kibana_server, "Kibana Server", "Kibana + Elasticsearch", "Анализ логов:\n- Log search\n- Pattern analysis\n- Business event tracking\n- Error investigation")
+}
+
+System_Boundary(logging_pipeline, "Logging Pipeline") {
+    Container(logstash_server, "Logstash Server", "Logstash + Ruby", "Обработка логов:\n- Log parsing\n- Field extraction\n- Data enrichment\n- Format transformation")
+    Container(elasticsearch_cluster, "Elasticsearch Cluster", "Elasticsearch + Lucene", "Поиск и хранение логов:\n- Full-text indexing\n- Aggregation queries\n- Data retention\n- Cluster management")
+    Container(filebeat_agent, "Filebeat Agent", "Filebeat + Go", "Сбор логов:\n- Log shipping\n- File monitoring\n- Multiline handling\n- Backpressure management")
+}
+
+System_Boundary(alerting_system, "Alerting System") {
+    Container(alertmanager_server, "AlertManager Server", "AlertManager + Go", "Управление алертами:\n- Alert routing\n- Deduplication\n- Silencing\n- Notification delivery")
+    Container(notification_gateway, "Notification Gateway", "Custom + Integrations", "Шлюз уведомлений:\n- Slack integration\n- Email delivery\n- PagerDuty integration\n- Webhook delivery")
+}
+
+System_Boundary(external_dependencies, "External Dependencies") {
+    Container(users_service_ext, "Users Service", "External HTTP API", "Внешний сервис пользователей")
+    Container(offers_service_ext, "Offers Service", "External HTTP API", "Внешний сервис объявлений")
+    Container(postgres_database, "PostgreSQL Database", "PostgreSQL 15", "Основная база данных")
+}
+
+' User interactions
+Rel(developer, grafana_server, "Просмотр дашбордов", "HTTPS")
+Rel(developer, jaeger_ui, "Анализ трассировок", "HTTPS")
+Rel(sre, kibana_server, "Анализ логов", "HTTPS")
+Rel(sre, alertmanager_server, "Управление алертами", "HTTPS")
+
+' Telemetry collection flow
+Rel(tracing_service, otel_collector, "Трассировки", "OTLP/gRPC")
+Rel(metrics_collector, prometheus_server, "Метрики", "HTTP/Pull")
+Rel(logging_service, filebeat_agent, "Логи", "File/JSON")
+
+' Router telemetry
+Rel(router_metrics, prometheus_server, "Router метрики", "HTTP")
+Rel(router_tracing, otel_collector, "Router трассировки", "OTLP")
+Rel(router_logging, filebeat_agent, "Router логи", "File")
+
+' Application instrumentation
+Rel(ugc_graphql_server, tracing_service, "GraphQL трассировка", "Function calls")
+Rel(telemetry_middleware, metrics_collector, "HTTP метрики", "Function calls")
+Rel(business_metrics_service, metrics_collector, "Бизнес-метрики", "Function calls")
+
+' Data layer monitoring
+Rel(database_monitor, metrics_collector, "DB метрики", "Function calls")
+Rel(external_service_monitor, tracing_service, "External трассировка", "Function calls")
+
+' Infrastructure data flow
+Rel(otel_collector, jaeger_backend, "Обработанные трассировки", "gRPC")
+Rel(filebeat_agent, logstash_server, "Сырые логи", "Beats protocol")
+Rel(logstash_server, elasticsearch_cluster, "Обработанные логи", "HTTP")
+
+' Visualization data sources
+Rel(prometheus_server, grafana_server, "Метрики для дашбордов", "HTTP/PromQL")
+Rel(jaeger_backend, jaeger_ui, "Данные трассировок", "HTTP/gRPC")
+Rel(elasticsearch_cluster, kibana_server, "Индексированные логи", "HTTP")
+
+' Alerting flow
+Rel(prometheus_server, alertmanager_server, "Alert triggers", "HTTP")
+Rel(alertmanager_server, notification_gateway, "Notifications", "HTTP/Webhook")
+
+' External service monitoring
+Rel(external_service_monitor, users_service_ext, "Мониторинг вызовов", "HTTP")
+Rel(external_service_monitor, offers_service_ext, "Трассировка запросов", "HTTP")
+Rel(database_monitor, postgres_database, "DB мониторинг", "PostgreSQL")
+
+' Business metrics collection
+Rel(business_metrics_service, postgres_database, "Бизнес-данные", "SQL")
+
+SHOW_LEGEND()
+@enduml

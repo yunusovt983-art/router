@@ -1,0 +1,123 @@
+@startuml C4_Deployment_Task12
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Task 12: Development and Deployment Environment Setup - Deployment Diagram
+
+Deployment_Node(developer_machine, "Developer Machine", "Local Development Environment") {
+    Deployment_Node(docker_desktop, "Docker Desktop", "Container Runtime") {
+        Container(local_ugc, "UGC Subgraph", "Rust/Docker", "Port 4001")
+        Container(local_users, "Users Subgraph", "Rust/Docker", "Port 4002") 
+        Container(local_offers, "Offers Subgraph", "Rust/Docker", "Port 4004")
+        Container(local_router, "Apollo Router", "Node.js/Docker", "Port 4000")
+        Container(local_postgres, "PostgreSQL", "Docker", "Port 5432")
+        Container(local_redis, "Redis", "Docker", "Port 6379")
+    }
+    
+    Deployment_Node(dev_tools, "Development Tools", "Native Applications") {
+        Container(ide, "IDE/Editor", "VS Code/IntelliJ", "Code editing")
+        Container(git_client, "Git Client", "Git", "Version control")
+        Container(make_tool, "Make", "GNU Make", "Task automation")
+    }
+}
+
+Deployment_Node(github_cloud, "GitHub Cloud", "CI/CD Platform") {
+    Deployment_Node(github_actions, "GitHub Actions", "Serverless CI/CD") {
+        Container(ci_runner, "CI Runner", "Ubuntu VM", "Testing and building")
+        Container(build_runner, "Build Runner", "Ubuntu VM", "Docker image building")
+        Container(deploy_runner, "Deploy Runner", "Ubuntu VM", "Deployment automation")
+    }
+    
+    Deployment_Node(github_registry, "GitHub Container Registry", "Container Storage") {
+        Container(image_ugc, "UGC Image", "Docker Image", "auto-ru/ugc:tag")
+        Container(image_users, "Users Image", "Docker Image", "auto-ru/users:tag")
+        Container(image_offers, "Offers Image", "Docker Image", "auto-ru/offers:tag")
+    }
+}
+
+Deployment_Node(aws_cloud, "AWS Cloud", "Production Infrastructure") {
+    Deployment_Node(aws_staging, "Staging Environment", "AWS EKS Cluster") {
+        Deployment_Node(staging_nodes, "EKS Worker Nodes", "EC2 t3.medium") {
+            Container(staging_ugc, "UGC Pod", "Kubernetes Pod", "Replicas: 2")
+            Container(staging_users, "Users Pod", "Kubernetes Pod", "Replicas: 1")
+            Container(staging_offers, "Offers Pod", "Kubernetes Pod", "Replicas: 1")
+            Container(staging_router, "Router Pod", "Kubernetes Pod", "Replicas: 2")
+        }
+        
+        Deployment_Node(staging_data, "Staging Data Layer", "AWS RDS/ElastiCache") {
+            Container(staging_rds, "PostgreSQL RDS", "AWS RDS", "db.t3.micro")
+            Container(staging_elasticache, "Redis ElastiCache", "AWS ElastiCache", "cache.t3.micro")
+        }
+    }
+    
+    Deployment_Node(aws_production, "Production Environment", "AWS EKS Cluster") {
+        Deployment_Node(prod_nodes, "EKS Worker Nodes", "EC2 c5.large") {
+            Container(prod_ugc, "UGC Pod", "Kubernetes Pod", "Replicas: 3")
+            Container(prod_users, "Users Pod", "Kubernetes Pod", "Replicas: 2")
+            Container(prod_offers, "Offers Pod", "Kubernetes Pod", "Replicas: 2")
+            Container(prod_router, "Router Pod", "Kubernetes Pod", "Replicas: 3")
+        }
+        
+        Deployment_Node(prod_data, "Production Data Layer", "AWS RDS/ElastiCache") {
+            Container(prod_rds, "PostgreSQL RDS", "AWS RDS", "db.r5.large Multi-AZ")
+            Container(prod_elasticache, "Redis ElastiCache", "AWS ElastiCache", "cache.r5.large Cluster")
+        }
+    }
+    
+    Deployment_Node(aws_monitoring, "Monitoring Infrastructure", "AWS EKS/EC2") {
+        Container(prometheus, "Prometheus", "Kubernetes Pod", "Metrics collection")
+        Container(grafana, "Grafana", "Kubernetes Pod", "Metrics visualization")
+        Container(jaeger, "Jaeger", "Kubernetes Pod", "Distributed tracing")
+    }
+}
+
+' Local Development Relationships
+Rel(local_router, local_ugc, "Routes to", "HTTP/GraphQL")
+Rel(local_router, local_users, "Routes to", "HTTP/GraphQL")
+Rel(local_router, local_offers, "Routes to", "HTTP/GraphQL")
+Rel(local_ugc, local_postgres, "Connects to", "PostgreSQL")
+Rel(local_ugc, local_redis, "Connects to", "Redis")
+
+' Development Tools Relationships
+Rel(ide, git_client, "Uses", "Git integration")
+Rel(make_tool, docker_desktop, "Controls", "Docker Compose")
+
+' CI/CD Relationships
+Rel(git_client, github_actions, "Triggers", "Git push")
+Rel(ci_runner, build_runner, "Triggers", "On test success")
+Rel(build_runner, github_registry, "Pushes to", "Docker Registry API")
+Rel(deploy_runner, github_registry, "Pulls from", "Docker Registry API")
+
+' Deployment Relationships
+Rel(deploy_runner, aws_staging, "Deploys to", "kubectl/Helm")
+Rel(deploy_runner, aws_production, "Deploys to", "kubectl/Helm")
+
+' Staging Environment Relationships
+Rel(staging_router, staging_ugc, "Routes to", "HTTP/GraphQL")
+Rel(staging_router, staging_users, "Routes to", "HTTP/GraphQL")
+Rel(staging_router, staging_offers, "Routes to", "HTTP/GraphQL")
+Rel(staging_ugc, staging_rds, "Connects to", "PostgreSQL")
+Rel(staging_ugc, staging_elasticache, "Connects to", "Redis")
+
+' Production Environment Relationships
+Rel(prod_router, prod_ugc, "Routes to", "HTTP/GraphQL")
+Rel(prod_router, prod_users, "Routes to", "HTTP/GraphQL")
+Rel(prod_router, prod_offers, "Routes to", "HTTP/GraphQL")
+Rel(prod_ugc, prod_rds, "Connects to", "PostgreSQL")
+Rel(prod_ugc, prod_elasticache, "Connects to", "Redis")
+
+' Monitoring Relationships
+Rel(staging_ugc, prometheus, "Sends metrics", "OpenTelemetry")
+Rel(staging_users, prometheus, "Sends metrics", "OpenTelemetry")
+Rel(staging_offers, prometheus, "Sends metrics", "OpenTelemetry")
+Rel(prod_ugc, prometheus, "Sends metrics", "OpenTelemetry")
+Rel(prod_users, prometheus, "Sends metrics", "OpenTelemetry")
+Rel(prod_offers, prometheus, "Sends metrics", "OpenTelemetry")
+
+Rel(prometheus, grafana, "Provides data", "PromQL")
+Rel(staging_ugc, jaeger, "Sends traces", "OpenTelemetry")
+Rel(prod_ugc, jaeger, "Sends traces", "OpenTelemetry")
+
+SHOW_LEGEND()
+@enduml

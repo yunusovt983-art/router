@@ -1,0 +1,93 @@
+# Federation Schema for UGC Subgraph
+# This file documents the federation directives that would be used
+# when proper federation support is available
+
+# Review entity - owned by UGC subgraph
+type Review @key(fields: "id") {
+  id: UUID!
+  offerId: UUID!
+  authorId: UUID!
+  rating: Int!
+  text: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isModerated: Boolean!
+  moderationStatus: ModerationStatus!
+  
+  # Federated relationships
+  offer: Offer!
+  author: User!
+}
+
+# User entity - extended from Users subgraph
+type User @key(fields: "id") @extends {
+  id: UUID! @external
+  
+  # Fields added by UGC subgraph
+  reviews(
+    first: Int
+    after: String
+    filter: ReviewsFilterInput
+  ): ReviewConnection!
+}
+
+# Offer entity - extended from Offers subgraph  
+type Offer @key(fields: "id") @extends {
+  id: UUID! @external
+  
+  # Fields added by UGC subgraph
+  reviews(
+    first: Int
+    after: String
+    filter: ReviewsFilterInput
+  ): ReviewConnection!
+  averageRating: Float
+  reviewsCount: Int!
+  ratingDistribution: RatingDistribution
+}
+
+# Supporting types
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+type ReviewConnection {
+  edges: [ReviewEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ReviewEdge {
+  node: Review!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type RatingDistribution {
+  rating1: Int!
+  rating2: Int!
+  rating3: Int!
+  rating4: Int!
+  rating5: Int!
+  totalReviews: Int!
+}
+
+input ReviewsFilterInput {
+  offerId: UUID
+  authorId: UUID
+  minRating: Int
+  maxRating: Int
+  moderatedOnly: Boolean
+  moderationStatus: ModerationStatus
+}
+
+scalar UUID
+scalar DateTime

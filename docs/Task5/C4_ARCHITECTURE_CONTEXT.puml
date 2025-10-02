@@ -1,0 +1,93 @@
+@startuml Task5_Context_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Auto.ru Federation - Context Diagram (Task 5: Continuous Improvement & AI-Driven Evolution)
+
+Person(user, "Пользователь Auto.ru", "Использует систему с\nперсонализированным опытом\nчерез A/B тестирование")
+Person(data_scientist, "Data Scientist", "Анализирует данные\nи создает ML модели\nдля оптимизации")
+Person(sre_engineer, "SRE Engineer", "Мониторит систему\nи управляет автоматическими\nоптимизациями")
+Person(product_manager, "Product Manager", "Управляет A/B экспериментами\nи анализирует метрики\nпользовательского опыта")
+Person(ml_engineer, "ML Engineer", "Разрабатывает и обучает\nмодели машинного обучения\nдля предсказания производительности")
+
+System_Boundary(intelligent_federation, "Auto.ru Intelligent Federation System") {
+    System(adaptive_gateway, "Adaptive Apollo Gateway", "Самооптимизирующийся GraphQL Gateway\nс ML-предсказанием производительности\nи динамической маршрутизацией")
+    System(smart_subgraphs, "Smart Subgraphs", "Интеллектуальные подграфы\nс автоматической оптимизацией\nи A/B тестированием")
+    System(ml_optimizer, "ML Query Optimizer", "Система машинного обучения\nдля предсказания и оптимизации\nпроизводительности запросов")
+    System(ab_testing_engine, "A/B Testing Engine", "Движок A/B тестирования\nдля экспериментов с функциональностью\nи оптимизацией UX")
+}
+
+System_Boundary(ai_analytics_platform, "AI Analytics & Optimization Platform") {
+    System(performance_predictor, "Performance Predictor", "ML модель для предсказания\nпроизводительности запросов\nна основе их структуры")
+    System(auto_optimizer, "Auto Optimizer", "Система автоматической оптимизации\nна основе анализа логов\nи метрик производительности")
+    System(experiment_manager, "Experiment Manager", "Управление A/B экспериментами\nи анализ их результатов\nс статистической значимостью")
+    System(predictive_scaler, "Predictive Scaler", "Предиктивное автомасштабирование\nна основе ML прогнозов\nи паттернов нагрузки")
+}
+
+System_Boundary(advanced_monitoring, "Advanced Monitoring & Observability") {
+    System(intelligent_monitoring, "Intelligent Monitoring", "Система мониторинга с ML\nдля обнаружения аномалий\nи предсказания проблем")
+    System(business_intelligence, "Business Intelligence", "Аналитика бизнес-метрик\nи пользовательского поведения\nс ML инсайтами")
+    System(real_time_optimizer, "Real-time Optimizer", "Система реального времени\nдля динамической оптимизации\nна основе текущих метрик")
+}
+
+System_Ext(ml_training_platform, "ML Training Platform", "Платформа для обучения\nML моделей на исторических\nданных производительности")
+System_Ext(feature_store, "Feature Store", "Хранилище признаков\nдля ML моделей\nи A/B экспериментов")
+System_Ext(data_lake, "Data Lake", "Озеро данных с историческими\nметриками, логами запросов\nи пользовательским поведением")
+System_Ext(experiment_platform, "Experiment Platform", "Внешняя платформа\nдля управления экспериментами\nи статистического анализа")
+
+System_Ext(postgres_cluster, "PostgreSQL Cluster", "Высокодоступный кластер БД\nс ML-оптимизированными\nиндексами и запросами")
+System_Ext(redis_intelligent, "Redis Intelligent Cache", "Интеллектуальное кеширование\nс ML-предсказанием паттернов\nи автоматической инвалидацией")
+System_Ext(elasticsearch_ai, "Elasticsearch AI", "Поисковый движок с ML\nдля оптимизации релевантности\nи производительности")
+
+System_Ext(kubernetes_ai, "Kubernetes AI Platform", "Kubernetes с AI операторами\nдля автоматического управления\nресурсами и масштабированием")
+System_Ext(prometheus_ml, "Prometheus ML", "Система метрик с ML\nдля предсказания трендов\nи автоматического алертинга")
+System_Ext(grafana_ai, "Grafana AI", "Дашборды с AI инсайтами\nи автоматическими рекомендациями\nпо оптимизации")
+
+' User interactions with intelligent features
+Rel(user, adaptive_gateway, "GraphQL запросы с\nперсонализированным опытом", "HTTPS/GraphQL")
+Rel(data_scientist, ml_training_platform, "Обучает ML модели\nдля оптимизации", "Python/Jupyter")
+Rel(sre_engineer, intelligent_monitoring, "Мониторит систему\nс AI помощником", "Web UI")
+Rel(product_manager, experiment_manager, "Управляет A/B тестами\nи анализирует результаты", "Web UI")
+Rel(ml_engineer, performance_predictor, "Разрабатывает модели\nпредсказания производительности", "Python/MLOps")
+
+' Intelligent system interactions
+Rel(adaptive_gateway, smart_subgraphs, "Интеллектуальная маршрутизация\nс ML оптимизацией", "HTTP/GraphQL")
+Rel(adaptive_gateway, ml_optimizer, "Запрос предсказаний\nпроизводительности", "gRPC/HTTP")
+Rel(adaptive_gateway, ab_testing_engine, "Получение вариантов\nA/B экспериментов", "HTTP/REST")
+
+Rel(smart_subgraphs, performance_predictor, "Предсказание времени\nвыполнения запросов", "gRPC")
+Rel(smart_subgraphs, auto_optimizer, "Автоматическая оптимизация\nна основе метрик", "HTTP/REST")
+
+' AI Analytics Platform interactions
+Rel(ml_optimizer, performance_predictor, "ML предсказания для\nоптимизации запросов", "gRPC")
+Rel(ab_testing_engine, experiment_manager, "Управление экспериментами\nи сбор результатов", "HTTP/REST")
+Rel(auto_optimizer, real_time_optimizer, "Применение оптимизаций\nв реальном времени", "HTTP/REST")
+Rel(predictive_scaler, kubernetes_ai, "Предиктивное масштабирование\nна основе ML прогнозов", "Kubernetes API")
+
+' Advanced monitoring interactions
+Rel(intelligent_monitoring, prometheus_ml, "Сбор метрик с ML\nанализом аномалий", "HTTP")
+Rel(business_intelligence, grafana_ai, "Визуализация бизнес-метрик\nс AI инсайтами", "HTTP")
+Rel(real_time_optimizer, adaptive_gateway, "Динамические настройки\nоптимизации", "HTTP/REST")
+
+' External ML platform integrations
+Rel(performance_predictor, ml_training_platform, "Обучение моделей на\nисторических данных", "Python/MLflow")
+Rel(experiment_manager, feature_store, "Получение признаков\nдля экспериментов", "HTTP/REST")
+Rel(auto_optimizer, data_lake, "Анализ исторических\nданных производительности", "SQL/Spark")
+Rel(ab_testing_engine, experiment_platform, "Статистический анализ\nрезультатов экспериментов", "HTTP/REST")
+
+' Database interactions with AI optimization
+Rel(smart_subgraphs, postgres_cluster, "Оптимизированные запросы\nс ML индексами", "PostgreSQL")
+Rel(smart_subgraphs, redis_intelligent, "Интеллектуальное кеширование\nс предсказанием паттернов", "Redis Protocol")
+Rel(smart_subgraphs, elasticsearch_ai, "AI-оптимизированный поиск\nс ML релевантностью", "HTTP/REST")
+
+' Infrastructure AI integration
+Rel(predictive_scaler, kubernetes_ai, "ML-предсказания для\nавтомасштабирования", "Kubernetes API")
+Rel(intelligent_monitoring, prometheus_ml, "AI-анализ метрик\nи предсказание проблем", "HTTP")
+Rel(business_intelligence, grafana_ai, "ML инсайты и\nавтоматические рекомендации", "HTTP")
+
+' Data flow for ML training
+Rel(adaptive_gateway, data_lake, "Логи запросов для\nобучения ML моделей", "Kafka/Stream")
+Rel(smart_subgraphs, data_lake, "Метрики производительности\nдля ML анализа", "Kafka/Stream")
+Rel(ab_testing_engine, data_lake, "Результаты экспериментов\nдля ML оптимизации", "Kafka/Stream")
+
+SHOW_LEGEND()
+@enduml

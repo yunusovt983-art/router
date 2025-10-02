@@ -1,0 +1,60 @@
+@startuml Task2_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Auto.ru UGC Subgraph - Container Diagram (Task 2: UGC Implementation)
+
+Person(user, "Пользователь", "Создает и читает отзывы")
+Person(moderator, "Модератор", "Модерирует контент")
+
+System_Boundary(ugc_subgraph_system, "UGC Subgraph System") {
+    Container(graphql_server, "GraphQL Server", "Rust, Axum, async-graphql", "HTTP сервер с GraphQL API\n- Query резолверы\n- Mutation резолверы\n- Федеративные директивы")
+    
+    Container(review_service, "Review Service", "Rust", "Бизнес-логика отзывов\n- Валидация данных\n- Бизнес-правила\n- Агрегация рейтингов")
+    
+    Container(review_repository, "Review Repository", "Rust, SQLx", "Слой доступа к данным\n- CRUD операции\n- Оптимизированные запросы\n- Транзакции")
+    
+    Container(auth_middleware, "Auth Middleware", "Rust", "Аутентификация и авторизация\n- JWT валидация\n- Контекст пользователя\n- Guards для резолверов")
+    
+    Container(cache_service, "Cache Service", "Rust, Redis", "Кеширование данных\n- Агрегированные рейтинги\n- Часто запрашиваемые отзывы\n- Инвалидация кеша")
+}
+
+System_Boundary(federation_system, "Federation System") {
+    Container(apollo_router, "Apollo Router", "GraphQL Router", "Федеративный роутер\n- Композиция схем\n- Маршрутизация запросов")
+    
+    Container(users_subgraph, "Users Subgraph", "GraphQL Service", "Сервис пользователей\n- Профили пользователей\n- Аутентификация")
+    
+    Container(offers_subgraph, "Offers Subgraph", "GraphQL Service", "Сервис объявлений\n- Информация о авто\n- Детали объявлений")
+}
+
+ContainerDb(postgres, "PostgreSQL", "PostgreSQL 15", "Основная база данных\n- Таблица reviews\n- Таблица offer_ratings\n- Индексы для производительности")
+
+ContainerDb(redis, "Redis", "Redis 7", "Кеш и сессии\n- Агрегированные данные\n- Временные данные\n- Rate limiting")
+
+System_Boundary(monitoring, "Monitoring & Observability") {
+    Container(prometheus, "Prometheus", "Metrics DB", "Сбор метрик\n- Производительность GraphQL\n- Бизнес-метрики\n- Системные метрики")
+    
+    Container(jaeger, "Jaeger", "Tracing", "Distributed tracing\n- Трассировка запросов\n- Анализ производительности\n- Отладка федерации")
+}
+
+Rel(user, apollo_router, "GraphQL запросы", "HTTPS")
+Rel(moderator, apollo_router, "Модерация", "HTTPS")
+
+Rel(apollo_router, graphql_server, "Федеративные запросы", "HTTP/GraphQL")
+
+Rel(graphql_server, auth_middleware, "Проверка аутентификации", "Function call")
+Rel(graphql_server, review_service, "Бизнес-операции", "Function call")
+
+Rel(review_service, review_repository, "Операции с данными", "Function call")
+Rel(review_service, cache_service, "Кеширование", "Function call")
+
+Rel(review_repository, postgres, "SQL запросы", "TCP:5432")
+Rel(cache_service, redis, "Кеш операции", "TCP:6379")
+
+Rel_Back(graphql_server, users_subgraph, "Федеративные ссылки", "HTTP/GraphQL")
+Rel_Back(graphql_server, offers_subgraph, "Федеративные ссылки", "HTTP/GraphQL")
+
+Rel(graphql_server, prometheus, "Метрики", "HTTP")
+Rel(graphql_server, jaeger, "Трассировки", "HTTP")
+
+SHOW_LEGEND()
+@enduml

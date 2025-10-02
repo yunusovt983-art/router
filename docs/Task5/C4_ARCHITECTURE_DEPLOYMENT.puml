@@ -1,0 +1,212 @@
+@startuml Task5_Deployment_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title Auto.ru Federation - Deployment Diagram (Task 5: AI-Driven Production Infrastructure)
+
+Deployment_Node(aws_cloud_ai, "AWS Cloud AI Platform", "Amazon Web Services + AI/ML Services") {
+    
+    Deployment_Node(production_vpc_ai, "Production VPC AI", "Virtual Private Cloud with AI/ML Integration") {
+        
+        Deployment_Node(public_subnet_ai_1, "Public Subnet AI-1", "us-east-1a") {
+            Deployment_Node(alb_intelligent, "Intelligent ALB", "AWS ALB + AI Routing") {
+                Container(load_balancer_ai, "AI Load Balancer", "ALB + ML Routing", "Интеллектуальная балансировка:\n- ML предсказание нагрузки\n- Адаптивная маршрутизация\n- Автоматическая оптимизация")
+            }
+            
+            Deployment_Node(api_gateway_ai, "API Gateway AI", "AWS API Gateway + ML") {
+                Container(api_gw_ml, "API Gateway ML", "AWS API Gateway", "ML-enhanced API Gateway:\n- Интеллектуальное rate limiting\n- Предсказание аномалий\n- Автоматическое масштабирование")
+            }
+        }
+        
+        Deployment_Node(private_subnet_ai_1, "Private Subnet AI-1", "us-east-1a") {
+            
+            Deployment_Node(eks_ai_cluster_1, "EKS AI Cluster 1", "Kubernetes + AI Operators") {
+                Deployment_Node(gateway_ai_pod_1, "Gateway AI Pod 1", "Kubernetes Pod + AI") {
+                    Container(apollo_gateway_ai, "Apollo Gateway AI", "Node.js + TensorFlow.js", "Адаптивный GraphQL Gateway:\n- ML предсказание производительности\n- Интеллектуальная маршрутизация\n- A/B тестирование запросов\n- Real-time оптимизация")
+                }
+                
+                Deployment_Node(ml_inference_pod_1, "ML Inference Pod 1", "Kubernetes Pod") {
+                    Container(model_server_1, "Model Server", "TorchServe", "Сервер ML моделей:\n- Performance Predictor\n- Query Optimizer\n- Anomaly Detector\n- Recommendation Engine")
+                }
+                
+                Deployment_Node(user_ai_pod_1, "User AI Service Pod 1", "Kubernetes Pod") {
+                    Container(user_service_ai_1, "User Subgraph AI", "Rust + Candle ML", "Интеллектуальный User сервис:\n- Персонализация запросов\n- ML кеширование\n- Поведенческий анализ\n- Fraud detection")
+                }
+                
+                Deployment_Node(offer_ai_pod_1, "Offer AI Service Pod 1", "Kubernetes Pod") {
+                    Container(offer_service_ai_1, "Offer Subgraph AI", "Rust + Candle ML", "Умный Offer сервис:\n- ML поиск и ранжирование\n- Динамическая индексация\n- Предсказание популярности\n- Quality scoring")
+                }
+            }
+            
+            Deployment_Node(rds_ai_primary, "RDS AI Primary", "PostgreSQL 15 + ML Extensions") {
+                ContainerDb(postgres_ai_primary, "PostgreSQL AI Primary", "PostgreSQL + ML", "AI-enhanced база данных:\n- ML-оптимизированные индексы\n- Предсказание запросов\n- Автоматическая настройка\n- Query plan optimization")
+            }
+            
+            Deployment_Node(elasticache_ai_primary, "ElastiCache AI Primary", "Redis 7 + RedisAI") {
+                ContainerDb(redis_ai_primary, "Redis AI Primary", "Redis + RedisAI", "Интеллектуальный кеш:\n- ML предсказание паттернов\n- Динамическое TTL\n- Автоматическая предзагрузка\n- Персонализированное кеширование")
+            }
+        }
+        
+        Deployment_Node(private_subnet_ai_2, "Private Subnet AI-2", "us-east-1b") {
+            
+            Deployment_Node(eks_ai_cluster_2, "EKS AI Cluster 2", "Kubernetes + AI Operators") {
+                Deployment_Node(gateway_ai_pod_2, "Gateway AI Pod 2", "Kubernetes Pod + AI") {
+                    Container(apollo_gateway_ai_2, "Apollo Gateway AI", "Node.js + TensorFlow.js", "Резервный AI Gateway:\n- Failover с ML состоянием\n- Синхронизация моделей\n- Distributed learning")
+                }
+                
+                Deployment_Node(ml_inference_pod_2, "ML Inference Pod 2", "Kubernetes Pod") {
+                    Container(model_server_2, "Model Server", "TorchServe", "Резервный Model Server:\n- Model replication\n- Load balancing\n- A/B model testing")
+                }
+                
+                Deployment_Node(ab_testing_pod, "A/B Testing Pod", "Kubernetes Pod") {
+                    Container(experiment_engine, "Experiment Engine", "Java + ML", "A/B Testing Engine:\n- Эксперименты с ML\n- Статистический анализ\n- Автоматическое завершение\n- Causal inference")
+                }
+                
+                Deployment_Node(auto_optimizer_pod, "Auto Optimizer Pod", "Kubernetes Pod") {
+                    Container(auto_optimizer, "Auto Optimizer", "Python + Ray", "Автоматический оптимизатор:\n- Анализ узких мест\n- ML генерация оптимизаций\n- Автоматическое применение\n- Continuous learning")
+                }
+            }
+            
+            Deployment_Node(opensearch_ai_cluster, "OpenSearch AI Cluster", "OpenSearch + ML") {
+                ContainerDb(opensearch_ai_master, "OpenSearch AI Master", "OpenSearch + ML", "Поиск с машинным обучением:\n- Learning to Rank\n- Персонализация результатов\n- Автоматическая оптимизация\n- Semantic search")
+            }
+        }
+        
+        Deployment_Node(private_subnet_ai_3, "Private Subnet AI-3", "us-east-1c") {
+            
+            Deployment_Node(ml_training_cluster, "ML Training Cluster", "EKS + Kubeflow") {
+                Deployment_Node(training_job_pod, "Training Job Pod", "Kubernetes Job") {
+                    Container(model_training, "Model Training", "PyTorch + Kubeflow", "Обучение ML моделей:\n- Автоматическое переобучение\n- Hyperparameter tuning\n- Model validation\n- Distributed training")
+                }
+                
+                Deployment_Node(feature_pipeline_pod, "Feature Pipeline Pod", "Kubernetes Pod") {
+                    Container(feature_processor, "Feature Processor", "Apache Beam", "Feature Engineering:\n- Real-time feature extraction\n- Feature transformation\n- Feature validation\n- Feature store integration")
+                }
+            }
+            
+            Deployment_Node(data_processing_cluster, "Data Processing Cluster", "EMR + Spark") {
+                Container(spark_cluster, "Spark Cluster", "Apache Spark + ML", "Большие данные + ML:\n- Batch feature engineering\n- Model training data prep\n- Historical analysis\n- ML pipeline orchestration")
+            }
+        }
+    }
+    
+    Deployment_Node(ai_services_region, "AI Services Region", "AWS AI/ML Services") {
+        
+        Deployment_Node(sagemaker_platform, "SageMaker Platform", "AWS SageMaker") {
+            Container(sagemaker_endpoints, "SageMaker Endpoints", "Managed ML Inference", "Managed ML сервисы:\n- Model hosting\n- Auto-scaling\n- A/B testing\n- Multi-model endpoints")
+            Container(sagemaker_training, "SageMaker Training", "Managed ML Training", "Managed обучение:\n- Distributed training\n- Hyperparameter optimization\n- Automatic model tuning\n- Experiment tracking")
+        }
+        
+        Deployment_Node(bedrock_platform, "Bedrock Platform", "AWS Bedrock") {
+            Container(bedrock_llm, "Bedrock LLM", "Foundation Models", "Large Language Models:\n- Content generation\n- Query understanding\n- Semantic analysis\n- Natural language processing")
+        }
+        
+        Deployment_Node(comprehend_platform, "Comprehend Platform", "AWS Comprehend") {
+            Container(comprehend_nlp, "Comprehend NLP", "Natural Language Processing", "NLP сервисы:\n- Sentiment analysis\n- Entity recognition\n- Language detection\n- Content moderation")
+        }
+    }
+    
+    Deployment_Node(data_lake_platform, "Data Lake Platform", "AWS Analytics Services") {
+        
+        Deployment_Node(s3_data_lake, "S3 Data Lake", "AWS S3 + Analytics") {
+            Container(raw_data_bucket, "Raw Data Bucket", "S3 Bucket", "Сырые данные:\n- GraphQL logs\n- User interactions\n- Performance metrics\n- A/B test results")
+            Container(processed_data_bucket, "Processed Data Bucket", "S3 Bucket", "Обработанные данные:\n- Feature datasets\n- Training data\n- Model artifacts\n- Analytics results")
+        }
+        
+        Deployment_Node(kinesis_platform, "Kinesis Platform", "AWS Kinesis") {
+            Container(kinesis_streams, "Kinesis Data Streams", "Real-time Streaming", "Потоковые данные:\n- Real-time events\n- ML feature streams\n- Monitoring metrics\n- A/B test events")
+            Container(kinesis_analytics, "Kinesis Analytics", "Stream Processing", "Stream обработка:\n- Real-time aggregations\n- Anomaly detection\n- Feature computation\n- Alert generation")
+        }
+    }
+    
+    Deployment_Node(monitoring_ai_platform, "Monitoring AI Platform", "Observability + AI") {
+        
+        Deployment_Node(prometheus_ai_cluster, "Prometheus AI Cluster", "Prometheus + ML") {
+            Container(prometheus_ai, "Prometheus AI", "Prometheus + ML Plugins", "AI-enhanced мониторинг:\n- Предсказание трендов\n- Автоматические алерты\n- Корреляционный анализ\n- Anomaly detection")
+        }
+        
+        Deployment_Node(grafana_ai_cluster, "Grafana AI Cluster", "Grafana + AI") {
+            Container(grafana_ai, "Grafana AI", "Grafana + ML Dashboards", "Дашборды с AI:\n- Автоматические инсайты\n- Предсказательная аналитика\n- ML рекомендации\n- Intelligent alerting")
+        }
+        
+        Deployment_Node(jaeger_ai_cluster, "Jaeger AI Cluster", "Jaeger + ML Analysis") {
+            Container(jaeger_ai, "Jaeger AI", "Jaeger + ML Analysis", "Трассировка с AI:\n- Анализ паттернов\n- Предсказание проблем\n- Автоматическая корреляция\n- Performance optimization")
+        }
+    }
+}
+
+Deployment_Node(edge_ai_locations, "Edge AI Locations", "CloudFront + Lambda@Edge") {
+    Container(cloudfront_ai, "CloudFront AI", "CDN + Edge Computing", "Интеллектуальная CDN:\n- Edge ML inference\n- Персонализация контента\n- Adaptive caching\n- Real-time optimization")
+    Container(lambda_edge_ai, "Lambda@Edge AI", "Serverless Edge Computing", "Edge AI функции:\n- Request routing\n- Content personalization\n- A/B testing\n- Performance optimization")
+}
+
+' Internet and User Traffic with AI
+Person(users_ai, "AI-Enhanced Users", "Пользователи с персонализированным опытом")
+Rel(users_ai, cloudfront_ai, "Персонализированный контент", "HTTPS")
+Rel(cloudfront_ai, load_balancer_ai, "Оптимизированные запросы", "HTTPS")
+
+' AI Load Balancing
+Rel(load_balancer_ai, apollo_gateway_ai, "ML-маршрутизация", "HTTP/HTTPS")
+Rel(load_balancer_ai, apollo_gateway_ai_2, "Intelligent failover", "HTTP/HTTPS")
+
+' AI Gateway to ML Services
+Rel(apollo_gateway_ai, model_server_1, "ML inference", "gRPC")
+Rel(apollo_gateway_ai_2, model_server_2, "ML inference", "gRPC")
+Rel(apollo_gateway_ai, experiment_engine, "A/B experiments", "HTTP/REST")
+
+' AI Subgraph Interactions
+Rel(apollo_gateway_ai, user_service_ai_1, "Персонализированные запросы", "HTTP/GraphQL")
+Rel(apollo_gateway_ai, offer_service_ai_1, "ML-оптимизированные запросы", "HTTP/GraphQL")
+Rel(apollo_gateway_ai_2, user_service_ai_1, "Load balanced requests", "HTTP/GraphQL")
+Rel(apollo_gateway_ai_2, offer_service_ai_1, "Intelligent routing", "HTTP/GraphQL")
+
+' AI Database Interactions
+Rel(user_service_ai_1, postgres_ai_primary, "ML-оптимизированные запросы", "PostgreSQL")
+Rel(offer_service_ai_1, postgres_ai_primary, "Интеллектуальные индексы", "PostgreSQL")
+Rel(user_service_ai_1, redis_ai_primary, "Персонализированное кеширование", "Redis Protocol")
+Rel(offer_service_ai_1, redis_ai_primary, "ML предсказание паттернов", "Redis Protocol")
+
+' Search AI Integration
+Rel(offer_service_ai_1, opensearch_ai_master, "Персонализированный поиск", "HTTP/REST")
+
+' ML Training and Optimization
+Rel(model_training, sagemaker_training, "Distributed training", "SageMaker API")
+Rel(model_server_1, sagemaker_endpoints, "Model deployment", "SageMaker API")
+Rel(auto_optimizer, model_training, "Trigger retraining", "Kubernetes API")
+
+' AI Services Integration
+Rel(apollo_gateway_ai, bedrock_llm, "LLM inference", "AWS Bedrock API")
+Rel(user_service_ai_1, comprehend_nlp, "Content analysis", "AWS Comprehend API")
+Rel(offer_service_ai_1, comprehend_nlp, "Text processing", "AWS Comprehend API")
+
+' Data Flow for ML
+Rel(apollo_gateway_ai, kinesis_streams, "Real-time events", "Kinesis API")
+Rel(user_service_ai_1, kinesis_streams, "User interactions", "Kinesis API")
+Rel(kinesis_streams, raw_data_bucket, "Event storage", "S3 API")
+Rel(kinesis_analytics, feature_processor, "Processed features", "Kafka")
+
+' Feature Pipeline
+Rel(feature_processor, processed_data_bucket, "Feature datasets", "S3 API")
+Rel(spark_cluster, processed_data_bucket, "Batch processing", "S3 API")
+Rel(model_training, processed_data_bucket, "Training data", "S3 API")
+
+' AI Monitoring Integration
+Rel(apollo_gateway_ai, prometheus_ai, "AI метрики", "HTTP")
+Rel(model_server_1, prometheus_ai, "ML производительность", "HTTP")
+Rel(experiment_engine, prometheus_ai, "A/B test метрики", "HTTP")
+Rel(auto_optimizer, prometheus_ai, "Optimization метрики", "HTTP")
+
+Rel(prometheus_ai, grafana_ai, "ML визуализация", "HTTP")
+Rel(apollo_gateway_ai, jaeger_ai, "AI трассировка", "HTTP")
+Rel(model_server_1, jaeger_ai, "ML request tracing", "HTTP")
+
+' Edge AI Integration
+Rel(lambda_edge_ai, apollo_gateway_ai, "Edge-optimized requests", "HTTP")
+Rel(cloudfront_ai, lambda_edge_ai, "Edge processing", "Lambda invocation")
+
+' Feedback Loops for Continuous Learning
+Rel(prometheus_ai, auto_optimizer, "Performance insights", "HTTP")
+Rel(jaeger_ai, model_training, "Trace-based training data", "HTTP")
+Rel(grafana_ai, experiment_engine, "Dashboard insights", "HTTP")
+
+SHOW_LEGEND()
+@enduml

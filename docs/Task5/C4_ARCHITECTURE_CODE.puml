@@ -1,0 +1,127 @@
+@startuml Task5_Code_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation - Code Diagram (Task 5: AI-Driven Implementation Details)
+
+System_Boundary(ai_gateway_implementation, "AI Gateway Implementation") {
+    
+    System_Boundary(ml_request_processing, "ML Request Processing Classes") {
+        Component(request_classifier_impl, "RequestClassifier", "TypeScript Class", "class RequestClassifier {\n  +classifyQuery(query: DocumentNode): Promise<QueryClassification>\n  +predictComplexity(query: DocumentNode): Promise<number>\n  +selectStrategy(classification: QueryClassification): ExecutionStrategy\n  -extractFeatures(query: DocumentNode): QueryFeatures\n  -loadModel(): Promise<TensorFlowModel>\n}")
+        
+        Component(query_optimizer_ml_impl, "QueryOptimizerML", "TypeScript Class", "class QueryOptimizerML {\n  +optimizeQuery(query: DocumentNode): Promise<OptimizedQuery>\n  +predictPerformance(query: DocumentNode): Promise<PerformancePrediction>\n  +generateOptimizations(query: DocumentNode): Promise<Optimization[]>\n  -analyzeAST(query: DocumentNode): ASTAnalysis\n  -applyMLOptimizations(query: DocumentNode, predictions: PerformancePrediction): DocumentNode\n}")
+        
+        Component(adaptive_rate_limiter_impl, "AdaptiveRateLimiter", "TypeScript Class", "class AdaptiveRateLimiter {\n  +checkRateLimit(userId: string, query: DocumentNode): Promise<RateLimitResult>\n  +updateLimits(userId: string, performance: PerformanceMetrics): Promise<void>\n  +predictOptimalLimits(userBehavior: UserBehavior): Promise<RateLimits>\n  -calculateDynamicLimits(userSegment: UserSegment): RateLimits\n  -learnFromFeedback(userId: string, success: boolean): Promise<void>\n}")
+        
+        Component(intelligent_auth_impl, "IntelligentAuth", "TypeScript Class", "class IntelligentAuth {\n  +authenticateWithBehavior(token: string, context: RequestContext): Promise<AuthResult>\n  +detectAnomalies(userBehavior: UserBehavior): Promise<AnomalyScore>\n  +adaptSecurityLevel(riskScore: number): SecurityLevel\n  -analyzeBehaviorPattern(userId: string): Promise<BehaviorProfile>\n  -updateRiskModel(userId: string, outcome: AuthOutcome): Promise<void>\n}")
+    }
+    
+    System_Boundary(ml_query_planning_impl, "ML Query Planning Implementation") {
+        Component(performance_predictor_impl, "PerformancePredictor", "Python Class", "class PerformancePredictor:\n    def predict_execution_time(self, query_features: QueryFeatures) -> float\n    def predict_resource_usage(self, query: str) -> ResourcePrediction\n    def update_model(self, feedback: PerformanceFeedback) -> None\n    def _extract_query_features(self, query: str) -> QueryFeatures\n    def _load_pytorch_model(self) -> torch.nn.Module")
+        
+        Component(execution_planner_impl, "ExecutionPlanner", "TypeScript Class", "class ExecutionPlanner {\n  +createOptimalPlan(query: DocumentNode, prediction: PerformancePrediction): Promise<ExecutionPlan>\n  +optimizeParallelization(plan: ExecutionPlan): Promise<ParallelExecutionPlan>\n  +calculateTimeouts(plan: ExecutionPlan): Promise<TimeoutConfig>\n  -analyzeQueryDependencies(query: DocumentNode): DependencyGraph\n  -optimizeExecutionOrder(dependencies: DependencyGraph): ExecutionOrder\n}")
+        
+        Component(cache_predictor_impl, "CachePredictor", "Python Class", "class CachePredictor:\n    def predict_cache_hit_probability(self, query_hash: str, context: CacheContext) -> float\n    def calculate_optimal_ttl(self, query_pattern: QueryPattern) -> int\n    def predict_prefetch_candidates(self, user_session: UserSession) -> List[str]\n    def _analyze_access_patterns(self, user_id: str) -> AccessPattern\n    def _update_cache_model(self, cache_events: List[CacheEvent]) -> None")
+        
+        Component(routing_intelligence_impl, "RoutingIntelligence", "TypeScript Class", "class RoutingIntelligence {\n  +selectOptimalSubgraph(query: DocumentNode, subgraphs: Subgraph[]): Promise<Subgraph>\n  +balanceLoad(subgraphs: Subgraph[], currentLoad: LoadMetrics): Promise<LoadBalanceDecision>\n  +learnFromOutcomes(decision: RoutingDecision, outcome: RoutingOutcome): Promise<void>\n  -calculateSubgraphScores(query: DocumentNode, subgraphs: Subgraph[]): Promise<SubgraphScore[]>\n  -updateRoutingModel(feedback: RoutingFeedback): Promise<void>\n}")
+    }
+    
+    System_Boundary(ab_testing_implementation, "A/B Testing Implementation") {
+        Component(experiment_manager_impl, "ExperimentManager", "Java Class", "public class ExperimentManager {\n    public Experiment createExperiment(ExperimentConfig config)\n    public ExperimentResult analyzeResults(String experimentId)\n    public boolean shouldStopExperiment(String experimentId)\n    private StatisticalTest calculateSignificance(ExperimentData data)\n    private PowerAnalysis calculateRequiredSampleSize(ExperimentConfig config)\n}")
+        
+        Component(user_segmentation_impl, "UserSegmentation", "Python Class", "class UserSegmentation:\n    def segment_user(self, user_profile: UserProfile) -> UserSegment\n    def create_dynamic_segments(self, behavioral_data: BehavioralData) -> List[Segment]\n    def update_segmentation_model(self, feedback: SegmentationFeedback) -> None\n    def _cluster_users(self, features: np.ndarray) -> np.ndarray\n    def _validate_segments(self, segments: List[Segment]) -> SegmentValidation")
+        
+        Component(variant_selector_impl, "VariantSelector", "TypeScript Class", "class VariantSelector {\n  +selectVariant(userId: string, experiment: Experiment): Promise<Variant>\n  +updateBanditModel(experimentId: string, outcome: ExperimentOutcome): Promise<void>\n  +optimizeConversions(experiment: Experiment): Promise<OptimizationResult>\n  -calculateVariantProbabilities(experiment: Experiment): VariantProbabilities\n  -applyThompsonSampling(experiment: Experiment): Variant\n}")
+        
+        Component(metrics_analyzer_impl, "MetricsAnalyzer", "R Class", "class MetricsAnalyzer {\n    analyze_causal_impact <- function(experiment_data, control_data)\n    calculate_statistical_significance <- function(treatment, control)\n    detect_novelty_effects <- function(time_series_data)\n    generate_insights <- function(experiment_results)\n    validate_assumptions <- function(experiment_design)\n}")
+    }
+    
+    System_Boundary(real_time_optimization_impl, "Real-time Optimization Implementation") {
+        Component(anomaly_detector_impl, "AnomalyDetector", "Python Class", "class AnomalyDetector:\n    def detect_anomalies(self, metrics: TimeSeriesData) -> List[Anomaly]\n    def predict_failures(self, system_state: SystemState) -> FailurePrediction\n    def update_detection_model(self, labeled_data: LabeledAnomalies) -> None\n    def _isolation_forest_detection(self, data: np.ndarray) -> np.ndarray\n    def _lstm_prediction(self, sequence: np.ndarray) -> float")
+        
+        Component(auto_scaler_impl, "AutoScaler", "Go Struct", "type AutoScaler struct {\n    predictiveModel *PredictiveModel\n    kubernetesClient kubernetes.Interface\n}\n\nfunc (as *AutoScaler) PredictLoad(ctx context.Context, timeHorizon time.Duration) (*LoadPrediction, error)\nfunc (as *AutoScaler) ScaleResources(ctx context.Context, prediction *LoadPrediction) error\nfunc (as *AutoScaler) LearnFromOutcomes(ctx context.Context, feedback *ScalingFeedback) error")
+        
+        Component(circuit_breaker_ai_impl, "CircuitBreakerAI", "TypeScript Class", "class CircuitBreakerAI {\n  +shouldOpenCircuit(serviceMetrics: ServiceMetrics): Promise<boolean>\n  +predictRecoveryTime(service: Service, failurePattern: FailurePattern): Promise<number>\n  +adaptThresholds(service: Service, historicalData: HistoricalData): Promise<CircuitBreakerConfig>\n  -analyzeFailurePatterns(service: Service): Promise<FailurePattern[]>\n  -updatePredictionModel(service: Service, outcome: CircuitBreakerOutcome): Promise<void>\n}")
+        
+        Component(load_balancer_ml_impl, "LoadBalancerML", "Rust Struct", "pub struct LoadBalancerML {\n    rl_agent: ReinforcementLearningAgent,\n    performance_history: PerformanceHistory,\n}\n\nimpl LoadBalancerML {\n    pub async fn select_backend(&self, request: &Request) -> Result<Backend>\n    pub async fn update_weights(&mut self, feedback: &LoadBalancingFeedback) -> Result<()>\n    pub async fn learn_from_latency(&mut self, backend: &Backend, latency: Duration) -> Result<()>\n}")
+    }
+}
+
+System_Boundary(smart_subgraph_implementation, "Smart Subgraph Implementation") {
+    
+    System_Boundary(ai_resolver_implementation, "AI Resolver Implementation") {
+        Component(personalized_resolver_impl, "PersonalizedResolver", "Rust Struct", "pub struct PersonalizedResolver {\n    personalization_model: PersonalizationModel,\n    user_profile_cache: UserProfileCache,\n}\n\nimpl PersonalizedResolver {\n    pub async fn resolve_personalized(&self, user_id: &UserId, query: &Query) -> Result<PersonalizedResult>\n    pub async fn adapt_to_context(&self, context: &RequestContext) -> Result<AdaptationStrategy>\n    pub async fn learn_preferences(&mut self, user_id: &UserId, interaction: &UserInteraction) -> Result<()>\n}")
+        
+        Component(predictive_dataloader_impl, "PredictiveDataLoader", "Rust Struct", "pub struct PredictiveDataLoader<K, V> {\n    base_loader: DataLoader<K, V>,\n    prediction_model: PredictionModel,\n    prefetch_cache: PrefetchCache<K, V>,\n}\n\nimpl<K, V> PredictiveDataLoader<K, V> {\n    pub async fn load_with_prediction(&self, key: K) -> Result<V>\n    pub async fn prefetch_likely_keys(&self, context: &LoadContext) -> Result<()>\n    pub async fn update_prediction_model(&mut self, access_pattern: &AccessPattern) -> Result<()>\n}")
+        
+        Component(adaptive_caching_impl, "AdaptiveCaching", "Rust Struct", "pub struct AdaptiveCaching {\n    cache_strategy_model: CacheStrategyModel,\n    dynamic_ttl_calculator: DynamicTTLCalculator,\n}\n\nimpl AdaptiveCaching {\n    pub async fn get_with_adaptive_strategy<T>(&self, key: &str) -> Result<Option<T>>\n    pub async fn set_with_predicted_ttl<T>(&self, key: &str, value: T) -> Result<()>\n    pub async fn predict_invalidation_time(&self, key: &str) -> Result<Duration>\n    pub async fn learn_from_cache_events(&mut self, events: &[CacheEvent]) -> Result<()>\n}")
+    }
+    
+    System_Boundary(ml_business_logic_impl, "ML Business Logic Implementation") {
+        Component(recommendation_engine_impl, "RecommendationEngine", "Python Class", "class RecommendationEngine:\n    def __init__(self, model_path: str):\n        self.collaborative_model = CollaborativeFilteringModel.load(model_path)\n        self.content_model = ContentBasedModel.load(model_path)\n    \n    def get_recommendations(self, user_id: str, context: RecommendationContext) -> List[Recommendation]\n    def update_user_preferences(self, user_id: str, interaction: UserInteraction) -> None\n    def a_b_test_algorithms(self, user_id: str) -> RecommendationAlgorithm")
+        
+        Component(content_moderator_impl, "ContentModerator", "Python Class", "class ContentModerator:\n    def __init__(self):\n        self.toxicity_model = ToxicityDetectionModel()\n        self.spam_detector = SpamDetectionModel()\n        self.image_moderator = ImageModerationModel()\n    \n    def moderate_text(self, text: str) -> ModerationResult\n    def moderate_image(self, image_url: str) -> ModerationResult\n    def classify_content(self, content: Content) -> ContentClassification\n    def update_moderation_models(self, feedback: ModerationFeedback) -> None")
+        
+        Component(fraud_detector_impl, "FraudDetector", "Python Class", "class FraudDetector:\n    def __init__(self):\n        self.anomaly_model = IsolationForest()\n        self.behavioral_model = BehavioralAnomalyModel()\n    \n    def analyze_user_behavior(self, user_session: UserSession) -> FraudScore\n    def detect_suspicious_patterns(self, user_actions: List[UserAction]) -> List[SuspiciousPattern]\n    def update_fraud_model(self, labeled_data: LabeledFraudData) -> None\n    def real_time_scoring(self, user_id: str, action: UserAction) -> float")
+        
+        Component(quality_scorer_impl, "QualityScorer", "Rust Struct", "pub struct QualityScorer {\n    quality_model: QualityPredictionModel,\n    feature_extractor: FeatureExtractor,\n}\n\nimpl QualityScorer {\n    pub async fn score_offer(&self, offer: &Offer) -> Result<QualityScore>\n    pub async fn predict_conversion_probability(&self, offer: &Offer, user: &User) -> Result<f64>\n    pub async fn rank_offers(&self, offers: &[Offer], user_context: &UserContext) -> Result<Vec<RankedOffer>>\n    pub async fn update_quality_model(&mut self, feedback: &QualityFeedback) -> Result<()>\n}")
+    }
+}
+
+System_Boundary(ml_infrastructure_implementation, "ML Infrastructure Implementation") {
+    
+    System_Boundary(model_serving_impl, "Model Serving Implementation") {
+        Component(model_server_impl, "ModelServer", "Python Class", "class ModelServer:\n    def __init__(self, model_registry: ModelRegistry):\n        self.models: Dict[str, MLModel] = {}\n        self.model_registry = model_registry\n    \n    def load_model(self, model_name: str, version: str) -> MLModel\n    def predict(self, model_name: str, features: np.ndarray) -> np.ndarray\n    def a_b_test_models(self, model_name: str, features: np.ndarray) -> ModelPrediction\n    def update_model(self, model_name: str, new_version: str) -> None")
+        
+        Component(feature_pipeline_impl, "FeaturePipeline", "Apache Beam Pipeline", "class FeaturePipeline(beam.DoFn):\n    def process(self, element: RawEvent) -> Iterator[ProcessedFeature]:\n        # Real-time feature engineering\n        features = self.extract_features(element)\n        transformed = self.transform_features(features)\n        return [self.validate_features(transformed)]\n    \n    def extract_features(self, event: RawEvent) -> RawFeatures\n    def transform_features(self, features: RawFeatures) -> TransformedFeatures\n    def validate_features(self, features: TransformedFeatures) -> ProcessedFeature")
+        
+        Component(model_monitor_impl, "ModelMonitor", "Python Class", "class ModelMonitor:\n    def __init__(self, monitoring_config: MonitoringConfig):\n        self.drift_detector = DriftDetector()\n        self.performance_tracker = PerformanceTracker()\n    \n    def detect_model_drift(self, model_name: str, recent_data: np.ndarray) -> DriftReport\n    def monitor_model_performance(self, model_name: str, predictions: np.ndarray, actuals: np.ndarray) -> PerformanceReport\n    def trigger_retraining(self, model_name: str, drift_severity: float) -> RetrainingJob\n    def alert_on_degradation(self, model_name: str, performance_drop: float) -> Alert")
+    }
+}
+
+' Relationships between AI Gateway classes
+Rel(request_classifier_impl, query_optimizer_ml_impl, "uses", "composition")
+Rel(query_optimizer_ml_impl, adaptive_rate_limiter_impl, "uses", "composition")
+Rel(adaptive_rate_limiter_impl, intelligent_auth_impl, "uses", "composition")
+
+' ML Query Planning relationships
+Rel(performance_predictor_impl, execution_planner_impl, "provides predictions", "gRPC call")
+Rel(execution_planner_impl, cache_predictor_impl, "uses cache predictions", "function call")
+Rel(cache_predictor_impl, routing_intelligence_impl, "informs routing", "function call")
+
+' A/B Testing relationships
+Rel(experiment_manager_impl, user_segmentation_impl, "uses segmentation", "REST API")
+Rel(user_segmentation_impl, variant_selector_impl, "provides segments", "function call")
+Rel(variant_selector_impl, metrics_analyzer_impl, "sends metrics", "message queue")
+
+' Real-time Optimization relationships
+Rel(anomaly_detector_impl, auto_scaler_impl, "triggers scaling", "HTTP webhook")
+Rel(auto_scaler_impl, circuit_breaker_ai_impl, "coordinates with", "gRPC")
+Rel(circuit_breaker_ai_impl, load_balancer_ml_impl, "informs balancing", "function call")
+
+' Smart Subgraph relationships
+Rel(personalized_resolver_impl, predictive_dataloader_impl, "uses", "composition")
+Rel(predictive_dataloader_impl, adaptive_caching_impl, "uses", "composition")
+
+' ML Business Logic relationships
+Rel(recommendation_engine_impl, content_moderator_impl, "moderates recommendations", "function call")
+Rel(content_moderator_impl, fraud_detector_impl, "fraud analysis", "function call")
+Rel(fraud_detector_impl, quality_scorer_impl, "quality assessment", "function call")
+
+' ML Infrastructure relationships
+Rel(model_server_impl, feature_pipeline_impl, "serves features", "gRPC")
+Rel(model_server_impl, model_monitor_impl, "monitoring integration", "HTTP")
+Rel(feature_pipeline_impl, model_monitor_impl, "feature drift monitoring", "Kafka")
+
+' Cross-layer ML integrations
+Rel(performance_predictor_impl, model_server_impl, "model inference", "gRPC")
+Rel(recommendation_engine_impl, model_server_impl, "recommendation models", "gRPC")
+Rel(content_moderator_impl, model_server_impl, "moderation models", "gRPC")
+Rel(fraud_detector_impl, model_server_impl, "fraud detection models", "gRPC")
+
+' Feedback loops for continuous learning
+Rel(routing_intelligence_impl, performance_predictor_impl, "routing feedback", "HTTP")
+Rel(metrics_analyzer_impl, experiment_manager_impl, "experiment insights", "function call")
+Rel(model_monitor_impl, auto_scaler_impl, "model performance alerts", "HTTP webhook")
+
+SHOW_LEGEND()
+@enduml

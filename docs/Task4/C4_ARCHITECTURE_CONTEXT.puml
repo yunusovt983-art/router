@@ -1,0 +1,123 @@
+@startuml Task4_Context_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Auto.ru Federation - Context Diagram (Task 4: Production-Ready Integration & Optimization)
+
+Person(user, "Пользователь Auto.ru", "Использует оптимизированную\nфедеративную систему")
+Person(seller, "Продавец", "Размещает объявления\nчерез оптимизированный API")
+Person(moderator, "Модератор", "Модерирует контент\nс улучшенной производительностью")
+Person(admin, "Администратор", "Управляет системой\nс полным мониторингом")
+Person(devops, "DevOps Engineer", "Мониторит и поддерживает\nproduction систему")
+Person(analyst, "Аналитик", "Анализирует метрики\nи производительность")
+
+System_Boundary(autoru_federation, "Auto.ru Federated GraphQL System (Production-Ready)") {
+    System(apollo_gateway, "Apollo Gateway", "Оптимизированный GraphQL Gateway\nс кешированием и мониторингом")
+    System(user_subgraph, "User Subgraph", "Микросервис пользователей\nс оптимизированными запросами")
+    System(offer_subgraph, "Offer Subgraph", "Микросервис объявлений\nс улучшенной индексацией")
+    System(review_subgraph, "Review Subgraph", "Микросервис отзывов\nс оптимизированной агрегацией")
+}
+
+System_Boundary(monitoring_stack, "Monitoring & Observability Stack") {
+    System(prometheus, "Prometheus", "Сбор метрик производительности\nи бизнес-метрик")
+    System(grafana, "Grafana", "Визуализация метрик\nи дашборды мониторинга")
+    System(jaeger, "Jaeger", "Distributed tracing\nдля анализа производительности")
+    System(elk_stack, "ELK Stack", "Централизованное логирование\nи анализ логов")
+}
+
+System_Boundary(testing_infrastructure, "Testing & Quality Assurance") {
+    System(k6_load_testing, "K6 Load Testing", "Автоматизированное\nнагрузочное тестирование")
+    System(integration_tests, "Integration Tests", "Комплексные интеграционные\nтесты федерации")
+    System(chaos_engineering, "Chaos Engineering", "Тестирование отказоустойчивости\nи resilience")
+}
+
+System_Ext(web_client, "Web Client", "Оптимизированное React SPA\nс Apollo Client")
+System_Ext(mobile_app, "Mobile App", "Native мобильные приложения\nс GraphQL кешированием")
+System_Ext(admin_dashboard, "Admin Dashboard", "Административная панель\nс real-time мониторингом")
+System_Ext(external_apis, "External APIs", "Внешние интеграции\nчерез оптимизированные адаптеры")
+
+System_Ext(postgres_cluster, "PostgreSQL Cluster", "Высокодоступный кластер БД\nс read replicas")
+System_Ext(redis_cluster, "Redis Cluster", "Распределенный кеш\nи session store")
+System_Ext(elasticsearch_cluster, "Elasticsearch Cluster", "Поисковый кластер\nс оптимизированными индексами")
+System_Ext(s3_storage, "AWS S3", "Объектное хранилище\nс CDN интеграцией")
+
+System_Ext(cdn, "CloudFront CDN", "Глобальная доставка контента\nи кеширование")
+System_Ext(load_balancer, "Application Load Balancer", "Балансировка нагрузки\nи SSL termination")
+System_Ext(api_gateway_aws, "AWS API Gateway", "Rate limiting и\nAPI management")
+
+System_Ext(notification_service, "Notification Service", "Масштабируемые уведомления\nEmail/SMS/Push")
+System_Ext(payment_gateway, "Payment Gateway", "Обработка платежей\nс fraud detection")
+System_Ext(analytics_platform, "Analytics Platform", "Бизнес-аналитика\nи A/B тестирование")
+
+' User interactions
+Rel(user, web_client, "Использует оптимизированный\nпользовательский интерфейс", "HTTPS")
+Rel(user, mobile_app, "Мобильное взаимодействие\nс кешированием", "HTTPS")
+Rel(seller, web_client, "Управляет объявлениями\nчерез оптимизированный UI", "HTTPS")
+Rel(moderator, admin_dashboard, "Модерирует контент\nс real-time обновлениями", "HTTPS")
+Rel(admin, admin_dashboard, "Администрирует систему\nс полным мониторингом", "HTTPS")
+Rel(devops, grafana, "Мониторит производительность\nи здоровье системы", "HTTPS")
+Rel(analyst, grafana, "Анализирует метрики\nи бизнес-показатели", "HTTPS")
+
+' External API integrations
+Rel(external_apis, apollo_gateway, "Интеграции через\nоптимизированный GraphQL", "HTTPS/GraphQL")
+
+' Client to infrastructure
+Rel(web_client, load_balancer, "HTTP запросы через\nбалансировщик нагрузки", "HTTPS")
+Rel(mobile_app, api_gateway_aws, "API запросы с\nrate limiting", "HTTPS")
+Rel(admin_dashboard, load_balancer, "Административные запросы", "HTTPS")
+
+' Load balancer to gateway
+Rel(load_balancer, apollo_gateway, "Распределение нагрузки\nна Gateway instances", "HTTP")
+Rel(api_gateway_aws, apollo_gateway, "Управляемые API запросы", "HTTP")
+
+' Gateway to subgraphs (optimized)
+Rel(apollo_gateway, user_subgraph, "Федеративные запросы\nс query planning", "HTTP/GraphQL")
+Rel(apollo_gateway, offer_subgraph, "Оптимизированные запросы\nс batching", "HTTP/GraphQL")
+Rel(apollo_gateway, review_subgraph, "Агрегированные запросы\nс кешированием", "HTTP/GraphQL")
+
+' Subgraphs to databases (optimized)
+Rel(user_subgraph, postgres_cluster, "Оптимизированные запросы\nс connection pooling", "PostgreSQL")
+Rel(offer_subgraph, postgres_cluster, "Batch операции\nи prepared statements", "PostgreSQL")
+Rel(review_subgraph, postgres_cluster, "Агрегированные запросы\nс индексами", "PostgreSQL")
+
+Rel(user_subgraph, redis_cluster, "Кеширование пользователей\nи сессий", "Redis Protocol")
+Rel(offer_subgraph, redis_cluster, "Кеширование объявлений\nи поисковых результатов", "Redis Protocol")
+Rel(review_subgraph, redis_cluster, "Кеширование рейтингов\nи агрегатов", "Redis Protocol")
+
+Rel(offer_subgraph, elasticsearch_cluster, "Оптимизированный поиск\nс фильтрацией", "HTTP/REST")
+Rel(offer_subgraph, s3_storage, "Управление изображениями\nчерез CDN", "AWS S3 API")
+
+' CDN integration
+Rel(cdn, s3_storage, "Кеширование статического\nконтента", "AWS S3 API")
+Rel(web_client, cdn, "Быстрая доставка\nстатических ресурсов", "HTTPS")
+Rel(mobile_app, cdn, "Оптимизированная загрузка\nизображений", "HTTPS")
+
+' External services
+Rel(apollo_gateway, notification_service, "Асинхронные уведомления\nчерез очереди", "HTTPS/REST")
+Rel(apollo_gateway, payment_gateway, "Безопасная обработка\nплатежей", "HTTPS/REST")
+Rel(apollo_gateway, analytics_platform, "Отправка событий\nи метрик", "HTTPS/REST")
+
+' Monitoring integrations
+Rel(apollo_gateway, prometheus, "Метрики производительности\nи бизнес-метрики", "HTTP")
+Rel(user_subgraph, prometheus, "Метрики микросервиса\nпользователей", "HTTP")
+Rel(offer_subgraph, prometheus, "Метрики микросервиса\nобъявлений", "HTTP")
+Rel(review_subgraph, prometheus, "Метрики микросервиса\nотзывов", "HTTP")
+
+Rel(prometheus, grafana, "Визуализация метрик\nи алертинг", "HTTP")
+
+Rel(apollo_gateway, jaeger, "Distributed tracing\nзапросов", "HTTP")
+Rel(user_subgraph, jaeger, "Трейсинг операций\nпользователей", "HTTP")
+Rel(offer_subgraph, jaeger, "Трейсинг поисковых\nзапросов", "HTTP")
+Rel(review_subgraph, jaeger, "Трейсинг агрегации\nотзывов", "HTTP")
+
+Rel(apollo_gateway, elk_stack, "Структурированные логи\nи события", "HTTP")
+Rel(user_subgraph, elk_stack, "Логи аутентификации\nи авторизации", "HTTP")
+Rel(offer_subgraph, elk_stack, "Логи поисковых запросов\nи операций", "HTTP")
+Rel(review_subgraph, elk_stack, "Логи модерации\nи агрегации", "HTTP")
+
+' Testing infrastructure
+Rel(k6_load_testing, apollo_gateway, "Автоматизированное\nнагрузочное тестирование", "HTTP/GraphQL")
+Rel(integration_tests, apollo_gateway, "Комплексные интеграционные\nтесты", "HTTP/GraphQL")
+Rel(chaos_engineering, apollo_gateway, "Тестирование отказоустойчивости\nи resilience", "Various")
+
+SHOW_LEGEND()
+@enduml

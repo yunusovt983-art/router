@@ -1,0 +1,115 @@
+@startuml Task2_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru UGC Subgraph - Component Diagram (Task 2: Internal Structure)
+
+Container(client, "GraphQL Client", "Apollo Router", "Отправляет федеративные запросы")
+
+System_Boundary(ugc_subgraph, "UGC Subgraph Internal Structure") {
+    
+    System_Boundary(graphql_layer, "GraphQL Layer") {
+        Component(query_resolvers, "Query Resolvers", "async-graphql", "GraphQL Query резолверы\n- review(id)\n- reviews(offerId, pagination)\n- offerRating(offerId)")
+        
+        Component(mutation_resolvers, "Mutation Resolvers", "async-graphql", "GraphQL Mutation резолверы\n- createReview(input)\n- updateReview(id, input)\n- deleteReview(id)\n- moderateReview(id, status)")
+        
+        Component(federation_types, "Federation Types", "async-graphql", "Федеративные типы\n- Review (@key)\n- User (@extends)\n- Offer (@extends)")
+        
+        Component(graphql_schema, "GraphQL Schema", "async-graphql", "Композиция схемы\n- Типы и резолверы\n- Федеративные директивы\n- Валидация схемы")
+    }
+    
+    System_Boundary(middleware_layer, "Middleware Layer") {
+        Component(auth_guard, "Auth Guard", "async-graphql Guard", "Проверка аутентификации\n- JWT валидация\n- Извлечение пользователя\n- Проверка ролей")
+        
+        Component(rate_limiter, "Rate Limiter", "Custom Middleware", "Ограничение запросов\n- Per-user limits\n- Per-operation limits\n- Redis-based storage")
+        
+        Component(error_handler, "Error Handler", "Custom Middleware", "Обработка ошибок\n- Типизированные ошибки\n- GraphQL error mapping\n- Логирование ошибок")
+        
+        Component(tracing_middleware, "Tracing Middleware", "OpenTelemetry", "Трассировка запросов\n- Span creation\n- Context propagation\n- Performance metrics")
+    }
+    
+    System_Boundary(service_layer, "Service Layer") {
+        Component(review_service, "Review Service", "Business Logic", "Основная бизнес-логика\n- Создание отзывов\n- Валидация данных\n- Бизнес-правила")
+        
+        Component(rating_service, "Rating Service", "Business Logic", "Управление рейтингами\n- Агрегация рейтингов\n- Обновление статистики\n- Кеширование результатов")
+        
+        Component(moderation_service, "Moderation Service", "Business Logic", "Модерация контента\n- Проверка прав\n- Изменение статуса\n- Аудит действий")
+        
+        Component(validation_service, "Validation Service", "Business Logic", "Валидация данных\n- Проверка входных данных\n- Бизнес-правила\n- Санитизация контента")
+    }
+    
+    System_Boundary(repository_layer, "Repository Layer") {
+        Component(review_repository, "Review Repository", "SQLx", "Доступ к данным отзывов\n- CRUD операции\n- Сложные запросы\n- Транзакции")
+        
+        Component(rating_repository, "Rating Repository", "SQLx", "Доступ к рейтингам\n- Агрегированные данные\n- Статистические запросы\n- Batch операции")
+        
+        Component(cache_repository, "Cache Repository", "Redis", "Кеширование данных\n- Get/Set операции\n- TTL управление\n- Инвалидация кеша")
+    }
+    
+    System_Boundary(model_layer, "Model Layer") {
+        Component(review_model, "Review Model", "Rust Struct", "Модель отзыва\n- Поля данных\n- Валидация\n- Сериализация")
+        
+        Component(offer_rating_model, "OfferRating Model", "Rust Struct", "Модель рейтинга\n- Агрегированные данные\n- Статистика\n- JSON поля")
+        
+        Component(input_types, "Input Types", "GraphQL InputObject", "Входные типы\n- CreateReviewInput\n- UpdateReviewInput\n- FilterInput")
+        
+        Component(connection_types, "Connection Types", "GraphQL Types", "Пагинация\n- ReviewConnection\n- ReviewEdge\n- PageInfo")
+    }
+}
+
+ContainerDb(postgres, "PostgreSQL", "Database", "Основная БД")
+ContainerDb(redis, "Redis", "Cache", "Кеш данных")
+
+System_Boundary(external_services, "External Services") {
+    Container(users_service, "Users Service", "GraphQL", "Сервис пользователей")
+    Container(offers_service, "Offers Service", "GraphQL", "Сервис объявлений")
+}
+
+' GraphQL Layer relationships
+Rel(client, query_resolvers, "Query запросы", "HTTP/GraphQL")
+Rel(client, mutation_resolvers, "Mutation запросы", "HTTP/GraphQL")
+
+Rel(query_resolvers, graphql_schema, "Использует схему", "Code")
+Rel(mutation_resolvers, graphql_schema, "Использует схему", "Code")
+Rel(federation_types, graphql_schema, "Определяет типы", "Code")
+
+' Middleware relationships
+Rel(query_resolvers, auth_guard, "Проверка прав", "Guard")
+Rel(mutation_resolvers, auth_guard, "Проверка прав", "Guard")
+Rel(mutation_resolvers, rate_limiter, "Ограничение запросов", "Middleware")
+Rel(query_resolvers, error_handler, "Обработка ошибок", "Middleware")
+Rel(mutation_resolvers, error_handler, "Обработка ошибок", "Middleware")
+Rel(query_resolvers, tracing_middleware, "Трассировка", "Middleware")
+Rel(mutation_resolvers, tracing_middleware, "Трассировка", "Middleware")
+
+' Service Layer relationships
+Rel(query_resolvers, review_service, "Получение данных", "Function call")
+Rel(query_resolvers, rating_service, "Получение рейтингов", "Function call")
+Rel(mutation_resolvers, review_service, "Создание/обновление", "Function call")
+Rel(mutation_resolvers, moderation_service, "Модерация", "Function call")
+
+Rel(review_service, validation_service, "Валидация", "Function call")
+Rel(rating_service, validation_service, "Валидация", "Function call")
+
+' Repository Layer relationships
+Rel(review_service, review_repository, "Операции с отзывами", "Function call")
+Rel(rating_service, rating_repository, "Операции с рейтингами", "Function call")
+Rel(review_service, cache_repository, "Кеширование", "Function call")
+Rel(rating_service, cache_repository, "Кеширование", "Function call")
+
+' Model relationships
+Rel(review_repository, review_model, "Использует модель", "Code")
+Rel(rating_repository, offer_rating_model, "Использует модель", "Code")
+Rel(query_resolvers, connection_types, "Пагинация", "Code")
+Rel(mutation_resolvers, input_types, "Входные данные", "Code")
+
+' Database relationships
+Rel(review_repository, postgres, "SQL запросы", "TCP")
+Rel(rating_repository, postgres, "SQL запросы", "TCP")
+Rel(cache_repository, redis, "Cache операции", "TCP")
+
+' Federation relationships
+Rel_Back(federation_types, users_service, "Федеративные ссылки", "HTTP/GraphQL")
+Rel_Back(federation_types, offers_service, "Федеративные ссылки", "HTTP/GraphQL")
+
+SHOW_LEGEND()
+@enduml

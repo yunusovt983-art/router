@@ -1,0 +1,83 @@
+@startuml Task7_Context_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Auto.ru Federation - Context Diagram (Task 7: Error Handling & Resilience System)
+
+Person(user, "Пользователь Auto.ru", "Получает надежные ответы\nдаже при сбоях внешних сервисов\nблагодаря graceful degradation")
+Person(developer, "Разработчик", "Мониторит состояние системы\nчерез метрики и алерты\nCircuit Breaker'ов")
+Person(sre_engineer, "SRE Инженер", "Управляет отказоустойчивостью\nи анализирует паттерны сбоев\nдля улучшения системы")
+
+System_Boundary(resilient_federation, "Resilient Auto.ru Federation System") {
+    System(ugc_resilient, "UGC Subgraph (Resilient)", "GraphQL подграф с комплексной\nсистемой обработки ошибок,\nCircuit Breaker'ами и fallback'ами")
+    System(error_handling_system, "Error Handling System", "Централизованная система\nобработки ошибок с типизацией,\nлогированием и метриками")
+    System(circuit_breaker_system, "Circuit Breaker System", "Система защиты от каскадных\nсбоев с автоматическим\nвосстановлением сервисов")
+    System(fallback_system, "Graceful Degradation System", "Система graceful degradation\nс кешированием и fallback\nданными для непрерывной работы")
+}
+
+System_Boundary(external_services, "External Services") {
+    System_Ext(users_service, "Users Service", "Внешний сервис пользователей\nс возможными сбоями\nи временной недоступностью")
+    System_Ext(offers_service, "Offers Service", "Внешний сервис объявлений\nс нестабильной работой\nи периодическими таймаутами")
+    System_Ext(payment_service, "Payment Service", "Внешний платежный сервис\nс критическими требованиями\nк надежности")
+}
+
+System_Boundary(monitoring_infrastructure, "Monitoring & Observability Infrastructure") {
+    System_Ext(prometheus_resilience, "Prometheus Resilience", "Сбор метрик отказоустойчивости:\n- Circuit Breaker состояния\n- Retry статистика\n- Error rates по типам")
+    System_Ext(grafana_resilience, "Grafana Resilience", "Дашборды мониторинга:\n- Circuit Breaker статусы\n- Error trends\n- Service health maps")
+    System_Ext(alertmanager_resilience, "AlertManager Resilience", "Алерты для критических событий:\n- Circuit Breaker открыт\n- High error rates\n- Service degradation")
+}
+
+System_Boundary(logging_infrastructure, "Logging & Analysis Infrastructure") {
+    System_Ext(elasticsearch_errors, "Elasticsearch Errors", "Индексирование и поиск\nпо структурированным логам\nошибок и событий восстановления")
+    System_Ext(kibana_errors, "Kibana Error Analysis", "Анализ паттернов ошибок:\n- Error categorization\n- Failure root cause analysis\n- Recovery time trends")
+    System_Ext(jaeger_resilience, "Jaeger Resilience Tracing", "Трассировка запросов\nчерез Circuit Breaker'ы\nи retry механизмы")
+}
+
+System_Boundary(cache_infrastructure, "Cache & Fallback Infrastructure") {
+    System_Ext(redis_fallback, "Redis Fallback Cache", "Кеширование данных\nдля fallback сценариев\nи быстрого восстановления")
+    System_Ext(cdn_cache, "CDN Cache", "Кеширование статических\nfallback данных\nна уровне CDN")
+}
+
+' User interactions with resilient system
+Rel(user, ugc_resilient, "GraphQL запросы", "HTTPS/GraphQL\nПолучает ответы даже при сбоях")
+Rel(developer, error_handling_system, "Анализ ошибок", "Logs/Metrics\nМониторинг типов ошибок")
+Rel(sre_engineer, circuit_breaker_system, "Управление CB", "Metrics/Config\nНастройка порогов")
+
+' Internal system interactions
+Rel(ugc_resilient, error_handling_system, "Обработка ошибок", "Function calls\nЦентрализованное логирование")
+Rel(ugc_resilient, circuit_breaker_system, "Защита от сбоев", "State management\nАвтоматическое переключение")
+Rel(ugc_resilient, fallback_system, "Graceful degradation", "Fallback calls\nВозврат кешированных данных")
+
+' External service interactions with resilience
+Rel(circuit_breaker_system, users_service, "Защищенные вызовы", "HTTP/gRPC\nС автоматическим отключением")
+Rel(circuit_breaker_system, offers_service, "Resilient requests", "HTTP/gRPC\nС retry логикой")
+Rel(circuit_breaker_system, payment_service, "Critical calls", "HTTP/gRPC\nС особой защитой")
+
+' Fallback system interactions
+Rel(fallback_system, redis_fallback, "Кеширование данных", "Redis Protocol\nДля быстрого fallback")
+Rel(fallback_system, cdn_cache, "Статические fallback", "HTTP\nМинимальные данные")
+
+' Monitoring integrations
+Rel(error_handling_system, prometheus_resilience, "Error метрики", "HTTP\nСтатистика по типам ошибок")
+Rel(circuit_breaker_system, prometheus_resilience, "CB метрики", "HTTP\nСостояния и переключения")
+Rel(fallback_system, prometheus_resilience, "Fallback метрики", "HTTP\nИспользование кеша")
+
+Rel(prometheus_resilience, grafana_resilience, "Визуализация", "HTTP\nДашборды отказоустойчивости")
+Rel(prometheus_resilience, alertmanager_resilience, "Алерты", "HTTP\nУведомления о проблемах")
+
+' Logging integrations
+Rel(error_handling_system, elasticsearch_errors, "Структурированные логи", "HTTP\nИндексирование ошибок")
+Rel(circuit_breaker_system, elasticsearch_errors, "CB события", "HTTP\nЛоги переключений")
+Rel(fallback_system, elasticsearch_errors, "Fallback события", "HTTP\nИспользование кеша")
+
+Rel(elasticsearch_errors, kibana_errors, "Анализ логов", "HTTP\nПоиск и визуализация")
+
+' Tracing integrations
+Rel(ugc_resilient, jaeger_resilience, "Трассировка запросов", "HTTP\nОтслеживание через CB")
+Rel(circuit_breaker_system, jaeger_resilience, "CB трассировка", "HTTP\nВремя переключений")
+
+' Feedback loops for improvement
+Rel(kibana_errors, circuit_breaker_system, "Анализ паттернов", "Insights\nОптимизация порогов")
+Rel(grafana_resilience, fallback_system, "Метрики производительности", "Insights\nУлучшение кеширования")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,393 @@
+version: '3.8'
+
+services:
+  # Apollo Router
+  apollo-router:
+    image: ghcr.io/apollographql/router:v1.33.0
+    ports:
+      - "4000:4000"
+      - "9090:9090"  # Prometheus metrics
+    volumes:
+      - ./router.yaml:/dist/config/router.yaml
+      - ./supergraph.graphql:/dist/config/supergraph.graphql
+      - ./scripts/router-entrypoint.sh:/usr/local/bin/router-entrypoint.sh
+      - ./schemas:/dist/schemas
+    environment:
+      - APOLLO_ROUTER_CONFIG_PATH=/dist/config/router.yaml
+      - APOLLO_ROUTER_SUPERGRAPH_PATH=/dist/config/supergraph.graphql
+      - APOLLO_ROUTER_LOG=warn
+      - APOLLO_ROUTER_VALIDATION_ENABLED=true
+      - APOLLO_ROUTER_STARTUP_DELAY=10
+      - ENVIRONMENT=production
+    entrypoint: ["/usr/local/bin/router-entrypoint.sh"]
+    depends_on:
+      - ugc-subgraph
+      - users-subgraph
+      - offers-subgraph
+      - catalog-subgraph
+      - search-subgraph
+    networks:
+      - federation-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # UGC Subgraph
+  ugc-subgraph:
+    build:
+      context: .
+      dockerfile: ugc-subgraph/Dockerfile
+    ports:
+      - "4001:4001"
+    environment:
+      - DATABASE_URL=${UGC_DATABASE_URL}
+      - RUST_LOG=warn
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URL=${REDIS_URL}
+      - JAEGER_ENDPOINT=${JAEGER_ENDPOINT}
+    depends_on:
+      - ugc-postgres
+      - redis
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Users Subgraph
+  users-subgraph:
+    build:
+      context: .
+      dockerfile: users-subgraph/Dockerfile
+    ports:
+      - "4002:4002"
+    environment:
+      - DATABASE_URL=${USERS_DATABASE_URL}
+      - RUST_LOG=warn
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URL=${REDIS_URL}
+      - JAEGER_ENDPOINT=${JAEGER_ENDPOINT}
+    depends_on:
+      - users-postgres
+      - redis
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Catalog Subgraph
+  catalog-subgraph:
+    build:
+      context: .
+      dockerfile: catalog-subgraph/Dockerfile
+    ports:
+      - "4003:4003"
+    environment:
+      - DATABASE_URL=${CATALOG_DATABASE_URL}
+      - RUST_LOG=warn
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URL=${REDIS_URL}
+      - JAEGER_ENDPOINT=${JAEGER_ENDPOINT}
+    depends_on:
+      - catalog-postgres
+      - redis
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Offers Subgraph
+  offers-subgraph:
+    build:
+      context: .
+      dockerfile: offers-subgraph/Dockerfile
+    ports:
+      - "4004:4004"
+    environment:
+      - DATABASE_URL=${OFFERS_DATABASE_URL}
+      - RUST_LOG=warn
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URL=${REDIS_URL}
+      - JAEGER_ENDPOINT=${JAEGER_ENDPOINT}
+    depends_on:
+      - offers-postgres
+      - redis
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Search Subgraph
+  search-subgraph:
+    build:
+      context: .
+      dockerfile: search-subgraph/Dockerfile
+    ports:
+      - "4005:4005"
+    environment:
+      - ELASTICSEARCH_URL=${ELASTICSEARCH_URL}
+      - RUST_LOG=warn
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URL=${REDIS_URL}
+      - JAEGER_ENDPOINT=${JAEGER_ENDPOINT}
+    depends_on:
+      - elasticsearch
+      - redis
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL for UGC
+  ugc-postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=${UGC_DB_NAME}
+      - POSTGRES_USER=${UGC_DB_USER}
+      - POSTGRES_PASSWORD=${UGC_DB_PASSWORD}
+    volumes:
+      - ugc_postgres_data:/var/lib/postgresql/data
+      - ./ugc-subgraph/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  # PostgreSQL for Users
+  users-postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=${USERS_DB_NAME}
+      - POSTGRES_USER=${USERS_DB_USER}
+      - POSTGRES_PASSWORD=${USERS_DB_PASSWORD}
+    volumes:
+      - users_postgres_data:/var/lib/postgresql/data
+      - ./users-subgraph/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  # PostgreSQL for Catalog
+  catalog-postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=${CATALOG_DB_NAME}
+      - POSTGRES_USER=${CATALOG_DB_USER}
+      - POSTGRES_PASSWORD=${CATALOG_DB_PASSWORD}
+    volumes:
+      - catalog_postgres_data:/var/lib/postgresql/data
+      - ./catalog-subgraph/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  # PostgreSQL for Offers
+  offers-postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=${OFFERS_DB_NAME}
+      - POSTGRES_USER=${OFFERS_DB_USER}
+      - POSTGRES_PASSWORD=${OFFERS_DB_PASSWORD}
+    volumes:
+      - offers_postgres_data:/var/lib/postgresql/data
+      - ./offers-subgraph/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  # Elasticsearch for Search
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    command: redis-server --appendonly yes --maxmemory 200mb --maxmemory-policy allkeys-lru
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.49
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=memory
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=720h'
+      - '--web.enable-lifecycle'
+    networks:
+      - federation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+volumes:
+  ugc_postgres_data:
+  users_postgres_data:
+  catalog_postgres_data:
+  offers_postgres_data:
+  elasticsearch_data:
+  redis_data:
+  prometheus_data:
+
+networks:
+  federation-network:
+    driver: bridge

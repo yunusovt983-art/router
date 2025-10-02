@@ -1,0 +1,79 @@
+@startuml Performance_Flow_Diagram
+!theme plain
+title Task 14: Performance Optimization Flow
+
+actor Client
+participant "GraphQL Gateway" as Gateway
+participant "Query Analyzer" as Analyzer
+participant "Rate Limiter" as RateLimit
+participant "GraphQL Resolver" as Resolver
+participant "Cache Manager" as Cache
+participant "DataLoader" as Loader
+participant "Repository" as Repo
+database "Redis Cache" as Redis
+database "PostgreSQL" as DB
+
+Client -> Gateway: GraphQL Query
+Gateway -> Analyzer: Validate Query
+Analyzer -> Analyzer: Check Depth & Complexity
+
+alt Query Valid
+    Gateway -> RateLimit: Check Rate Limit
+    alt Rate Limit OK
+        Gateway -> Resolver: Execute Query
+        Resolver -> Cache: Check L1 Cache
+        
+        alt Cache Hit (L1)
+            Cache -> Resolver: Return Cached Data
+        else Cache Miss (L1)
+            Cache -> Redis: Check L2 Cache
+            alt Cache Hit (L2)
+                Redis -> Cache: Return Cached Data
+                Cache -> Resolver: Return Data
+            else Cache Miss (L2)
+                Cache -> Loader: Request Data
+                Loader -> Loader: Batch Requests
+                Loader -> Repo: Execute Batched Query
+                Repo -> DB: SQL Query with Optimized Indexes
+                DB -> Repo: Result Set
+                Repo -> Loader: Processed Data
+                Loader -> Cache: Store in L1 & L2
+                Cache -> Redis: Store with TTL
+                Cache -> Resolver: Return Data
+            end
+        end
+        
+        Resolver -> Gateway: GraphQL Response
+        Gateway -> Client: JSON Response
+        
+    else Rate Limit Exceeded
+        RateLimit -> Gateway: Rate Limit Error
+        Gateway -> Client: 429 Too Many Requests
+    end
+    
+else Query Invalid
+    Analyzer -> Gateway: Validation Error
+    Gateway -> Client: 400 Bad Request
+end
+
+note over Cache, Redis
+    Multi-Level Caching:
+    L1: In-memory (request-scoped)
+    L2: Redis (shared, TTL-based)
+end note
+
+note over Loader, Repo
+    DataLoader Pattern:
+    - Batches N+1 queries
+    - Request-scoped caching
+    - Automatic deduplication
+end note
+
+note over Repo, DB
+    Database Optimizations:
+    - Optimized indexes
+    - Connection pooling
+    - Prepared statements
+end note
+
+@enduml

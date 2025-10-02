@@ -1,0 +1,114 @@
+@startuml Cache_Architecture_Diagram
+!theme plain
+title Task 14: Multi-Level Cache Architecture
+
+package "Application Layer" {
+    [GraphQL Resolver] as Resolver
+    [Review Service] as ReviewService
+    [Rating Service] as RatingService
+}
+
+package "Performance Layer" {
+    package "Cache Manager" {
+        [Cache Coordinator] as Coordinator
+        [Cache Invalidation] as Invalidation
+        [Circuit Breaker] as CircuitBreaker
+    }
+    
+    package "L1 Cache (Memory)" {
+        [Request Cache] as L1Cache
+        [LRU Eviction] as LRU
+        [TTL Manager] as L1TTL
+    }
+    
+    package "L2 Cache (Redis)" {
+        [Redis Client] as RedisClient
+        [Connection Pool] as RedisPool
+        [Serialization] as Serializer
+    }
+}
+
+package "Data Layer" {
+    [Review Repository] as ReviewRepo
+    [Rating Repository] as RatingRepo
+}
+
+cloud "Redis Cluster" {
+    database "Redis Master" as RedisMaster
+    database "Redis Replica 1" as RedisReplica1
+    database "Redis Replica 2" as RedisReplica2
+}
+
+database "PostgreSQL" as DB
+
+' Cache Flow
+Resolver --> Coordinator : get(key)
+Coordinator --> L1Cache : check L1
+L1Cache --> Coordinator : hit/miss
+
+alt L1 Miss
+    Coordinator --> RedisClient : check L2
+    RedisClient --> RedisPool : get connection
+    RedisPool --> RedisMaster : redis command
+    RedisMaster --> RedisPool : result
+    RedisPool --> RedisClient : data
+    RedisClient --> Coordinator : hit/miss
+end
+
+alt L2 Miss
+    Coordinator --> ReviewRepo : fetch data
+    ReviewRepo --> DB : SQL query
+    DB --> ReviewRepo : result
+    ReviewRepo --> Coordinator : data
+    Coordinator --> RedisClient : store L2
+    Coordinator --> L1Cache : store L1
+end
+
+' Cache Invalidation
+ReviewService --> Invalidation : invalidate(pattern)
+Invalidation --> L1Cache : clear matching
+Invalidation --> RedisClient : delete pattern
+RedisClient --> RedisMaster : DEL command
+
+' Circuit Breaker Protection
+Coordinator --> CircuitBreaker : protect Redis calls
+CircuitBreaker --> RedisClient : if closed/half-open
+
+' Cache Key Patterns
+note right of Coordinator
+    Cache Key Patterns:
+    - review:{id}
+    - offer_rating:{offer_id}
+    - reviews:offer:{offer_id}:page:{page}
+    - reviews:author:{author_id}:page:{page}
+    - offer_reviews_count:{offer_id}
+end note
+
+' TTL Configuration
+note right of L1TTL
+    L1 Cache TTL:
+    - Reviews: 5 minutes
+    - Ratings: 10 minutes
+    - Counts: 2 minutes
+    - Max size: 1000 entries
+end note
+
+note right of RedisMaster
+    L2 Cache TTL:
+    - Reviews: 10 minutes
+    - Ratings: 30 minutes
+    - Counts: 5 minutes
+    - Auto-expiration
+end note
+
+' Performance Metrics
+package "Monitoring" {
+    [Cache Metrics] as Metrics
+    [Prometheus] as Prom
+}
+
+L1Cache --> Metrics : hit/miss rates
+RedisClient --> Metrics : latency/errors
+Metrics --> Prom : export metrics
+
+@enduml

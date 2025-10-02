@@ -1,0 +1,212 @@
+@startuml Task8_Deployment_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title Auto.ru Federation - Deployment Diagram (Task 8: Telemetry & Monitoring Production Infrastructure)
+
+Deployment_Node(aws_cloud_telemetry, "AWS Cloud Telemetry Platform", "Amazon Web Services + Observability Stack") {
+    
+    Deployment_Node(production_vpc_telemetry, "Production VPC with Telemetry", "Virtual Private Cloud + Monitoring") {
+        
+        Deployment_Node(public_subnet_telemetry_1, "Public Subnet Telemetry-1", "us-east-1a") {
+            Deployment_Node(alb_telemetry, "ALB with Telemetry", "AWS ALB + Access Logs") {
+                Container(load_balancer_telemetry, "Telemetry Load Balancer", "ALB + CloudWatch Logs", "Load balancer с телеметрией:\n- Access logs в CloudWatch\n- Metrics в CloudWatch\n- Health check monitoring\n- Request tracing headers")
+            }
+            
+            Deployment_Node(cloudfront_telemetry, "CloudFront Telemetry", "AWS CloudFront + Real User Monitoring") {
+                Container(cdn_telemetry, "CDN with RUM", "CloudFront + Real User Monitoring", "CDN с мониторингом пользователей:\n- Real User Monitoring (RUM)\n- Cache hit/miss metrics\n- Geographic performance data\n- Error rate tracking")
+            }
+        }
+        
+        Deployment_Node(private_subnet_telemetry_1, "Private Subnet Telemetry-1", "us-east-1a") {
+            
+            Deployment_Node(eks_telemetry_cluster_1, "EKS Telemetry Cluster 1", "Kubernetes + Observability Operators") {
+                Deployment_Node(ugc_telemetry_pod_1, "UGC Telemetry Pod 1", "Kubernetes Pod + Full Instrumentation") {
+                    Container(ugc_service_telemetry_1, "UGC Service (Instrumented)", "Rust + OpenTelemetry + Prometheus", "UGC сервис с полной телеметрией:\n- OpenTelemetry tracing\n- Prometheus metrics endpoint\n- Structured JSON logging\n- Correlation ID propagation")
+                }
+                
+                Deployment_Node(otel_collector_pod_1, "OpenTelemetry Collector Pod 1", "Kubernetes Pod + OTEL Collector") {
+                    Container(otel_collector_1, "OTEL Collector", "OTEL Collector + Processors", "OpenTelemetry Collector:\n- Trace collection and processing\n- Metrics aggregation\n- Log processing\n- Multi-backend export")
+                }
+                
+                Deployment_Node(prometheus_pod_1, "Prometheus Pod 1", "Kubernetes Pod + Prometheus Server") {
+                    Container(prometheus_server_1, "Prometheus Server", "Prometheus + TSDB", "Prometheus сервер:\n- Metrics scraping\n- Time-series storage\n- PromQL query engine\n- Alert rule evaluation")
+                }
+            }
+            
+            Deployment_Node(jaeger_cluster_1, "Jaeger Cluster 1", "Jaeger + Cassandra") {
+                Container(jaeger_collector_1, "Jaeger Collector", "Jaeger Collector + gRPC", "Jaeger Collector:\n- Trace ingestion\n- Batch processing\n- Data validation\n- Storage writing")
+                Container(jaeger_query_1, "Jaeger Query", "Jaeger Query + HTTP API", "Jaeger Query сервис:\n- Trace retrieval\n- Search API\n- Dependency analysis\n- Service map generation")
+            }
+            
+            Deployment_Node(cassandra_cluster_1, "Cassandra Cluster 1", "Apache Cassandra + Multi-node") {
+                ContainerDb(cassandra_traces_1, "Cassandra Traces", "Cassandra + Trace Storage", "Cassandra для трассировок:\n- Distributed trace storage\n- High write throughput\n- Time-based partitioning\n- Automatic data retention")
+            }
+        }
+        
+        Deployment_Node(private_subnet_telemetry_2, "Private Subnet Telemetry-2", "us-east-1b") {
+            
+            Deployment_Node(eks_telemetry_cluster_2, "EKS Telemetry Cluster 2", "Kubernetes + Monitoring Stack") {
+                Deployment_Node(grafana_pod, "Grafana Pod", "Kubernetes Pod + Grafana") {
+                    Container(grafana_server, "Grafana Server", "Grafana + Dashboards", "Grafana сервер:\n- Multi-datasource dashboards\n- Real-time visualization\n- Alert visualization\n- Custom panels")
+                }
+                
+                Deployment_Node(alertmanager_pod, "AlertManager Pod", "Kubernetes Pod + AlertManager") {
+                    Container(alertmanager_server, "AlertManager Server", "AlertManager + Routing", "AlertManager сервер:\n- Alert deduplication\n- Notification routing\n- Silencing rules\n- Escalation policies")
+                }
+                
+                Deployment_Node(elasticsearch_cluster_pod, "Elasticsearch Cluster Pod", "Kubernetes Pod + Elasticsearch") {
+                    Container(elasticsearch_master, "Elasticsearch Master", "Elasticsearch + Master Node", "Elasticsearch master:\n- Cluster coordination\n- Index management\n- Search coordination\n- Metadata storage")
+                    Container(elasticsearch_data_1, "Elasticsearch Data 1", "Elasticsearch + Data Node", "Elasticsearch data node:\n- Log storage\n- Search execution\n- Aggregation processing\n- Index sharding")
+                }
+            }
+            
+            Deployment_Node(logging_pipeline_cluster, "Logging Pipeline Cluster", "ELK Stack + Processing") {
+                Deployment_Node(logstash_pod, "Logstash Pod", "Kubernetes Pod + Logstash") {
+                    Container(logstash_processor, "Logstash Processor", "Logstash + Ruby Filters", "Logstash обработчик:\n- Log parsing and filtering\n- Field extraction\n- Data enrichment\n- Format transformation")
+                }
+                
+                Deployment_Node(filebeat_pod, "Filebeat Pod", "Kubernetes Pod + Filebeat") {
+                    Container(filebeat_shipper, "Filebeat Shipper", "Filebeat + Log Shipping", "Filebeat агент:\n- Log file monitoring\n- Multi-line processing\n- Backpressure handling\n- Reliable delivery")
+                }
+                
+                Deployment_Node(kibana_pod, "Kibana Pod", "Kubernetes Pod + Kibana") {
+                    Container(kibana_server, "Kibana Server", "Kibana + Visualizations", "Kibana сервер:\n- Log search interface\n- Pattern analysis\n- Business event dashboards\n- Error investigation tools")
+                }
+            }
+        }
+        
+        Deployment_Node(private_subnet_telemetry_3, "Private Subnet Telemetry-3", "us-east-1c") {
+            
+            Deployment_Node(apollo_router_telemetry_cluster, "Apollo Router Telemetry Cluster", "Kubernetes + Router Monitoring") {
+                Deployment_Node(apollo_router_pod_1, "Apollo Router Pod 1", "Kubernetes Pod + Router Telemetry") {
+                    Container(apollo_router_telemetry_1, "Apollo Router (Telemetry)", "Apollo Router + OTLP + Prometheus", "Apollo Router с телеметрией:\n- Federation metrics\n- Query planning traces\n- Subgraph call monitoring\n- Cache performance metrics")
+                }
+            }
+            
+            Deployment_Node(external_services_monitored, "External Services Monitored", "Kubernetes + Service Monitoring") {
+                Deployment_Node(users_service_pod, "Users Service Pod", "Kubernetes Pod + Monitoring") {
+                    Container(users_service_monitored, "Users Service (Monitored)", "Mock Service + Telemetry", "Users сервис с мониторингом:\n- Response time tracking\n- Error rate monitoring\n- Circuit breaker integration\n- Health check endpoints")
+                }
+                
+                Deployment_Node(offers_service_pod, "Offers Service Pod", "Kubernetes Pod + Monitoring") {
+                    Container(offers_service_monitored, "Offers Service (Monitored)", "Mock Service + Telemetry", "Offers сервис с мониторингом:\n- Performance metrics\n- Dependency tracking\n- Load testing integration\n- SLA monitoring")
+                }
+            }
+        }
+    }
+    
+    Deployment_Node(monitoring_region, "Monitoring Region", "AWS Managed Monitoring Services") {
+        
+        Deployment_Node(cloudwatch_telemetry, "CloudWatch Telemetry", "AWS CloudWatch + Custom Metrics") {
+            Container(cloudwatch_metrics, "CloudWatch Metrics", "CloudWatch + Custom Dashboards", "CloudWatch метрики:\n- Infrastructure metrics\n- Application metrics\n- Custom business metrics\n- Cross-service correlation")
+            Container(cloudwatch_logs, "CloudWatch Logs", "CloudWatch Logs + Log Groups", "CloudWatch логи:\n- Centralized log aggregation\n- Log retention policies\n- Real-time log streaming\n- Log insights queries")
+            Container(cloudwatch_alarms, "CloudWatch Alarms", "CloudWatch + SNS Integration", "CloudWatch алармы:\n- Threshold-based alerts\n- Composite alarms\n- SNS notifications\n- Auto-scaling triggers")
+        }
+        
+        Deployment_Node(x_ray_telemetry, "X-Ray Telemetry", "AWS X-Ray + Distributed Tracing") {
+            Container(x_ray_service, "X-Ray Service", "X-Ray + Service Map", "AWS X-Ray сервис:\n- Distributed trace analysis\n- Service dependency mapping\n- Performance bottleneck detection\n- Error root cause analysis")
+        }
+        
+        Deployment_Node(managed_prometheus, "Amazon Managed Prometheus", "AWS Managed Prometheus") {
+            Container(amp_workspace, "AMP Workspace", "Managed Prometheus + PromQL", "Amazon Managed Prometheus:\n- Managed Prometheus service\n- High availability\n- Automatic scaling\n- Long-term storage")
+        }
+        
+        Deployment_Node(managed_grafana, "Amazon Managed Grafana", "AWS Managed Grafana") {
+            Container(amg_workspace, "AMG Workspace", "Managed Grafana + Dashboards", "Amazon Managed Grafana:\n- Managed Grafana service\n- Multi-datasource support\n- Team collaboration\n- Enterprise features")
+        }
+    }
+    
+    Deployment_Node(notification_infrastructure, "Notification Infrastructure", "Multi-channel Notifications") {
+        
+        Deployment_Node(slack_integration, "Slack Integration", "Slack + Webhooks") {
+            Container(slack_bot, "Slack Bot", "Slack Bot + Channels", "Slack интеграция:\n- Real-time alerts\n- Interactive notifications\n- Channel routing\n- Escalation workflows")
+        }
+        
+        Deployment_Node(pagerduty_integration, "PagerDuty Integration", "PagerDuty + Incident Management") {
+            Container(pagerduty_service, "PagerDuty Service", "PagerDuty + On-call", "PagerDuty интеграция:\n- Incident escalation\n- On-call scheduling\n- Incident response\n- Post-mortem tracking")
+        }
+        
+        Deployment_Node(email_notifications, "Email Notifications", "AWS SES + SMTP") {
+            Container(ses_service, "SES Service", "AWS SES + Templates", "Email уведомления:\n- Template-based emails\n- Delivery tracking\n- Bounce handling\n- Suppression lists")
+        }
+    }
+}
+
+Deployment_Node(development_environment, "Development Environment", "Local Development Stack") {
+    
+    Deployment_Node(docker_compose_telemetry, "Docker Compose Telemetry", "Local Observability Stack") {
+        Container(local_jaeger, "Local Jaeger", "Jaeger All-in-One", "Локальный Jaeger:\n- Single-node deployment\n- In-memory storage\n- Development tracing\n- UI access on :16686")
+        Container(local_prometheus, "Local Prometheus", "Prometheus + Local Config", "Локальный Prometheus:\n- Local metrics collection\n- Development rules\n- UI access on :9091\n- File-based storage")
+        Container(local_grafana, "Local Grafana", "Grafana + Preconfigured Dashboards", "Локальный Grafana:\n- Pre-built dashboards\n- Local datasources\n- UI access on :3000\n- Development panels")
+    }
+}
+
+' User traffic with telemetry
+Person(developers_telemetry, "Developers", "Анализируют метрики и трассировки")
+Person(sre_team, "SRE Team", "Управляют мониторингом и алертами")
+
+Rel(developers_telemetry, grafana_server, "Анализ дашбордов", "HTTPS")
+Rel(developers_telemetry, jaeger_query_1, "Анализ трассировок", "HTTPS")
+Rel(sre_team, kibana_server, "Анализ логов", "HTTPS")
+Rel(sre_team, alertmanager_server, "Управление алертами", "HTTPS")
+
+' Load balancer telemetry
+Rel(load_balancer_telemetry, ugc_service_telemetry_1, "Traced requests", "HTTP + Trace Headers")
+Rel(load_balancer_telemetry, cloudwatch_logs, "Access logs", "CloudWatch Logs API")
+
+' Application telemetry flow
+Rel(ugc_service_telemetry_1, otel_collector_1, "Traces + Metrics", "OTLP/gRPC")
+Rel(ugc_service_telemetry_1, prometheus_server_1, "Metrics scraping", "HTTP/Pull")
+Rel(ugc_service_telemetry_1, filebeat_shipper, "Application logs", "File/JSON")
+
+' Apollo Router telemetry
+Rel(apollo_router_telemetry_1, otel_collector_1, "Router traces", "OTLP")
+Rel(apollo_router_telemetry_1, prometheus_server_1, "Router metrics", "HTTP")
+Rel(apollo_router_telemetry_1, ugc_service_telemetry_1, "Federated calls", "HTTP + Tracing")
+
+' OpenTelemetry Collector processing
+Rel(otel_collector_1, jaeger_collector_1, "Processed traces", "gRPC")
+Rel(otel_collector_1, prometheus_server_1, "Aggregated metrics", "Remote Write")
+Rel(otel_collector_1, x_ray_service, "AWS X-Ray traces", "X-Ray API")
+
+' Jaeger storage
+Rel(jaeger_collector_1, cassandra_traces_1, "Trace storage", "Cassandra Protocol")
+Rel(jaeger_query_1, cassandra_traces_1, "Trace queries", "Cassandra Protocol")
+
+' Logging pipeline
+Rel(filebeat_shipper, logstash_processor, "Raw logs", "Beats Protocol")
+Rel(logstash_processor, elasticsearch_master, "Processed logs", "HTTP/Bulk API")
+Rel(elasticsearch_master, elasticsearch_data_1, "Index operations", "Elasticsearch Protocol")
+Rel(elasticsearch_data_1, kibana_server, "Log search", "Elasticsearch API")
+
+' Monitoring integration
+Rel(prometheus_server_1, grafana_server, "Metrics data", "HTTP/PromQL")
+Rel(prometheus_server_1, alertmanager_server, "Alert triggers", "HTTP")
+Rel(jaeger_query_1, grafana_server, "Trace data", "HTTP/Jaeger API")
+
+' AWS managed services integration
+Rel(ugc_service_telemetry_1, cloudwatch_metrics, "Custom metrics", "CloudWatch API")
+Rel(ugc_service_telemetry_1, cloudwatch_logs, "Application logs", "CloudWatch Logs API")
+Rel(otel_collector_1, amp_workspace, "Managed Prometheus", "Remote Write")
+Rel(amp_workspace, amg_workspace, "Managed Grafana", "Prometheus API")
+
+' Alerting and notifications
+Rel(alertmanager_server, slack_bot, "Slack alerts", "Webhook")
+Rel(alertmanager_server, pagerduty_service, "Critical alerts", "PagerDuty API")
+Rel(alertmanager_server, ses_service, "Email alerts", "SMTP")
+Rel(cloudwatch_alarms, pagerduty_service, "AWS alarms", "SNS + PagerDuty")
+
+' External service monitoring
+Rel(ugc_service_telemetry_1, users_service_monitored, "Monitored calls", "HTTP + Tracing")
+Rel(ugc_service_telemetry_1, offers_service_monitored, "Traced requests", "HTTP + Correlation ID")
+
+' Development environment
+Rel(developers_telemetry, local_grafana, "Local development", "HTTP :3000")
+Rel(developers_telemetry, local_jaeger, "Local tracing", "HTTP :16686")
+
+' Cross-region replication
+Rel(prometheus_server_1, amp_workspace, "Metrics backup", "Remote Write")
+Rel(elasticsearch_data_1, cloudwatch_logs, "Log backup", "CloudWatch API")
+
+SHOW_LEGEND()
+@enduml

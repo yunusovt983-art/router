@@ -1,0 +1,97 @@
+@startuml Task14_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Task 14: Performance Optimization - Component Diagram (UGC Subgraph)
+
+Container(graphql_gateway, "GraphQL Gateway", "Apollo Router")
+
+Container_Boundary(ugc_subgraph, "UGC Subgraph") {
+    Component(graphql_schema, "GraphQL Schema", "Async-GraphQL", "Defines GraphQL types and resolvers")
+    Component(query_resolver, "Query Resolver", "Rust", "Handles GraphQL query operations")
+    Component(mutation_resolver, "Mutation Resolver", "Rust", "Handles GraphQL mutation operations")
+    
+    Component_Boundary(performance_layer, "Performance Layer") {
+        Component(dataloader_manager, "DataLoader Manager", "Rust", "Manages all DataLoader instances")
+        Component(review_dataloader, "Review DataLoader", "Rust", "Batches review queries")
+        Component(rating_dataloader, "Rating DataLoader", "Rust", "Batches rating queries")
+        
+        Component(cache_manager, "Cache Manager", "Rust", "Coordinates L1/L2 caching")
+        Component(memory_cache, "Memory Cache (L1)", "Rust/HashMap", "In-memory request-scoped cache")
+        Component(redis_client, "Redis Client", "Rust/Redis", "Redis connection and operations")
+        
+        Component(query_complexity, "Query Complexity Analyzer", "Rust", "Analyzes and scores queries")
+        Component(rate_limit_service, "Rate Limit Service", "Rust", "Per-user request throttling")
+        Component(circuit_breaker, "Circuit Breaker", "Rust", "Prevents cascade failures")
+    }
+    
+    Component_Boundary(business_layer, "Business Layer") {
+        Component(review_service, "Review Service", "Rust", "Business logic for reviews")
+        Component(rating_service, "Rating Service", "Rust", "Business logic for ratings")
+        Component(auth_service, "Auth Service", "Rust", "Authentication and authorization")
+    }
+    
+    Component_Boundary(data_layer, "Data Layer") {
+        Component(review_repository, "Review Repository", "Rust/SQLx", "Database operations for reviews")
+        Component(rating_repository, "Rating Repository", "Rust/SQLx", "Database operations for ratings")
+        Component(connection_pool, "Connection Pool", "Rust/SQLx", "Database connection management")
+    }
+    
+    Component(metrics_collector, "Metrics Collector", "Rust/Prometheus", "Collects performance metrics")
+    Component(health_checker, "Health Checker", "Rust", "System health monitoring")
+}
+
+ContainerDb(redis_cache, "Redis Cache", "Redis")
+ContainerDb(postgres_db, "PostgreSQL", "PostgreSQL")
+System_Ext(external_services, "External Services", "Users/Offers Services")
+System_Ext(monitoring, "Monitoring", "Prometheus/Grafana")
+
+' GraphQL Layer Relationships
+Rel(graphql_gateway, graphql_schema, "GraphQL requests", "HTTP")
+Rel(graphql_schema, query_resolver, "Query execution")
+Rel(graphql_schema, mutation_resolver, "Mutation execution")
+
+' Performance Layer Relationships
+Rel(query_resolver, query_complexity, "Query validation")
+Rel(query_resolver, rate_limit_service, "Rate limiting")
+Rel(query_resolver, dataloader_manager, "Data loading")
+Rel(mutation_resolver, cache_manager, "Cache invalidation")
+
+Rel(dataloader_manager, review_dataloader, "Review batching")
+Rel(dataloader_manager, rating_dataloader, "Rating batching")
+
+Rel(cache_manager, memory_cache, "L1 cache ops")
+Rel(cache_manager, redis_client, "L2 cache ops")
+Rel(cache_manager, circuit_breaker, "Failure protection")
+
+' Business Layer Relationships
+Rel(query_resolver, review_service, "Review operations")
+Rel(query_resolver, rating_service, "Rating operations")
+Rel(mutation_resolver, auth_service, "Authorization")
+
+Rel(review_service, cache_manager, "Cache operations")
+Rel(rating_service, cache_manager, "Cache operations")
+
+' Data Layer Relationships
+Rel(review_dataloader, review_repository, "Batched queries")
+Rel(rating_dataloader, rating_repository, "Batched queries")
+Rel(review_service, review_repository, "Direct queries")
+Rel(rating_service, rating_repository, "Direct queries")
+
+Rel(review_repository, connection_pool, "DB connections")
+Rel(rating_repository, connection_pool, "DB connections")
+
+' External Relationships
+Rel(redis_client, redis_cache, "Cache operations", "Redis Protocol")
+Rel(connection_pool, postgres_db, "SQL queries", "PostgreSQL")
+Rel(review_service, external_services, "External data", "HTTP/REST")
+Rel(metrics_collector, monitoring, "Metrics", "HTTP/Prometheus")
+
+' Monitoring Relationships
+Rel(dataloader_manager, metrics_collector, "DataLoader metrics")
+Rel(cache_manager, metrics_collector, "Cache metrics")
+Rel(query_complexity, metrics_collector, "Query metrics")
+Rel(rate_limit_service, metrics_collector, "Rate limit metrics")
+Rel(health_checker, metrics_collector, "Health metrics")
+
+SHOW_LEGEND()
+@enduml

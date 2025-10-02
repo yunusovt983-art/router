@@ -1,0 +1,136 @@
+@startuml Task11_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation - Component Diagram (Task 11: Subgraph Stubs Components)
+
+Container(apollo_router, "Apollo Router", "Federation Gateway", "Маршрутизация федеративных запросов")
+
+System_Boundary(users_subgraph_components, "Users Subgraph Components") {
+    
+    System_Boundary(users_graphql_layer, "GraphQL Layer") {
+        Component(users_schema, "Users Schema", "async-graphql Schema", "GraphQL схема пользователей:\n- User type с @key(fields: \"id\")\n- Query root type\n- Mutation root type\n- Federation directives")
+        Component(users_query_resolver, "Users Query Resolver", "async-graphql Object", "Query резолверы:\n- user(id: ID!): User\n- users: [User!]!\n- _entities resolver\n- Health check queries")
+        Component(users_mutation_resolver, "Users Mutation Resolver", "async-graphql Object", "Mutation резолверы (заглушки):\n- createUser placeholder\n- updateUser placeholder\n- deleteUser placeholder\n- Error handling")
+        Component(users_federation_resolver, "Users Federation Resolver", "async-graphql EntityResolver", "Federation entity resolver:\n- __resolveReference\n- Entity type resolution\n- Cross-subgraph queries\n- Reference validation")
+    }
+    
+    System_Boundary(users_service_layer, "Service Layer") {
+        Component(users_service, "Users Service", "Rust Service Struct", "Бизнес-логика пользователей:\n- User CRUD operations\n- Data validation\n- Business rules\n- Error handling")
+        Component(users_repository, "Users Repository", "In-Memory Repository", "Хранение данных:\n- In-memory user storage\n- CRUD operations\n- Query filtering\n- Data persistence simulation")
+        Component(users_validator, "Users Validator", "Validation Logic", "Валидация данных:\n- Email format validation\n- Phone number validation\n- Required fields check\n- Business rule validation")
+    }
+    
+    System_Boundary(users_data_layer, "Data Layer") {
+        Component(users_mock_data, "Users Mock Data", "Static Data Store", "Моковые данные:\n- Predefined user records\n- Realistic test data\n- Russian localization\n- Relationship data")
+        Component(users_data_generator, "Users Data Generator", "Faker + Custom Logic", "Генерация данных:\n- Random user generation\n- Realistic names/emails\n- Phone number generation\n- Timestamp management")
+        Component(users_entity_model, "Users Entity Model", "Rust Structs", "Модели данных:\n- User struct\n- CreateUserInput\n- UpdateUserInput\n- UserFilter")
+    }
+}
+
+System_Boundary(offers_subgraph_components, "Offers Subgraph Components") {
+    
+    System_Boundary(offers_graphql_layer, "GraphQL Layer") {
+        Component(offers_schema, "Offers Schema", "async-graphql Schema", "GraphQL схема объявлений:\n- Offer type с @key(fields: \"id\")\n- Car embedded type\n- Query и Mutation roots\n- Federation extensions")
+        Component(offers_query_resolver, "Offers Query Resolver", "async-graphql Object", "Query резолверы:\n- offer(id: ID!): Offer\n- offers(filter: OfferFilter): [Offer!]!\n- cars: [Car!]!\n- Search и filtering")
+        Component(offers_mutation_resolver, "Offers Mutation Resolver", "async-graphql Object", "Mutation резолверы:\n- createOffer(input: CreateOfferInput!)\n- updateOffer(id: ID!, input: UpdateOfferInput!)\n- deleteOffer(id: ID!)\n- Validation и error handling")
+        Component(offers_federation_resolver, "Offers Federation Resolver", "async-graphql EntityResolver", "Federation integration:\n- Entity resolution\n- User reference resolution\n- Cross-subgraph relationships\n- UGC integration")
+    }
+    
+    System_Boundary(offers_service_layer, "Service Layer") {
+        Component(offers_service, "Offers Service", "Rust Service Struct", "Бизнес-логика объявлений:\n- Offer lifecycle management\n- Price validation\n- Car data validation\n- User relationship management")
+        Component(offers_repository, "Offers Repository", "In-Memory Repository", "Хранение объявлений:\n- In-memory offer storage\n- Complex filtering\n- Sorting и pagination\n- Relationship management")
+        Component(offers_search_engine, "Offers Search Engine", "Custom Search Logic", "Поиск объявлений:\n- Text search\n- Price range filtering\n- Car parameters filtering\n- Geographic search")
+    }
+    
+    System_Boundary(offers_data_layer, "Data Layer") {
+        Component(offers_mock_data, "Offers Mock Data", "Static Data Store", "Моковые объявления:\n- Predefined car offers\n- Realistic pricing\n- Car specifications\n- User associations")
+        Component(car_data_generator, "Car Data Generator", "Automotive Data", "Генерация автомобилей:\n- Car makes и models\n- Technical specifications\n- Realistic pricing\n- Market data")
+        Component(offers_entity_model, "Offers Entity Model", "Rust Structs", "Модели данных:\n- Offer struct\n- Car struct\n- CreateOfferInput\n- OfferFilter")
+    }
+}
+
+System_Boundary(shared_components, "Shared Components") {
+    
+    System_Boundary(federation_support, "Federation Support") {
+        Component(federation_directives, "Federation Directives", "GraphQL Directives", "Federation директивы:\n- @key directive implementation\n- @extends для type extensions\n- @external для внешних полей\n- @requires для зависимостей")
+        Component(entity_resolver, "Entity Resolver", "Federation Entity Logic", "Entity resolution:\n- __resolveReference implementation\n- Type resolution\n- Entity caching\n- Error handling")
+        Component(schema_composer, "Schema Composer", "Schema Composition", "Композиция схем:\n- Subgraph schema merging\n- Directive processing\n- Type extension handling\n- Validation")
+    }
+    
+    System_Boundary(cross_subgraph_integration, "Cross-Subgraph Integration") {
+        Component(user_reference_resolver, "User Reference Resolver", "Federation Reference", "Разрешение User ссылок:\n- User ID resolution\n- Cross-subgraph queries\n- Caching strategies\n- Error fallbacks")
+        Component(offer_reference_resolver, "Offer Reference Resolver", "Federation Reference", "Разрешение Offer ссылок:\n- Offer ID resolution\n- Related data fetching\n- Performance optimization\n- Data consistency")
+        Component(relationship_manager, "Relationship Manager", "Data Relationship Logic", "Управление связями:\n- User-Offer relationships\n- Data consistency\n- Referential integrity\n- Cascade operations")
+    }
+    
+    System_Boundary(testing_support, "Testing Support") {
+        Component(mock_data_factory, "Mock Data Factory", "Test Data Generation", "Фабрика тестовых данных:\n- Consistent test data\n- Relationship setup\n- Scenario data\n- Data cleanup")
+        Component(federation_test_client, "Federation Test Client", "GraphQL Test Client", "Тестовый клиент:\n- Federation query testing\n- Entity resolution testing\n- Performance testing\n- Error scenario testing")
+        Component(contract_validator, "Contract Validator", "API Contract Testing", "Валидация контрактов:\n- Schema compatibility\n- API contract compliance\n- Breaking change detection\n- Consumer testing")
+    }
+}
+
+' Apollo Router interactions
+Rel(apollo_router, users_schema, "User запросы", "GraphQL federation")
+Rel(apollo_router, offers_schema, "Offer запросы", "GraphQL federation")
+
+' Users subgraph component flow
+Rel(users_schema, users_query_resolver, "Query execution", "Resolver invocation")
+Rel(users_schema, users_mutation_resolver, "Mutation execution", "Resolver invocation")
+Rel(users_schema, users_federation_resolver, "Entity resolution", "Federation queries")
+
+Rel(users_query_resolver, users_service, "Business logic", "Service calls")
+Rel(users_mutation_resolver, users_service, "Business operations", "Service calls")
+Rel(users_federation_resolver, users_service, "Entity lookup", "Service calls")
+
+Rel(users_service, users_repository, "Data access", "Repository pattern")
+Rel(users_service, users_validator, "Data validation", "Validation logic")
+Rel(users_repository, users_mock_data, "Mock data access", "Data retrieval")
+Rel(users_repository, users_data_generator, "Data generation", "Dynamic data")
+Rel(users_mock_data, users_entity_model, "Data modeling", "Struct mapping")
+
+' Offers subgraph component flow
+Rel(offers_schema, offers_query_resolver, "Query execution", "Resolver invocation")
+Rel(offers_schema, offers_mutation_resolver, "Mutation execution", "Resolver invocation")
+Rel(offers_schema, offers_federation_resolver, "Entity resolution", "Federation queries")
+
+Rel(offers_query_resolver, offers_service, "Business logic", "Service calls")
+Rel(offers_mutation_resolver, offers_service, "Business operations", "Service calls")
+Rel(offers_federation_resolver, offers_service, "Entity lookup", "Service calls")
+
+Rel(offers_service, offers_repository, "Data access", "Repository pattern")
+Rel(offers_service, offers_search_engine, "Search operations", "Search logic")
+Rel(offers_repository, offers_mock_data, "Mock data access", "Data retrieval")
+Rel(offers_repository, car_data_generator, "Car data generation", "Automotive data")
+Rel(offers_mock_data, offers_entity_model, "Data modeling", "Struct mapping")
+
+' Federation support integration
+Rel(users_federation_resolver, federation_directives, "Directive processing", "Federation compliance")
+Rel(offers_federation_resolver, federation_directives, "Directive processing", "Federation compliance")
+Rel(users_schema, entity_resolver, "Entity resolution", "Federation entities")
+Rel(offers_schema, entity_resolver, "Entity resolution", "Federation entities")
+Rel(federation_directives, schema_composer, "Schema composition", "Directive handling")
+
+' Cross-subgraph relationships
+Rel(offers_federation_resolver, user_reference_resolver, "User lookup", "Cross-subgraph query")
+Rel(users_federation_resolver, offer_reference_resolver, "Offer lookup", "Cross-subgraph query")
+Rel(user_reference_resolver, users_service, "User data", "Service integration")
+Rel(offer_reference_resolver, offers_service, "Offer data", "Service integration")
+Rel(relationship_manager, users_repository, "User relationships", "Data consistency")
+Rel(relationship_manager, offers_repository, "Offer relationships", "Data consistency")
+
+' Testing support integration
+Rel(mock_data_factory, users_data_generator, "User test data", "Test data generation")
+Rel(mock_data_factory, car_data_generator, "Car test data", "Test data generation")
+Rel(federation_test_client, users_schema, "Users testing", "GraphQL testing")
+Rel(federation_test_client, offers_schema, "Offers testing", "GraphQL testing")
+Rel(contract_validator, users_schema, "Users contract validation", "API testing")
+Rel(contract_validator, offers_schema, "Offers contract validation", "API testing")
+
+' Data flow between components
+Rel(users_data_generator, relationship_manager, "User ID coordination", "Data consistency")
+Rel(car_data_generator, relationship_manager, "Offer-User linking", "Relationship setup")
+Rel(entity_resolver, relationship_manager, "Entity relationships", "Cross-reference resolution")
+
+SHOW_LEGEND()
+@enduml

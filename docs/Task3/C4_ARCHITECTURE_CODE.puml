@@ -1,0 +1,121 @@
+@startuml Task3_Code_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation Integration & Monitoring - Code Level Diagram (Task 3: Implementation Details)
+
+System_Boundary(integration_codebase, "Integration Hub Codebase Structure") {
+    
+    System_Boundary(api_module, "API Module (src/api/)") {
+        Component(express_app, "Express Application", "TypeScript", "const app = express()\napp.use('/api/integrations', integrationRoutes)\napp.use('/graphql', apolloGateway)\napp.use(authMiddleware)")
+        
+        Component(integration_routes, "Integration Routes", "Express Router", "router.get('/subgraphs', getSubgraphs)\nrouter.post('/subgraphs', registerSubgraph)\nrouter.put('/subgraphs/:id', updateSubgraph)\nrouter.delete('/subgraphs/:id', removeSubgraph)")
+        
+        Component(graphql_handler, "GraphQL Handler", "Apollo Gateway", "const gateway = new ApolloGateway({\n  serviceList: subgraphConfigs,\n  buildService: buildFederatedSchema,\n  experimental_pollInterval: 30000\n})")
+        
+        Component(websocket_handler, "WebSocket Handler", "Socket.io", "io.on('connection', (socket) => {\n  socket.join('monitoring')\n  socket.on('subscribe', handleSubscription)\n  socket.on('unsubscribe', handleUnsubscription)\n})")
+    }
+    
+    System_Boundary(integration_module, "Integration Module (src/integration/)") {
+        Component(subgraph_registry, "Subgraph Registry", "TypeScript Class", "class SubgraphRegistry {\n  private subgraphs: Map<string, SubgraphConfig>\n  \n  register(config: SubgraphConfig): void\n  unregister(name: string): void\n  getHealthStatus(name: string): Promise<HealthStatus>\n  validateSchema(schema: string): ValidationResult\n}")
+        
+        Component(federation_manager, "Federation Manager", "Apollo Federation", "class FederationManager {\n  private gateway: ApolloGateway\n  \n  async composeSchema(): Promise<ComposedSchema>\n  async validateComposition(): Promise<ValidationResult>\n  async updateSubgraphSchema(name: string, schema: string): Promise<void>\n}")
+        
+        Component(config_manager, "Config Manager", "TypeScript", "class ConfigManager {\n  private configs: Map<string, any>\n  \n  async loadConfig(path: string): Promise<Config>\n  async saveConfig(config: Config): Promise<void>\n  async syncConfigs(): Promise<void>\n  watchConfigChanges(callback: (config: Config) => void): void\n}")
+        
+        Component(test_orchestrator, "Test Orchestrator", "Jest Framework", "class TestOrchestrator {\n  private testSuites: TestSuite[]\n  \n  async runIntegrationTests(): Promise<TestResults>\n  async runContractTests(): Promise<TestResults>\n  async runPerformanceTests(): Promise<TestResults>\n  generateTestReport(results: TestResults): Report\n}")
+    }
+    
+    System_Boundary(monitoring_module, "Monitoring Module (src/monitoring/)") {
+        Component(metrics_service, "Metrics Service", "Prometheus Client", "class MetricsService {\n  private registry: Registry\n  private counters: Map<string, Counter>\n  private histograms: Map<string, Histogram>\n  \n  incrementCounter(name: string, labels?: object): void\n  recordHistogram(name: string, value: number, labels?: object): void\n  collectMetrics(): Promise<string>\n}")
+        
+        Component(tracing_service, "Tracing Service", "Jaeger Client", "class TracingService {\n  private tracer: Tracer\n  \n  startSpan(operationName: string, parentSpan?: Span): Span\n  finishSpan(span: Span): void\n  injectHeaders(span: Span, headers: object): void\n  extractSpan(headers: object): SpanContext | null\n}")
+        
+        Component(logging_service, "Logging Service", "Winston", "class LoggingService {\n  private logger: Logger\n  \n  info(message: string, meta?: object): void\n  error(message: string, error?: Error, meta?: object): void\n  warn(message: string, meta?: object): void\n  debug(message: string, meta?: object): void\n}")
+        
+        Component(alert_service, "Alert Service", "Custom Logic", "class AlertService {\n  private rules: AlertRule[]\n  private channels: NotificationChannel[]\n  \n  evaluateRules(metrics: Metrics): Alert[]\n  sendAlert(alert: Alert): Promise<void>\n  acknowledgeAlert(alertId: string): Promise<void>\n}")
+    }
+    
+    System_Boundary(analytics_module, "Analytics Module (src/analytics/)") {
+        Component(performance_analyzer, "Performance Analyzer", "TypeScript", "class PerformanceAnalyzer {\n  analyzeQueryPerformance(traces: Trace[]): PerformanceReport\n  identifyBottlenecks(metrics: Metrics): Bottleneck[]\n  generateOptimizationSuggestions(analysis: Analysis): Suggestion[]\n  calculateSLACompliance(metrics: Metrics): SLAReport\n}")
+        
+        Component(schema_analyzer, "Schema Analyzer", "GraphQL Tools", "class SchemaAnalyzer {\n  detectBreakingChanges(oldSchema: string, newSchema: string): BreakingChange[]\n  analyzeSchemaUsage(queries: Query[]): UsageReport\n  validateSchemaComposition(schemas: Schema[]): ValidationResult\n  generateSchemaDocumentation(schema: Schema): Documentation\n}")
+        
+        Component(cost_analyzer, "Cost Analyzer", "Custom Algorithm", "class CostAnalyzer {\n  calculateQueryCost(query: Query, schema: Schema): number\n  analyzeResourceUsage(metrics: Metrics): ResourceReport\n  optimizeCachingStrategy(patterns: QueryPattern[]): CacheStrategy\n  estimateInfrastructureCosts(usage: Usage): CostEstimate\n}")
+        
+        Component(ml_recommender, "ML Recommender", "TensorFlow.js", "class MLRecommender {\n  private model: tf.LayersModel\n  \n  async trainModel(data: TrainingData): Promise<void>\n  predictOptimizations(metrics: Metrics): Prediction[]\n  recommendArchitectureChanges(analysis: Analysis): Recommendation[]\n}")
+    }
+    
+    System_Boundary(storage_module, "Storage Module (src/storage/)") {
+        Component(redis_client, "Redis Client", "ioredis", "class RedisClient {\n  private client: Redis\n  \n  async get(key: string): Promise<string | null>\n  async set(key: string, value: string, ttl?: number): Promise<void>\n  async del(key: string): Promise<number>\n  async hgetall(key: string): Promise<Record<string, string>>\n}")
+        
+        Component(cache_manager, "Cache Manager", "TypeScript", "class CacheManager {\n  private redis: RedisClient\n  \n  async cacheMetrics(key: string, metrics: Metrics, ttl: number): Promise<void>\n  async getCachedMetrics(key: string): Promise<Metrics | null>\n  async invalidateCache(pattern: string): Promise<void>\n  async getCacheStats(): Promise<CacheStats>\n}")
+        
+        Component(config_store, "Config Store", "Redis/File System", "class ConfigStore {\n  async saveConfig(name: string, config: object): Promise<void>\n  async loadConfig(name: string): Promise<object | null>\n  async listConfigs(): Promise<string[]>\n  watchConfigChanges(callback: (name: string, config: object) => void): void\n}")
+        
+        Component(session_manager, "Session Manager", "Redis Sessions", "class SessionManager {\n  async createSession(userId: string, data: SessionData): Promise<string>\n  async getSession(sessionId: string): Promise<SessionData | null>\n  async updateSession(sessionId: string, data: Partial<SessionData>): Promise<void>\n  async destroySession(sessionId: string): Promise<void>\n}")
+    }
+    
+    System_Boundary(utils_module, "Utils Module (src/utils/)") {
+        Component(validation_utils, "Validation Utils", "Joi/Yup", "export const validateSubgraphConfig = (config: any): ValidationResult => {\n  const schema = Joi.object({\n    name: Joi.string().required(),\n    url: Joi.string().uri().required(),\n    schema: Joi.string().required()\n  })\n  return schema.validate(config)\n}")
+        
+        Component(error_handler, "Error Handler", "Custom Errors", "export class IntegrationError extends Error {\n  constructor(message: string, public code: string, public statusCode: number) {\n    super(message)\n    this.name = 'IntegrationError'\n  }\n}\n\nexport const handleError = (error: Error, req: Request, res: Response) => {...}")
+        
+        Component(middleware_utils, "Middleware Utils", "Express Middleware", "export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {\n  const token = extractToken(req)\n  const user = await validateToken(token)\n  req.user = user\n  next()\n}")
+        
+        Component(health_checker, "Health Checker", "HTTP Client", "export class HealthChecker {\n  async checkSubgraphHealth(url: string): Promise<HealthStatus> {\n    const response = await fetch(`${url}/health`)\n    return {\n      status: response.ok ? 'healthy' : 'unhealthy',\n      responseTime: response.headers.get('x-response-time'),\n      timestamp: new Date().toISOString()\n    }\n  }\n}")
+    }
+}
+
+System_Boundary(test_module, "Test Module (tests/)") {
+    Component(unit_tests, "Unit Tests", "Jest", "describe('SubgraphRegistry', () => {\n  test('should register subgraph', async () => {\n    const registry = new SubgraphRegistry()\n    const config = createMockConfig()\n    await registry.register(config)\n    expect(registry.getSubgraph(config.name)).toBeDefined()\n  })\n})")
+    
+    Component(integration_tests, "Integration Tests", "Jest + Supertest", "describe('Integration API', () => {\n  test('should create federation schema', async () => {\n    const response = await request(app)\n      .post('/api/integrations/compose')\n      .send({ subgraphs: mockSubgraphs })\n    expect(response.status).toBe(200)\n    expect(response.body.schema).toBeDefined()\n  })\n})")
+    
+    Component(e2e_tests, "E2E Tests", "Playwright", "test('federation workflow', async ({ page }) => {\n  await page.goto('/dashboard')\n  await page.click('[data-testid=\"add-subgraph\"]')\n  await page.fill('[name=\"subgraph-url\"]', 'http://test-subgraph')\n  await page.click('[data-testid=\"register\"]')\n  await expect(page.locator('.success-message')).toBeVisible()\n})")
+    
+    Component(performance_tests, "Performance Tests", "Artillery/K6", "export default function() {\n  const query = `query { offers { id title reviews { rating } } }`\n  const response = http.post('http://gateway/graphql', {\n    query: query\n  })\n  check(response, {\n    'status is 200': (r) => r.status === 200,\n    'response time < 500ms': (r) => r.timings.duration < 500\n  })\n}")
+}
+
+System_Boundary(config_module, "Configuration (config/)") {
+    Component(app_config, "App Config", "YAML/JSON", "server:\n  port: 3000\n  host: '0.0.0.0'\n\nfederation:\n  pollInterval: 30000\n  introspectionEnabled: false\n\nmonitoring:\n  prometheus:\n    enabled: true\n    port: 9090\n  jaeger:\n    endpoint: 'http://jaeger:14268'")
+    
+    Component(docker_config, "Docker Config", "Dockerfile", "FROM node:18-alpine\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci --only=production\nCOPY dist/ ./dist/\nEXPOSE 3000\nCMD [\"node\", \"dist/index.js\"]")
+    
+    Component(k8s_manifests, "K8s Manifests", "YAML", "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: integration-hub\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: integration-hub\n  template:\n    spec:\n      containers:\n      - name: integration-hub\n        image: integration-hub:latest\n        ports:\n        - containerPort: 3000")
+}
+
+' Module relationships
+Rel(express_app, integration_routes, "Регистрирует маршруты", "Code")
+Rel(express_app, graphql_handler, "Подключает GraphQL", "Code")
+Rel(express_app, websocket_handler, "Настраивает WebSocket", "Code")
+
+Rel(integration_routes, subgraph_registry, "Управляет подграфами", "Function call")
+Rel(graphql_handler, federation_manager, "Композиция схемы", "Function call")
+Rel(integration_routes, config_manager, "Управляет конфигурацией", "Function call")
+
+Rel(subgraph_registry, metrics_service, "Отправляет метрики", "Function call")
+Rel(federation_manager, tracing_service, "Трассировка операций", "Function call")
+Rel(integration_routes, logging_service, "Логирование событий", "Function call")
+
+Rel(metrics_service, performance_analyzer, "Данные производительности", "Function call")
+Rel(tracing_service, schema_analyzer, "Данные трассировки", "Function call")
+Rel(performance_analyzer, ml_recommender, "Данные для ML", "Function call")
+
+Rel(config_manager, redis_client, "Хранение конфигураций", "Function call")
+Rel(metrics_service, cache_manager, "Кеширование метрик", "Function call")
+Rel(express_app, session_manager, "Управление сессиями", "Function call")
+
+Rel(integration_routes, validation_utils, "Валидация данных", "Function call")
+Rel(express_app, error_handler, "Обработка ошибок", "Function call")
+Rel(subgraph_registry, health_checker, "Проверка здоровья", "Function call")
+
+Rel(unit_tests, subgraph_registry, "Тестирует функциональность", "Test")
+Rel(integration_tests, express_app, "Тестирует API", "Test")
+Rel(e2e_tests, websocket_handler, "Тестирует UI", "Test")
+
+Rel(express_app, app_config, "Загружает конфигурацию", "File read")
+Rel(docker_config, express_app, "Контейнеризация", "Docker build")
+Rel(k8s_manifests, docker_config, "Деплой в K8s", "Kubernetes")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,81 @@
+@startuml Task10_Context_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Auto.ru Federation - Context Diagram (Task 10: Testing Infrastructure)
+
+Person(developer, "Разработчик", "Пишет и запускает тесты\nдля обеспечения качества\nкода и функциональности")
+Person(qa_engineer, "QA Инженер", "Создает тестовые сценарии\nи проводит тестирование\nкачества системы")
+Person(devops_engineer, "DevOps Инженер", "Настраивает CI/CD pipeline\nи автоматизирует\nвыполнение тестов")
+
+System_Boundary(comprehensive_testing_system, "Auto.ru Comprehensive Testing System") {
+    System(ugc_testing_suite, "UGC Testing Suite", "Comprehensive тестовый набор:\n- Unit тесты для резолверов\n- Integration тесты с БД\n- Contract тесты для API\n- E2E пользовательские сценарии")
+    System(federation_testing, "Federation Testing Framework", "Тестирование федерации:\n- Cross-subgraph queries\n- Schema compatibility\n- Breaking changes detection\n- Performance testing")
+    System(test_automation, "Test Automation Platform", "Автоматизация тестирования:\n- CI/CD integration\n- Parallel test execution\n- Test reporting\n- Coverage analysis")
+}
+
+System_Boundary(testing_infrastructure, "Testing Infrastructure & Tools") {
+    System_Ext(unit_testing_framework, "Unit Testing Framework", "Rust testing инфраструктура:\n- Built-in test framework\n- Mockall для моков\n- Property-based testing\n- Async test utilities")
+    System_Ext(integration_testing, "Integration Testing Platform", "Интеграционное тестирование:\n- Testcontainers для БД\n- Docker test environments\n- Database migrations\n- Real service integration")
+    System_Ext(contract_testing, "Contract Testing System", "Consumer-driven тестирование:\n- Pact framework\n- API contract validation\n- Schema compatibility\n- Breaking change detection")
+}
+
+System_Boundary(test_data_management, "Test Data & Environment Management") {
+    System_Ext(test_database, "Test Database", "Изолированная тестовая БД:\n- PostgreSQL testcontainers\n- Test data fixtures\n- Transaction rollback\n- Schema migrations")
+    System_Ext(mock_services, "Mock Services", "Мокированные внешние сервисы:\n- Users API mock\n- Offers API mock\n- Wiremock HTTP server\n- Configurable responses")
+    System_Ext(test_data_factory, "Test Data Factory", "Генерация тестовых данных:\n- Fake data generation\n- Fixture management\n- Data builders\n- Scenario setup")
+}
+
+System_Boundary(performance_testing, "Performance & Load Testing") {
+    System_Ext(performance_benchmarks, "Performance Benchmarks", "Измерение производительности:\n- Criterion benchmarks\n- GraphQL query performance\n- Database operation timing\n- Memory usage analysis")
+    System_Ext(load_testing, "Load Testing Platform", "Нагрузочное тестирование:\n- Concurrent user simulation\n- Stress testing scenarios\n- Performance regression\n- Scalability validation")
+    System_Ext(chaos_testing, "Chaos Engineering", "Тестирование отказоустойчивости:\n- Service failure simulation\n- Network partition testing\n- Database unavailability\n- Recovery validation")
+}
+
+System_Boundary(ci_cd_testing, "CI/CD Testing Pipeline") {
+    System_Ext(github_actions, "GitHub Actions", "Автоматизация тестирования:\n- Automated test execution\n- Parallel test jobs\n- Test result reporting\n- Coverage collection")
+    System_Ext(test_reporting, "Test Reporting System", "Отчетность по тестам:\n- Test coverage reports\n- Performance metrics\n- Failure analysis\n- Quality gates")
+    System_Ext(quality_gates, "Quality Gates", "Контроль качества:\n- Coverage thresholds\n- Performance benchmarks\n- Security scanning\n- Code quality checks")
+}
+
+' User interactions with testing system
+Rel(developer, ugc_testing_suite, "Разработка и запуск тестов", "Local development\nTest execution")
+Rel(qa_engineer, federation_testing, "Тестирование федерации", "Manual testing\nScenario validation")
+Rel(devops_engineer, test_automation, "Настройка автоматизации", "CI/CD configuration\nPipeline management")
+
+' Testing suite integration
+Rel(ugc_testing_suite, unit_testing_framework, "Unit тестирование", "Rust test framework\nMock integration")
+Rel(ugc_testing_suite, integration_testing, "Интеграционные тесты", "Database testing\nService integration")
+Rel(federation_testing, contract_testing, "Contract validation", "Pact testing\nSchema validation")
+
+' Test data and environment
+Rel(ugc_testing_suite, test_database, "Тестовые данные", "Database operations\nTransaction testing")
+Rel(federation_testing, mock_services, "Мокированные сервисы", "External API mocking\nService simulation")
+Rel(ugc_testing_suite, test_data_factory, "Генерация данных", "Test data creation\nFixture management")
+
+' Performance and load testing
+Rel(federation_testing, performance_benchmarks, "Performance тесты", "Benchmark execution\nPerformance validation")
+Rel(test_automation, load_testing, "Нагрузочные тесты", "Load simulation\nStress testing")
+Rel(federation_testing, chaos_testing, "Chaos engineering", "Failure simulation\nResilience testing")
+
+' CI/CD integration
+Rel(test_automation, github_actions, "Автоматизация CI/CD", "Pipeline execution\nTest orchestration")
+Rel(github_actions, test_reporting, "Отчеты тестов", "Test results\nCoverage data")
+Rel(test_reporting, quality_gates, "Quality validation", "Quality metrics\nGate enforcement")
+
+' Cross-system interactions
+Rel(unit_testing_framework, mock_services, "Mock integration", "Service mocking\nDependency isolation")
+Rel(integration_testing, test_database, "Database testing", "Real DB operations\nMigration testing")
+Rel(contract_testing, mock_services, "Contract mocking", "API contract testing\nBehavior validation")
+
+' Performance monitoring integration
+Rel(performance_benchmarks, test_reporting, "Performance metrics", "Benchmark results\nRegression detection")
+Rel(load_testing, quality_gates, "Load test results", "Performance validation\nScalability gates")
+Rel(chaos_testing, test_reporting, "Resilience metrics", "Failure recovery data\nStability analysis")
+
+' Feedback loops
+Rel(test_reporting, ugc_testing_suite, "Test feedback", "Failure analysis\nImprovement suggestions")
+Rel(quality_gates, federation_testing, "Quality feedback", "Quality metrics\nTest enhancement")
+Rel(github_actions, test_automation, "Pipeline feedback", "Execution results\nOptimization insights")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,180 @@
+@startuml Task10_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation - Component Diagram (Task 10: Testing Infrastructure Components)
+
+Container(developer_ide, "Developer IDE", "VS Code, IntelliJ", "Среда разработки с тестами")
+
+System_Boundary(unit_testing_components, "Unit Testing Components") {
+    
+    System_Boundary(test_execution_engine, "Test Execution Engine") {
+        Component(test_runner, "Test Runner", "Rust, cargo test", "Выполнение тестов:\n- Test discovery\n- Parallel execution\n- Result collection\n- Failure reporting")
+        Component(test_harness, "Test Harness", "Rust, tokio-test", "Тестовая среда:\n- Async test support\n- Test isolation\n- Resource management\n- Cleanup handling")
+        Component(assertion_framework, "Assertion Framework", "Rust, assert macros", "Проверки и утверждения:\n- Custom assertions\n- Error messages\n- Comparison utilities\n- Matcher patterns")
+    }
+    
+    System_Boundary(mocking_system, "Mocking System") {
+        Component(mock_generator, "Mock Generator", "Rust, Mockall", "Генерация моков:\n- Trait mocking\n- Method stubbing\n- Call verification\n- Behavior configuration")
+        Component(fake_data_generator, "Fake Data Generator", "Rust, Fake crate", "Генерация тестовых данных:\n- Random data creation\n- Realistic fake data\n- Custom generators\n- Locale support")
+        Component(fixture_manager, "Fixture Manager", "Rust, Custom", "Управление фикстурами:\n- Data loading\n- Fixture caching\n- Template processing\n- Data relationships")
+    }
+    
+    System_Boundary(property_testing_system, "Property Testing System") {
+        Component(property_generator, "Property Generator", "Rust, Proptest", "Генерация свойств:\n- Random input generation\n- Shrinking strategies\n- Custom generators\n- Constraint handling")
+        Component(invariant_checker, "Invariant Checker", "Rust, Proptest", "Проверка инвариантов:\n- Property validation\n- Counterexample finding\n- Regression testing\n- Statistical analysis")
+        Component(strategy_composer, "Strategy Composer", "Rust, Proptest", "Композиция стратегий:\n- Strategy combination\n- Weighted selection\n- Conditional generation\n- Complex data structures")
+    }
+}
+
+System_Boundary(integration_testing_components, "Integration Testing Components") {
+    
+    System_Boundary(database_testing, "Database Testing System") {
+        Component(testcontainer_manager, "Testcontainer Manager", "Rust, Testcontainers", "Управление контейнерами:\n- Container lifecycle\n- Port management\n- Network isolation\n- Resource cleanup")
+        Component(migration_runner, "Migration Runner", "Rust, SQLx", "Выполнение миграций:\n- Schema setup\n- Data seeding\n- Version management\n- Rollback support")
+        Component(transaction_manager, "Transaction Manager", "Rust, SQLx", "Управление транзакциями:\n- Test isolation\n- Rollback on failure\n- Nested transactions\n- Connection pooling")
+    }
+    
+    System_Boundary(service_testing, "Service Testing System") {
+        Component(http_client_mock, "HTTP Client Mock", "Rust, Wiremock", "HTTP мокинг:\n- Request matching\n- Response configuration\n- Latency simulation\n- Failure injection")
+        Component(graphql_test_client, "GraphQL Test Client", "Rust, async-graphql-test", "GraphQL тестирование:\n- Query execution\n- Schema validation\n- Federation testing\n- Subscription testing")
+        Component(federation_tester, "Federation Tester", "Rust, Custom", "Тестирование федерации:\n- Cross-subgraph queries\n- Entity resolution\n- Schema composition\n- Gateway testing")
+    }
+    
+    System_Boundary(auth_testing, "Authentication Testing") {
+        Component(jwt_test_helper, "JWT Test Helper", "Rust, jsonwebtoken", "JWT тестирование:\n- Token generation\n- Signature validation\n- Claims verification\n- Expiration testing")
+        Component(auth_flow_tester, "Auth Flow Tester", "Rust, Custom", "Тестирование аутентификации:\n- Login flow testing\n- Permission validation\n- Role-based access\n- Session management")
+        Component(security_test_suite, "Security Test Suite", "Rust, Custom", "Тесты безопасности:\n- Input validation\n- SQL injection prevention\n- XSS protection\n- Rate limiting")
+    }
+}
+
+System_Boundary(contract_testing_components, "Contract Testing Components") {
+    
+    System_Boundary(pact_testing_system, "Pact Testing System") {
+        Component(pact_consumer, "Pact Consumer", "Rust, Pact Consumer", "Consumer тесты:\n- Contract definition\n- Mock provider setup\n- Interaction recording\n- Contract verification")
+        Component(pact_provider, "Pact Provider", "Rust, Pact Provider", "Provider тесты:\n- Contract validation\n- State management\n- Verification reporting\n- Breaking change detection")
+        Component(pact_broker_client, "Pact Broker Client", "Rust, HTTP client", "Брокер интеграция:\n- Contract publishing\n- Version management\n- Compatibility matrix\n- Deployment validation")
+    }
+    
+    System_Boundary(schema_testing, "Schema Testing System") {
+        Component(schema_validator, "Schema Validator", "GraphQL, Schema diff", "Валидация схем:\n- Schema parsing\n- Compatibility checking\n- Breaking change detection\n- Evolution tracking")
+        Component(federation_validator, "Federation Validator", "Apollo Federation", "Валидация федерации:\n- Composition validation\n- Entity key checking\n- Directive validation\n- Gateway compatibility")
+        Component(breaking_change_detector, "Breaking Change Detector", "Custom analysis", "Детектор изменений:\n- API diff analysis\n- Impact assessment\n- Change categorization\n- Migration guidance")
+    }
+}
+
+System_Boundary(e2e_testing_components, "End-to-End Testing Components") {
+    
+    System_Boundary(scenario_execution, "Scenario Execution System") {
+        Component(test_scenario_runner, "Test Scenario Runner", "Rust, Custom framework", "Выполнение сценариев:\n- Step execution\n- Data flow validation\n- State management\n- Error handling")
+        Component(user_journey_simulator, "User Journey Simulator", "Rust, Selenium-like", "Симуляция пользователей:\n- User action simulation\n- Multi-step workflows\n- Session management\n- Behavior validation")
+        Component(data_flow_validator, "Data Flow Validator", "Rust, Custom", "Валидация потоков данных:\n- End-to-end data tracking\n- Consistency checking\n- Transformation validation\n- Integrity verification")
+    }
+    
+    System_Boundary(performance_testing, "Performance Testing System") {
+        Component(benchmark_runner, "Benchmark Runner", "Rust, Criterion", "Выполнение бенчмарков:\n- Performance measurement\n- Statistical analysis\n- Regression detection\n- Report generation")
+        Component(load_generator, "Load Generator", "Rust, Custom", "Генерация нагрузки:\n- Concurrent requests\n- Traffic patterns\n- Ramp-up strategies\n- Resource monitoring")
+        Component(performance_analyzer, "Performance Analyzer", "Rust, Profiling", "Анализ производительности:\n- Bottleneck detection\n- Resource usage analysis\n- Optimization suggestions\n- Trend analysis")
+    }
+    
+    System_Boundary(chaos_testing, "Chaos Testing System") {
+        Component(failure_injector, "Failure Injector", "Rust, Chaos engineering", "Инжекция отказов:\n- Service failures\n- Network partitions\n- Resource exhaustion\n- Latency injection")
+        Component(resilience_validator, "Resilience Validator", "Rust, Custom", "Валидация отказоустойчивости:\n- Recovery testing\n- Graceful degradation\n- Circuit breaker validation\n- Fallback verification")
+        Component(chaos_orchestrator, "Chaos Orchestrator", "Rust, Scheduling", "Оркестрация хаоса:\n- Experiment scheduling\n- Blast radius control\n- Safety mechanisms\n- Result correlation")
+    }
+}
+
+System_Boundary(test_infrastructure_components, "Test Infrastructure Components") {
+    
+    System_Boundary(environment_management, "Environment Management") {
+        Component(environment_provisioner, "Environment Provisioner", "Docker, Kubernetes", "Провизионинг окружений:\n- Container orchestration\n- Service discovery\n- Network configuration\n- Resource allocation")
+        Component(configuration_manager, "Configuration Manager", "Config files, Env vars", "Управление конфигурацией:\n- Environment-specific configs\n- Secret management\n- Feature flags\n- Dynamic configuration")
+        Component(resource_monitor, "Resource Monitor", "System metrics", "Мониторинг ресурсов:\n- CPU/Memory usage\n- Network traffic\n- Disk I/O\n- Container health")
+    }
+    
+    System_Boundary(test_data_management, "Test Data Management") {
+        Component(data_builder, "Data Builder", "Rust, Builder pattern", "Построение данных:\n- Fluent API\n- Relationship management\n- Validation rules\n- Default values")
+        Component(scenario_data_manager, "Scenario Data Manager", "Rust, State management", "Управление данными сценариев:\n- Test state tracking\n- Data isolation\n- Cleanup strategies\n- Dependency resolution")
+        Component(test_database_seeder, "Test Database Seeder", "SQL, Data scripts", "Заполнение БД:\n- Reference data loading\n- Scenario-specific data\n- Relationship integrity\n- Performance optimization")
+    }
+}
+
+System_Boundary(reporting_components, "Test Reporting Components") {
+    
+    System_Boundary(result_collection, "Result Collection System") {
+        Component(test_result_aggregator, "Test Result Aggregator", "JUnit XML, TAP", "Агрегация результатов:\n- Multi-format support\n- Result normalization\n- Failure categorization\n- Trend tracking")
+        Component(coverage_collector, "Coverage Collector", "Tarpaulin, LLVM-cov", "Сбор покрытия:\n- Line coverage\n- Branch coverage\n- Function coverage\n- Integration coverage")
+        Component(performance_metrics_collector, "Performance Metrics Collector", "Custom metrics", "Сбор метрик производительности:\n- Response times\n- Throughput metrics\n- Resource utilization\n- Error rates")
+    }
+    
+    System_Boundary(analysis_reporting, "Analysis & Reporting") {
+        Component(test_analytics_engine, "Test Analytics Engine", "Data analysis, ML", "Аналитический движок:\n- Flaky test detection\n- Performance regression\n- Test optimization\n- Predictive analysis")
+        Component(quality_scorer, "Quality Scorer", "Custom algorithms", "Оценка качества:\n- Quality metrics calculation\n- Trend analysis\n- Benchmark comparison\n- Improvement suggestions")
+        Component(report_generator, "Report Generator", "HTML, PDF, JSON", "Генерация отчетов:\n- Multi-format reports\n- Interactive dashboards\n- Trend visualization\n- Executive summaries")
+    }
+}
+
+' Developer interactions
+Rel(developer_ide, test_runner, "Запуск тестов", "IDE integration")
+Rel(developer_ide, mock_generator, "Создание моков", "Code generation")
+
+' Unit testing flow
+Rel(test_runner, test_harness, "Test execution", "Async support")
+Rel(test_harness, assertion_framework, "Assertions", "Validation")
+Rel(mock_generator, fake_data_generator, "Mock data", "Data generation")
+Rel(fake_data_generator, fixture_manager, "Fixture data", "Data management")
+
+' Property testing integration
+Rel(test_runner, property_generator, "Property tests", "Random testing")
+Rel(property_generator, invariant_checker, "Property validation", "Invariant checking")
+Rel(invariant_checker, strategy_composer, "Strategy composition", "Complex generation")
+
+' Integration testing flow
+Rel(test_runner, testcontainer_manager, "Container setup", "DB testing")
+Rel(testcontainer_manager, migration_runner, "Schema setup", "Migration execution")
+Rel(migration_runner, transaction_manager, "Transaction control", "Test isolation")
+
+' Service testing integration
+Rel(graphql_test_client, federation_tester, "Federation testing", "Cross-subgraph queries")
+Rel(federation_tester, http_client_mock, "External services", "Service mocking")
+Rel(auth_flow_tester, jwt_test_helper, "JWT validation", "Token testing")
+
+' Contract testing flow
+Rel(pact_consumer, pact_provider, "Contract validation", "Provider verification")
+Rel(pact_provider, pact_broker_client, "Contract publishing", "Broker integration")
+Rel(schema_validator, federation_validator, "Federation validation", "Schema composition")
+Rel(federation_validator, breaking_change_detector, "Change detection", "Impact analysis")
+
+' E2E testing orchestration
+Rel(test_scenario_runner, user_journey_simulator, "User simulation", "Journey execution")
+Rel(user_journey_simulator, data_flow_validator, "Data validation", "Flow verification")
+Rel(benchmark_runner, load_generator, "Load testing", "Performance validation")
+Rel(load_generator, performance_analyzer, "Performance analysis", "Bottleneck detection")
+
+' Chaos testing coordination
+Rel(chaos_orchestrator, failure_injector, "Failure injection", "Chaos experiments")
+Rel(failure_injector, resilience_validator, "Resilience testing", "Recovery validation")
+Rel(resilience_validator, performance_analyzer, "Impact analysis", "Performance impact")
+
+' Infrastructure management
+Rel(environment_provisioner, configuration_manager, "Environment config", "Configuration management")
+Rel(configuration_manager, resource_monitor, "Resource monitoring", "Health tracking")
+Rel(testcontainer_manager, environment_provisioner, "Container management", "Infrastructure provisioning")
+
+' Test data management
+Rel(data_builder, scenario_data_manager, "Scenario data", "State management")
+Rel(scenario_data_manager, test_database_seeder, "Database seeding", "Data loading")
+Rel(fixture_manager, data_builder, "Fixture building", "Data construction")
+
+' Reporting and analytics
+Rel(test_result_aggregator, coverage_collector, "Coverage integration", "Result correlation")
+Rel(coverage_collector, performance_metrics_collector, "Metrics correlation", "Performance coverage")
+Rel(test_analytics_engine, quality_scorer, "Quality analysis", "Score calculation")
+Rel(quality_scorer, report_generator, "Report generation", "Quality reporting")
+
+' Cross-component integration
+Rel(test_runner, test_result_aggregator, "Result collection", "Test outcomes")
+Rel(benchmark_runner, performance_metrics_collector, "Performance data", "Metrics collection")
+Rel(chaos_orchestrator, test_analytics_engine, "Chaos results", "Resilience analysis")
+
+SHOW_LEGEND()
+@enduml

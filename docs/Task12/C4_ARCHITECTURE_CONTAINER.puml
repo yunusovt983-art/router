@@ -1,0 +1,69 @@
+@startuml C4_Container_Task12
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Task 12: Development and Deployment Environment Setup - Container Diagram
+
+Person(developer, "Developer", "Software developer")
+Person(devops, "DevOps Engineer", "Infrastructure specialist")
+
+System_Boundary(local_development, "Local Development Environment") {
+    Container(docker_compose, "Docker Compose", "YAML Configuration", "Orchestrates all services locally")
+    Container(ugc_container, "UGC Subgraph Container", "Docker/Rust", "Containerized UGC service")
+    Container(users_container, "Users Subgraph Container", "Docker/Rust", "Containerized Users service")
+    Container(offers_container, "Offers Subgraph Container", "Docker/Rust", "Containerized Offers service")
+    Container(router_container, "Apollo Router Container", "Docker/Node.js", "Federation gateway")
+    Container(postgres_container, "PostgreSQL Container", "Docker/PostgreSQL", "Database for development")
+    Container(redis_container, "Redis Container", "Docker/Redis", "Cache for development")
+}
+
+System_Boundary(ci_cd_system, "CI/CD Pipeline") {
+    Container(github_actions, "GitHub Actions", "YAML Workflows", "Automated CI/CD pipeline")
+    Container(test_runner, "Test Runner", "Rust/Cargo", "Runs unit and integration tests")
+    Container(docker_builder, "Docker Builder", "Docker Buildx", "Builds multi-arch container images")
+    Container(schema_validator, "Schema Validator", "Apollo Rover", "Validates GraphQL federation schema")
+    Container(security_scanner, "Security Scanner", "Trivy/Snyk", "Scans for vulnerabilities")
+}
+
+System_Boundary(documentation_system, "Documentation System") {
+    Container(readme_docs, "README Documentation", "Markdown", "Project setup and usage guide")
+    Container(api_docs, "API Documentation", "Markdown/GraphQL", "GraphQL API reference")
+    Container(architecture_docs, "Architecture Documentation", "Markdown/PlantUML", "System architecture diagrams")
+    Container(makefile, "Makefile", "Make", "Development automation commands")
+}
+
+System_Ext(github_repo, "GitHub Repository", "Git repository with source code")
+System_Ext(docker_registry, "Docker Registry", "Container image storage")
+System_Ext(aws_eks, "AWS EKS", "Kubernetes cluster for deployment")
+
+Rel(developer, docker_compose, "Runs", "docker-compose up")
+Rel(developer, makefile, "Uses", "make dev/test/build")
+Rel(developer, readme_docs, "Follows", "Setup instructions")
+
+Rel(docker_compose, ugc_container, "Orchestrates", "Service definition")
+Rel(docker_compose, users_container, "Orchestrates", "Service definition")
+Rel(docker_compose, offers_container, "Orchestrates", "Service definition")
+Rel(docker_compose, router_container, "Orchestrates", "Service definition")
+Rel(docker_compose, postgres_container, "Orchestrates", "Database service")
+Rel(docker_compose, redis_container, "Orchestrates", "Cache service")
+
+Rel(devops, github_actions, "Configures", "Workflow YAML")
+Rel(github_actions, test_runner, "Executes", "cargo test")
+Rel(github_actions, docker_builder, "Executes", "docker build")
+Rel(github_actions, schema_validator, "Executes", "rover supergraph compose")
+Rel(github_actions, security_scanner, "Executes", "Security scans")
+
+Rel(github_actions, github_repo, "Triggered by", "Git push/PR")
+Rel(docker_builder, docker_registry, "Pushes images", "Docker Registry API")
+Rel(github_actions, aws_eks, "Deploys to", "kubectl apply")
+
+Rel(router_container, ugc_container, "Routes to", "GraphQL Federation")
+Rel(router_container, users_container, "Routes to", "GraphQL Federation")
+Rel(router_container, offers_container, "Routes to", "GraphQL Federation")
+
+Rel(ugc_container, postgres_container, "Connects to", "PostgreSQL protocol")
+Rel(ugc_container, redis_container, "Connects to", "Redis protocol")
+
+SHOW_LEGEND()
+@enduml

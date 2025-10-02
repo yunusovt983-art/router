@@ -1,0 +1,180 @@
+@startuml Task7_Deployment_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title Auto.ru Federation - Deployment Diagram (Task 7: Error Handling & Resilience Production Infrastructure)
+
+Deployment_Node(aws_cloud_resilience, "AWS Cloud Resilience Platform", "Amazon Web Services + Resilience Services") {
+    
+    Deployment_Node(production_vpc_resilience, "Production VPC with Resilience", "Virtual Private Cloud + Fault Tolerance") {
+        
+        Deployment_Node(public_subnet_resilience_1, "Public Subnet Resilience-1", "us-east-1a") {
+            Deployment_Node(alb_resilience, "ALB with Health Checks", "AWS ALB + Advanced Health Monitoring") {
+                Container(load_balancer_resilience, "Resilient Load Balancer", "ALB + Circuit Breaker Logic", "Интеллектуальная балансировка с resilience:\n- Health check integration\n- Circuit breaker awareness\n- Automatic failover\n- Request retry coordination")
+            }
+            
+            Deployment_Node(cloudfront_resilience, "CloudFront Resilience", "AWS CloudFront + Error Handling") {
+                Container(cdn_resilience, "CDN with Fallback", "CloudFront + Custom Error Pages", "CDN с обработкой ошибок:\n- Custom error pages\n- Fallback content serving\n- Origin failure handling\n- Cache-based resilience")
+            }
+        }
+        
+        Deployment_Node(private_subnet_resilience_1, "Private Subnet Resilience-1", "us-east-1a") {
+            
+            Deployment_Node(eks_resilience_cluster_1, "EKS Resilience Cluster 1", "Kubernetes + Resilience Operators") {
+                Deployment_Node(ugc_resilient_pod_1, "UGC Resilient Pod 1", "Kubernetes Pod + Error Handling") {
+                    Container(ugc_service_resilient_1, "UGC Service (Resilient)", "Rust + Error Handling + CB", "UGC сервис с полной отказоустойчивостью:\n- Типизированные ошибки (UgcError)\n- Circuit Breaker для внешних сервисов\n- Retry механизм с exp backoff\n- Graceful degradation с fallback")
+                }
+                
+                Deployment_Node(circuit_breaker_pod_1, "Circuit Breaker Pod 1", "Kubernetes Pod + State Management") {
+                    Container(circuit_breaker_service_1, "Circuit Breaker Service", "Rust + State Machine + Redis", "Централизованный Circuit Breaker:\n- Multi-service state management\n- Distributed state coordination\n- Health check orchestration\n- Recovery automation")
+                }
+                
+                Deployment_Node(fallback_cache_pod_1, "Fallback Cache Pod 1", "Kubernetes Pod + Cache Management") {
+                    Container(fallback_cache_service_1, "Fallback Cache Service", "Rust + Redis + Local Cache", "Сервис fallback кеширования:\n- Multi-level cache hierarchy\n- Intelligent cache warming\n- Expiration policy management\n- Emergency data provision")
+                }
+            }
+            
+            Deployment_Node(redis_resilience_primary, "Redis Resilience Primary", "Redis 7.0 + Persistence + HA") {
+                ContainerDb(redis_resilience_main, "Redis Resilience Main", "Redis + Circuit Breaker State", "Redis для отказоустойчивости:\n- Circuit breaker state storage\n- Fallback data caching\n- Health check results\n- Recovery coordination data")
+            }
+            
+            Deployment_Node(postgres_resilience_primary, "PostgreSQL Resilience Primary", "PostgreSQL 15 + Connection Pooling") {
+                ContainerDb(postgres_resilience_main, "PostgreSQL Resilience Main", "PostgreSQL + Error Logging", "База данных с resilience:\n- Error event logging\n- Circuit breaker metrics\n- Recovery statistics\n- Health check history")
+            }
+        }
+        
+        Deployment_Node(private_subnet_resilience_2, "Private Subnet Resilience-2", "us-east-1b") {
+            
+            Deployment_Node(eks_resilience_cluster_2, "EKS Resilience Cluster 2", "Kubernetes + Failover") {
+                Deployment_Node(ugc_resilient_pod_2, "UGC Resilient Pod 2", "Kubernetes Pod + Failover") {
+                    Container(ugc_service_resilient_2, "UGC Service (Resilient) Replica", "Rust + Error Handling + CB", "Реплика UGC сервиса:\n- Identical error handling\n- Shared circuit breaker state\n- Cross-AZ fallback coordination\n- Load balancing participation")
+                }
+                
+                Deployment_Node(monitoring_resilience_pod, "Monitoring Resilience Pod", "Kubernetes Pod + Observability") {
+                    Container(prometheus_resilience, "Prometheus Resilience", "Prometheus + Custom Rules", "Мониторинг отказоустойчивости:\n- Circuit breaker metrics\n- Error rate monitoring\n- Recovery time tracking\n- SLA compliance metrics")
+                    Container(grafana_resilience, "Grafana Resilience", "Grafana + Resilience Dashboards", "Дашборды resilience:\n- Real-time CB status\n- Error trend analysis\n- Service health maps\n- Recovery time visualization")
+                }
+                
+                Deployment_Node(alerting_pod, "Alerting Pod", "Kubernetes Pod + Alert Management") {
+                    Container(alertmanager_resilience, "AlertManager Resilience", "AlertManager + Custom Routes", "Управление алертами resilience:\n- Circuit breaker alerts\n- Error threshold notifications\n- Recovery confirmations\n- Escalation policies")
+                }
+            }
+            
+            Deployment_Node(elasticsearch_resilience_cluster, "Elasticsearch Resilience Cluster", "Elasticsearch + Error Indexing") {
+                ContainerDb(elasticsearch_resilience_master, "Elasticsearch Resilience Master", "Elasticsearch + Error Analytics", "Поиск и анализ ошибок:\n- Structured error log indexing\n- Error pattern analysis\n- Root cause correlation\n- Historical error trends")
+            }
+        }
+        
+        Deployment_Node(private_subnet_resilience_3, "Private Subnet Resilience-3", "us-east-1c") {
+            
+            Deployment_Node(external_services_cluster, "External Services Cluster", "Kubernetes + Service Mesh") {
+                Deployment_Node(users_service_pod, "Users Service Pod", "Kubernetes Pod + Instability Simulation") {
+                    Container(users_service_unstable, "Users Service (Unstable)", "Mock Service + Chaos", "Нестабильный сервис пользователей:\n- Periodic failures (30% error rate)\n- Random timeouts (2-10s)\n- Circuit breaker trigger simulation\n- Recovery pattern testing")
+                }
+                
+                Deployment_Node(offers_service_pod, "Offers Service Pod", "Kubernetes Pod + Load Simulation") {
+                    Container(offers_service_degraded, "Offers Service (Degraded)", "Mock Service + Performance Issues", "Деградированный сервис объявлений:\n- High latency responses (5-15s)\n- Intermittent availability\n- Resource exhaustion simulation\n- Fallback scenario testing")
+                }
+            }
+            
+            Deployment_Node(chaos_engineering_cluster, "Chaos Engineering Cluster", "Kubernetes + Chaos Tools") {
+                Deployment_Node(chaos_monkey_pod, "Chaos Monkey Pod", "Kubernetes Pod + Fault Injection") {
+                    Container(chaos_monkey_service, "Chaos Monkey Service", "Chaos Toolkit + Custom Scenarios", "Chaos Engineering для resilience:\n- Random service failures\n- Network partition simulation\n- Resource exhaustion tests\n- Recovery time validation")
+                }
+            }
+        }
+    }
+    
+    Deployment_Node(monitoring_region, "Monitoring Region", "AWS Monitoring Services") {
+        
+        Deployment_Node(cloudwatch_resilience, "CloudWatch Resilience", "AWS CloudWatch + Custom Metrics") {
+            Container(cloudwatch_metrics, "CloudWatch Metrics", "CloudWatch + Resilience Metrics", "Метрики отказоустойчивости:\n- Circuit breaker state changes\n- Error rate by service\n- Recovery time measurements\n- SLA compliance tracking")
+            Container(cloudwatch_alarms, "CloudWatch Alarms", "CloudWatch + Resilience Alarms", "Алармы resilience:\n- Circuit breaker opened\n- High error rate detected\n- Recovery time exceeded\n- Service degradation alerts")
+        }
+        
+        Deployment_Node(x_ray_resilience, "X-Ray Resilience", "AWS X-Ray + Error Tracing") {
+            Container(x_ray_tracing, "X-Ray Tracing", "X-Ray + Error Correlation", "Трассировка с обработкой ошибок:\n- Error propagation tracking\n- Circuit breaker trace annotation\n- Retry attempt visualization\n- Fallback path tracing")
+        }
+    }
+    
+    Deployment_Node(backup_region, "Backup Region", "us-west-2") {
+        
+        Deployment_Node(disaster_recovery_cluster, "Disaster Recovery Cluster", "EKS + Cross-Region Replication") {
+            Deployment_Node(ugc_dr_pod, "UGC DR Pod", "Kubernetes Pod + Standby") {
+                Container(ugc_service_dr, "UGC Service (DR)", "Rust + Standby Mode", "Disaster Recovery UGC:\n- Read-only fallback mode\n- Cross-region state sync\n- Emergency activation\n- Minimal service provision")
+            }
+        }
+        
+        Deployment_Node(redis_dr_cluster, "Redis DR Cluster", "Redis + Cross-Region Replication") {
+            ContainerDb(redis_dr, "Redis DR", "Redis + Async Replication", "DR Redis для resilience:\n- Circuit breaker state backup\n- Fallback data replication\n- Emergency cache provision\n- Cross-region coordination")
+        }
+    }
+}
+
+Deployment_Node(external_dependencies, "External Dependencies", "Third-party Services") {
+    Container(payment_gateway, "Payment Gateway", "External API + SLA", "Внешний платежный шлюз:\n- 99.9% SLA guarantee\n- Circuit breaker protection\n- Retry policy compliance\n- Fallback payment methods")
+    Container(notification_provider, "Notification Provider", "External API + Rate Limits", "Провайдер уведомлений:\n- Rate limiting (1000/min)\n- Quota management\n- Fallback channels\n- Circuit breaker integration")
+    Container(analytics_service, "Analytics Service", "External API + Batch Processing", "Сервис аналитики:\n- Batch processing delays\n- Periodic maintenance windows\n- Graceful degradation support\n- Non-critical path handling")
+}
+
+' User traffic with resilience
+Person(users_resilience, "Users with Resilience", "Пользователи получающие надежный сервис")
+Rel(users_resilience, cdn_resilience, "Resilient requests", "HTTPS + Fallback")
+Rel(cdn_resilience, load_balancer_resilience, "Origin requests", "HTTP + Health Checks")
+
+' Load balancer to services
+Rel(load_balancer_resilience, ugc_service_resilient_1, "Primary traffic", "HTTP + Circuit Breaker Aware")
+Rel(load_balancer_resilience, ugc_service_resilient_2, "Failover traffic", "HTTP + Cross-AZ")
+
+' UGC service resilience integration
+Rel(ugc_service_resilient_1, circuit_breaker_service_1, "CB coordination", "gRPC + State Sync")
+Rel(ugc_service_resilient_1, fallback_cache_service_1, "Fallback data", "Redis + Local Cache")
+Rel(ugc_service_resilient_2, circuit_breaker_service_1, "Shared CB state", "gRPC + Cross-AZ")
+
+' Circuit breaker state management
+Rel(circuit_breaker_service_1, redis_resilience_main, "State persistence", "Redis + Atomic Operations")
+Rel(circuit_breaker_service_1, postgres_resilience_main, "Metrics logging", "PostgreSQL + Batch Insert")
+
+' External service calls with protection
+Rel(ugc_service_resilient_1, users_service_unstable, "Protected calls", "HTTP + CB + Retry")
+Rel(ugc_service_resilient_1, offers_service_degraded, "Resilient calls", "HTTP + Fallback")
+Rel(ugc_service_resilient_2, users_service_unstable, "Backup calls", "HTTP + CB + Retry")
+
+' Fallback cache operations
+Rel(fallback_cache_service_1, redis_resilience_main, "Cache operations", "Redis + TTL Management")
+Rel(fallback_cache_service_1, postgres_resilience_main, "Cache metrics", "PostgreSQL + Analytics")
+
+' Monitoring integration
+Rel(ugc_service_resilient_1, prometheus_resilience, "Resilience metrics", "HTTP + Custom Metrics")
+Rel(circuit_breaker_service_1, prometheus_resilience, "CB metrics", "HTTP + State Metrics")
+Rel(fallback_cache_service_1, prometheus_resilience, "Cache metrics", "HTTP + Hit/Miss Rates")
+
+Rel(prometheus_resilience, grafana_resilience, "Metrics visualization", "HTTP + Dashboards")
+Rel(prometheus_resilience, alertmanager_resilience, "Alert triggering", "HTTP + Rules")
+
+' Logging and analysis
+Rel(ugc_service_resilient_1, elasticsearch_resilience_master, "Error logs", "HTTP + Structured Logs")
+Rel(circuit_breaker_service_1, elasticsearch_resilience_master, "CB events", "HTTP + Event Logs")
+
+' AWS monitoring integration
+Rel(ugc_service_resilient_1, cloudwatch_metrics, "AWS metrics", "CloudWatch API")
+Rel(circuit_breaker_service_1, cloudwatch_alarms, "CB alarms", "CloudWatch API")
+Rel(ugc_service_resilient_1, x_ray_tracing, "Error tracing", "X-Ray API")
+
+' Chaos engineering
+Rel(chaos_monkey_service, ugc_service_resilient_1, "Fault injection", "Kubernetes API + Chaos")
+Rel(chaos_monkey_service, users_service_unstable, "Failure simulation", "HTTP + Chaos Scenarios")
+
+' External dependencies with resilience
+Rel(ugc_service_resilient_1, payment_gateway, "Protected payments", "HTTPS + CB + Retry")
+Rel(ugc_service_resilient_1, notification_provider, "Resilient notifications", "HTTPS + Fallback")
+Rel(ugc_service_resilient_1, analytics_service, "Non-critical analytics", "HTTPS + Best Effort")
+
+' Disaster recovery
+Rel(ugc_service_resilient_1, ugc_service_dr, "State replication", "Cross-Region Sync")
+Rel(redis_resilience_main, redis_dr, "Data replication", "Redis Async Replication")
+
+' Cross-region coordination
+Rel(circuit_breaker_service_1, redis_dr, "CB state backup", "Cross-Region Redis")
+
+SHOW_LEGEND()
+@enduml

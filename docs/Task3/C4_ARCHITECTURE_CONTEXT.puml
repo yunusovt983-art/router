@@ -1,0 +1,47 @@
+@startuml Task3_Context_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Auto.ru Federation Integration & Monitoring - Context Diagram (Task 3: Integration & Optimization)
+
+Person(developer, "Разработчик", "Интегрирует и мониторит федеративную систему")
+Person(devops, "DevOps инженер", "Настраивает мониторинг и деплой")
+Person(qa_engineer, "QA инженер", "Проводит интеграционное тестирование")
+Person(product_owner, "Product Owner", "Анализирует метрики производительности")
+
+System_Boundary(federation_integration, "Federation Integration & Monitoring System") {
+    System(integration_hub, "Integration Hub", "Центральная система интеграции\nи мониторинга федеративных подграфов")
+}
+
+System_Ext(apollo_router, "Apollo Router", "Федеративный GraphQL роутер\nс расширенной телеметрией")
+System_Ext(ugc_subgraph, "UGC Subgraph", "Подграф пользовательского контента\nс интеграционными метриками")
+System_Ext(users_subgraph, "Users Subgraph", "Подграф пользователей\nс мониторингом производительности")
+System_Ext(offers_subgraph, "Offers Subgraph", "Подграф объявлений\nс трассировкой запросов")
+
+System_Ext(prometheus, "Prometheus", "Система сбора метрик\nи мониторинга производительности")
+System_Ext(grafana, "Grafana", "Визуализация метрик\nи дашборды мониторинга")
+System_Ext(jaeger, "Jaeger", "Distributed tracing\nи анализ производительности")
+System_Ext(elasticsearch, "Elasticsearch", "Централизованное логирование\nи поиск по логам")
+
+System_Ext(k8s_cluster, "Kubernetes Cluster", "Оркестрация контейнеров\nи автомасштабирование")
+System_Ext(ci_cd_pipeline, "CI/CD Pipeline", "Автоматизация тестирования\nи деплоя")
+
+Rel(developer, integration_hub, "Настраивает интеграции\nи анализирует метрики", "HTTPS/GraphQL")
+Rel(devops, integration_hub, "Конфигурирует мониторинг\nи алерты", "HTTPS/API")
+Rel(qa_engineer, integration_hub, "Запускает интеграционные\nтесты", "HTTPS/API")
+Rel(product_owner, integration_hub, "Просматривает бизнес-метрики\nи KPI", "HTTPS/Dashboard")
+
+Rel(integration_hub, apollo_router, "Мониторит федеративные\nзапросы и производительность", "HTTP/Metrics")
+Rel(integration_hub, ugc_subgraph, "Собирает метрики UGC\nи трассировки", "HTTP/Telemetry")
+Rel(integration_hub, users_subgraph, "Мониторит пользовательские\nзапросы", "HTTP/Telemetry")
+Rel(integration_hub, offers_subgraph, "Отслеживает производительность\nобъявлений", "HTTP/Telemetry")
+
+Rel(integration_hub, prometheus, "Агрегирует метрики\nпроизводительности", "HTTP/Metrics")
+Rel(integration_hub, grafana, "Создает дашборды\nи визуализации", "HTTP/API")
+Rel(integration_hub, jaeger, "Анализирует трассировки\nи bottlenecks", "HTTP/Traces")
+Rel(integration_hub, elasticsearch, "Централизует логи\nи события", "HTTP/Logs")
+
+Rel(integration_hub, k8s_cluster, "Управляет деплоем\nи масштабированием", "K8s API")
+Rel(integration_hub, ci_cd_pipeline, "Интегрируется с процессом\nнепрерывной доставки", "Webhook/API")
+
+SHOW_LEGEND()
+@enduml

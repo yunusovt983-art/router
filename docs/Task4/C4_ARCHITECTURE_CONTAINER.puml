@@ -1,0 +1,188 @@
+@startuml Task4_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Auto.ru Federation - Container Diagram (Task 4: Production-Ready Architecture)
+
+Person(user, "Пользователь", "Использует систему")
+Person(devops, "DevOps Engineer", "Мониторит систему")
+
+System_Boundary(production_federation, "Production-Ready Federation System") {
+    
+    System_Boundary(gateway_layer, "Gateway Layer (Optimized)") {
+        Container(apollo_gateway_primary, "Apollo Gateway Primary", "Node.js, Apollo Federation", "Основной Gateway instance\nс query planning и кешированием")
+        Container(apollo_gateway_secondary, "Apollo Gateway Secondary", "Node.js, Apollo Federation", "Резервный Gateway instance\nдля высокой доступности")
+        Container(gateway_cache, "Gateway Cache", "Redis Cluster", "Кеширование query plans\nи результатов запросов")
+        Container(rate_limiter, "Rate Limiter", "Redis + Lua Scripts", "Ограничение частоты запросов\nпо пользователям и IP")
+    }
+    
+    System_Boundary(subgraph_layer, "Optimized Subgraph Layer") {
+        Container(user_service_primary, "User Service Primary", "Node.js, Apollo Server", "Основной сервис пользователей\nс оптимизированными запросами")
+        Container(user_service_replica, "User Service Replica", "Node.js, Apollo Server", "Реплика сервиса пользователей\nдля read операций")
+        
+        Container(offer_service_primary, "Offer Service Primary", "Node.js, Apollo Server", "Основной сервис объявлений\nс batch loading")
+        Container(offer_service_replica, "Offer Service Replica", "Node.js, Apollo Server", "Реплика сервиса объявлений\nдля поисковых запросов")
+        
+        Container(review_service_primary, "Review Service Primary", "Node.js, Apollo Server", "Основной сервис отзывов\nс агрегацией в реальном времени")
+        Container(review_service_replica, "Review Service Replica", "Node.js, Apollo Server", "Реплика сервиса отзывов\nдля аналитики")
+    }
+    
+    System_Boundary(data_layer, "Optimized Data Layer") {
+        Container(postgres_primary, "PostgreSQL Primary", "PostgreSQL 15", "Основная БД с оптимизированными\nиндексами и партиционированием")
+        Container(postgres_read_replica_1, "PostgreSQL Read Replica 1", "PostgreSQL 15", "Реплика для чтения\nаналитических запросов")
+        Container(postgres_read_replica_2, "PostgreSQL Read Replica 2", "PostgreSQL 15", "Реплика для чтения\nпользовательских запросов")
+        
+        Container(redis_primary, "Redis Primary", "Redis Cluster", "Основной кеш с\nпартиционированием данных")
+        Container(redis_replica, "Redis Replica", "Redis Cluster", "Реплика кеша для\nread операций")
+        
+        Container(elasticsearch_master, "Elasticsearch Master", "Elasticsearch 8", "Мастер-нода поискового\nкластера")
+        Container(elasticsearch_data_1, "Elasticsearch Data 1", "Elasticsearch 8", "Дата-нода с индексами\nобъявлений")
+        Container(elasticsearch_data_2, "Elasticsearch Data 2", "Elasticsearch 8", "Дата-нода с индексами\nпользователей и отзывов")
+    }
+    
+    System_Boundary(background_processing, "Background Processing Layer") {
+        Container(job_queue, "Job Queue", "Bull Queue + Redis", "Очередь фоновых задач\nс приоритизацией")
+        Container(worker_pool, "Worker Pool", "Node.js Workers", "Пул воркеров для обработки\nфоновых задач")
+        Container(scheduler, "Task Scheduler", "Node-cron", "Планировщик периодических\nзадач и cleanup")
+    }
+}
+
+System_Boundary(monitoring_observability, "Monitoring & Observability") {
+    Container(prometheus_server, "Prometheus Server", "Prometheus", "Сбор и хранение метрик\nпроизводительности")
+    Container(grafana_dashboard, "Grafana Dashboard", "Grafana", "Визуализация метрик\nи алертинг")
+    Container(jaeger_collector, "Jaeger Collector", "Jaeger", "Сбор distributed traces\nдля анализа производительности")
+    Container(jaeger_query, "Jaeger Query", "Jaeger UI", "Интерфейс для анализа\ntraces и bottlenecks")
+    Container(elasticsearch_logs, "Elasticsearch Logs", "Elasticsearch", "Централизованное хранение\nлогов системы")
+    Container(kibana, "Kibana", "Kibana", "Анализ и поиск\nпо логам")
+    Container(alertmanager, "AlertManager", "Prometheus AlertManager", "Управление алертами\nи уведомлениями")
+}
+
+System_Boundary(testing_qa, "Testing & QA Infrastructure") {
+    Container(k6_runner, "K6 Load Test Runner", "K6", "Автоматизированное нагрузочное\nтестирование API")
+    Container(integration_test_suite, "Integration Test Suite", "Jest + Apollo Testing", "Комплексные интеграционные\nтесты федерации")
+    Container(chaos_monkey, "Chaos Monkey", "Chaos Engineering Tools", "Тестирование отказоустойчивости\nсистемы")
+    Container(performance_profiler, "Performance Profiler", "Node.js Profiler", "Профилирование производительности\nи memory leaks")
+}
+
+System_Boundary(security_layer, "Security & Compliance") {
+    Container(auth_service, "Authentication Service", "OAuth 2.0 + JWT", "Централизованная аутентификация\nи управление токенами")
+    Container(authorization_service, "Authorization Service", "RBAC + ABAC", "Гранулярная авторизация\nи контроль доступа")
+    Container(security_scanner, "Security Scanner", "OWASP ZAP", "Автоматическое сканирование\nуязвимостей")
+    Container(audit_logger, "Audit Logger", "Structured Logging", "Аудит безопасности\nи compliance")
+}
+
+' External Systems
+System_Ext(load_balancer, "Application Load Balancer", "AWS ALB с SSL termination")
+System_Ext(cdn, "CloudFront CDN", "Глобальная доставка контента")
+System_Ext(s3_storage, "AWS S3", "Объектное хранилище")
+System_Ext(notification_service, "Notification Service", "Масштабируемые уведомления")
+System_Ext(payment_gateway, "Payment Gateway", "Обработка платежей")
+
+' User interactions
+Rel(user, load_balancer, "HTTPS запросы", "HTTPS")
+Rel(devops, grafana_dashboard, "Мониторинг системы", "HTTPS")
+
+' Load balancer to gateways
+Rel(load_balancer, apollo_gateway_primary, "Основной трафик", "HTTP")
+Rel(load_balancer, apollo_gateway_secondary, "Failover трафик", "HTTP")
+
+' Gateway layer interactions
+Rel(apollo_gateway_primary, gateway_cache, "Кеширование query plans", "Redis Protocol")
+Rel(apollo_gateway_secondary, gateway_cache, "Кеширование query plans", "Redis Protocol")
+Rel(apollo_gateway_primary, rate_limiter, "Rate limiting", "Redis Protocol")
+Rel(apollo_gateway_secondary, rate_limiter, "Rate limiting", "Redis Protocol")
+
+' Gateway to subgraphs (load balanced)
+Rel(apollo_gateway_primary, user_service_primary, "Write операции пользователей", "HTTP/GraphQL")
+Rel(apollo_gateway_primary, user_service_replica, "Read операции пользователей", "HTTP/GraphQL")
+Rel(apollo_gateway_secondary, user_service_primary, "Write операции пользователей", "HTTP/GraphQL")
+Rel(apollo_gateway_secondary, user_service_replica, "Read операции пользователей", "HTTP/GraphQL")
+
+Rel(apollo_gateway_primary, offer_service_primary, "Write операции объявлений", "HTTP/GraphQL")
+Rel(apollo_gateway_primary, offer_service_replica, "Read операции объявлений", "HTTP/GraphQL")
+Rel(apollo_gateway_secondary, offer_service_primary, "Write операции объявлений", "HTTP/GraphQL")
+Rel(apollo_gateway_secondary, offer_service_replica, "Read операции объявлений", "HTTP/GraphQL")
+
+Rel(apollo_gateway_primary, review_service_primary, "Write операции отзывов", "HTTP/GraphQL")
+Rel(apollo_gateway_primary, review_service_replica, "Read операции отзывов", "HTTP/GraphQL")
+Rel(apollo_gateway_secondary, review_service_primary, "Write операции отзывов", "HTTP/GraphQL")
+Rel(apollo_gateway_secondary, review_service_replica, "Read операции отзывов", "HTTP/GraphQL")
+
+' Subgraphs to databases (optimized)
+Rel(user_service_primary, postgres_primary, "Write операции", "PostgreSQL")
+Rel(user_service_replica, postgres_read_replica_2, "Read операции", "PostgreSQL")
+Rel(offer_service_primary, postgres_primary, "Write операции", "PostgreSQL")
+Rel(offer_service_replica, postgres_read_replica_1, "Read операции", "PostgreSQL")
+Rel(review_service_primary, postgres_primary, "Write операции", "PostgreSQL")
+Rel(review_service_replica, postgres_read_replica_1, "Read операции", "PostgreSQL")
+
+' Cache layer
+Rel(user_service_primary, redis_primary, "Кеширование пользователей", "Redis Protocol")
+Rel(user_service_replica, redis_replica, "Чтение кеша", "Redis Protocol")
+Rel(offer_service_primary, redis_primary, "Кеширование объявлений", "Redis Protocol")
+Rel(offer_service_replica, redis_replica, "Чтение кеша", "Redis Protocol")
+Rel(review_service_primary, redis_primary, "Кеширование агрегатов", "Redis Protocol")
+Rel(review_service_replica, redis_replica, "Чтение кеша", "Redis Protocol")
+
+' Search layer
+Rel(offer_service_primary, elasticsearch_master, "Индексация объявлений", "HTTP/REST")
+Rel(offer_service_replica, elasticsearch_data_1, "Поисковые запросы", "HTTP/REST")
+Rel(review_service_primary, elasticsearch_master, "Индексация отзывов", "HTTP/REST")
+Rel(review_service_replica, elasticsearch_data_2, "Поиск по отзывам", "HTTP/REST")
+
+' Background processing
+Rel(user_service_primary, job_queue, "Постановка задач", "Redis Protocol")
+Rel(offer_service_primary, job_queue, "Постановка задач", "Redis Protocol")
+Rel(review_service_primary, job_queue, "Постановка задач", "Redis Protocol")
+Rel(worker_pool, job_queue, "Обработка задач", "Redis Protocol")
+Rel(scheduler, job_queue, "Периодические задачи", "Redis Protocol")
+
+' Database replication
+Rel(postgres_primary, postgres_read_replica_1, "Streaming replication", "PostgreSQL")
+Rel(postgres_primary, postgres_read_replica_2, "Streaming replication", "PostgreSQL")
+Rel(redis_primary, redis_replica, "Redis replication", "Redis Protocol")
+
+' External services
+Rel(worker_pool, s3_storage, "Обработка файлов", "AWS S3 API")
+Rel(worker_pool, notification_service, "Отправка уведомлений", "HTTPS/REST")
+Rel(apollo_gateway_primary, payment_gateway, "Обработка платежей", "HTTPS/REST")
+Rel(apollo_gateway_secondary, payment_gateway, "Обработка платежей", "HTTPS/REST")
+
+' Security integrations
+Rel(apollo_gateway_primary, auth_service, "Аутентификация", "HTTP/JWT")
+Rel(apollo_gateway_secondary, auth_service, "Аутентификация", "HTTP/JWT")
+Rel(user_service_primary, authorization_service, "Авторизация", "HTTP")
+Rel(offer_service_primary, authorization_service, "Авторизация", "HTTP")
+Rel(review_service_primary, authorization_service, "Авторизация", "HTTP")
+
+' Monitoring integrations
+Rel(apollo_gateway_primary, prometheus_server, "Метрики Gateway", "HTTP")
+Rel(apollo_gateway_secondary, prometheus_server, "Метрики Gateway", "HTTP")
+Rel(user_service_primary, prometheus_server, "Метрики User Service", "HTTP")
+Rel(offer_service_primary, prometheus_server, "Метрики Offer Service", "HTTP")
+Rel(review_service_primary, prometheus_server, "Метрики Review Service", "HTTP")
+
+Rel(prometheus_server, grafana_dashboard, "Визуализация метрик", "HTTP")
+Rel(prometheus_server, alertmanager, "Алерты", "HTTP")
+
+' Tracing
+Rel(apollo_gateway_primary, jaeger_collector, "Distributed traces", "HTTP")
+Rel(user_service_primary, jaeger_collector, "Service traces", "HTTP")
+Rel(offer_service_primary, jaeger_collector, "Service traces", "HTTP")
+Rel(review_service_primary, jaeger_collector, "Service traces", "HTTP")
+Rel(jaeger_collector, jaeger_query, "Trace queries", "gRPC")
+
+' Logging
+Rel(apollo_gateway_primary, elasticsearch_logs, "Структурированные логи", "HTTP")
+Rel(user_service_primary, elasticsearch_logs, "Service логи", "HTTP")
+Rel(offer_service_primary, elasticsearch_logs, "Service логи", "HTTP")
+Rel(review_service_primary, elasticsearch_logs, "Service логи", "HTTP")
+Rel(elasticsearch_logs, kibana, "Анализ логов", "HTTP")
+
+' Testing integrations
+Rel(k6_runner, apollo_gateway_primary, "Нагрузочное тестирование", "HTTP/GraphQL")
+Rel(integration_test_suite, apollo_gateway_primary, "Интеграционные тесты", "HTTP/GraphQL")
+Rel(chaos_monkey, apollo_gateway_primary, "Chaos testing", "Various")
+Rel(performance_profiler, user_service_primary, "Профилирование", "HTTP")
+
+SHOW_LEGEND()
+@enduml

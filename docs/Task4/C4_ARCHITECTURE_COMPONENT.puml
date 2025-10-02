@@ -1,0 +1,181 @@
+@startuml Task4_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation - Component Diagram (Task 4: Production-Ready Internal Architecture)
+
+Container(client, "GraphQL Client", "Apollo Client", "Оптимизированный клиент")
+
+System_Boundary(apollo_gateway_optimized, "Optimized Apollo Gateway") {
+    
+    System_Boundary(request_processing, "Request Processing Layer") {
+        Component(http_handler, "HTTP Request Handler", "Express.js", "Обработка HTTP запросов:\n- CORS handling\n- Security headers\n- Request validation")
+        Component(graphql_parser, "GraphQL Parser", "GraphQL.js", "Парсинг GraphQL запросов:\n- Syntax validation\n- Query complexity analysis\n- Depth limiting")
+        Component(rate_limiter_component, "Rate Limiter", "Redis + Sliding Window", "Ограничение частоты запросов:\n- Per-user limits\n- Per-IP limits\n- Burst protection")
+        Component(auth_middleware, "Auth Middleware", "JWT + OAuth", "Аутентификация и авторизация:\n- Token validation\n- User context extraction\n- Permission checking")
+    }
+    
+    System_Boundary(query_planning, "Optimized Query Planning") {
+        Component(query_planner, "Query Planner", "Apollo Federation", "Планирование федеративных запросов:\n- Subgraph selection\n- Query optimization\n- Execution strategy")
+        Component(plan_cache, "Query Plan Cache", "Redis LRU Cache", "Кеширование планов запросов:\n- Plan serialization\n- TTL management\n- Cache invalidation")
+        Component(complexity_analyzer, "Query Complexity Analyzer", "GraphQL Analysis", "Анализ сложности запросов:\n- Cost calculation\n- Resource estimation\n- Timeout prediction")
+        Component(batch_optimizer, "Batch Optimizer", "DataLoader Pattern", "Оптимизация batch запросов:\n- Request deduplication\n- Batch consolidation\n- N+1 prevention")
+    }
+    
+    System_Boundary(execution_engine, "Execution Engine") {
+        Component(executor, "GraphQL Executor", "Apollo Server", "Выполнение GraphQL запросов:\n- Parallel execution\n- Error handling\n- Result composition")
+        Component(subgraph_client, "Subgraph Client", "Apollo Gateway Client", "Клиент для subgraph'ов:\n- Connection pooling\n- Retry logic\n- Circuit breaker")
+        Component(response_cache, "Response Cache", "Redis + CDN", "Кеширование ответов:\n- Field-level caching\n- TTL strategies\n- Cache warming")
+        Component(result_composer, "Result Composer", "Apollo Federation", "Композиция результатов:\n- Entity resolution\n- Type merging\n- Error aggregation")
+    }
+    
+    System_Boundary(monitoring_components, "Monitoring & Observability") {
+        Component(metrics_collector, "Metrics Collector", "Prometheus Client", "Сбор метрик производительности:\n- Request latency\n- Error rates\n- Cache hit rates")
+        Component(tracer, "Distributed Tracer", "Jaeger Client", "Distributed tracing:\n- Span creation\n- Context propagation\n- Performance tracking")
+        Component(logger, "Structured Logger", "Winston + ELK", "Структурированное логирование:\n- Request logging\n- Error tracking\n- Audit trails")
+        Component(health_checker, "Health Checker", "Custom Health Checks", "Проверка здоровья системы:\n- Subgraph health\n- Database connectivity\n- Cache availability")
+    }
+}
+
+System_Boundary(user_subgraph_optimized, "Optimized User Subgraph") {
+    
+    System_Boundary(user_api_layer, "User API Layer") {
+        Component(user_schema, "User GraphQL Schema", "Apollo Server", "Схема пользователей:\n- Type definitions\n- Resolvers\n- Directives")
+        Component(user_resolvers, "User Resolvers", "TypeScript", "Резолверы пользователей:\n- Query resolvers\n- Mutation resolvers\n- Field resolvers")
+        Component(user_dataloaders, "User DataLoaders", "DataLoader", "Оптимизация загрузки данных:\n- Batch loading\n- Caching\n- Deduplication")
+    }
+    
+    System_Boundary(user_business_logic, "User Business Logic") {
+        Component(user_service, "User Service", "Domain Service", "Бизнес-логика пользователей:\n- User management\n- Profile operations\n- Authentication logic")
+        Component(user_validator, "User Validator", "Joi/Yup", "Валидация пользовательских данных:\n- Input validation\n- Business rules\n- Constraint checking")
+        Component(user_cache_manager, "User Cache Manager", "Redis Client", "Управление кешем пользователей:\n- User profile cache\n- Session management\n- Cache invalidation")
+    }
+    
+    System_Boundary(user_data_access, "User Data Access") {
+        Component(user_repository, "User Repository", "Prisma ORM", "Доступ к данным пользователей:\n- CRUD operations\n- Query optimization\n- Transaction management")
+        Component(user_search_client, "User Search Client", "Elasticsearch Client", "Поиск пользователей:\n- Full-text search\n- Filtering\n- Aggregations")
+    }
+}
+
+System_Boundary(offer_subgraph_optimized, "Optimized Offer Subgraph") {
+    
+    System_Boundary(offer_api_layer, "Offer API Layer") {
+        Component(offer_schema, "Offer GraphQL Schema", "Apollo Server", "Схема объявлений:\n- Complex types\n- Federation directives\n- Custom scalars")
+        Component(offer_resolvers, "Offer Resolvers", "TypeScript", "Резолверы объявлений:\n- Search resolvers\n- Filter resolvers\n- Aggregation resolvers")
+        Component(offer_dataloaders, "Offer DataLoaders", "DataLoader + Redis", "Оптимизация загрузки объявлений:\n- Batch by category\n- Geographic batching\n- Price range batching")
+    }
+    
+    System_Boundary(offer_business_logic, "Offer Business Logic") {
+        Component(offer_service, "Offer Service", "Domain Service", "Бизнес-логика объявлений:\n- Offer lifecycle\n- Search algorithms\n- Recommendation engine")
+        Component(search_optimizer, "Search Optimizer", "Custom Algorithm", "Оптимизация поиска:\n- Query rewriting\n- Index selection\n- Result ranking")
+        Component(image_processor, "Image Processor", "Sharp + AWS Lambda", "Обработка изображений:\n- Resize/optimize\n- Format conversion\n- Metadata extraction")
+    }
+    
+    System_Boundary(offer_data_access, "Offer Data Access") {
+        Component(offer_repository, "Offer Repository", "Prisma + Read Replicas", "Доступ к данным объявлений:\n- Optimized queries\n- Read/write splitting\n- Connection pooling")
+        Component(search_engine, "Search Engine Client", "Elasticsearch + Optimizations", "Поисковый движок:\n- Multi-field search\n- Faceted search\n- Auto-complete")
+        Component(geo_service, "Geo Service", "PostGIS + Redis", "Геолокационные операции:\n- Distance calculations\n- Region filtering\n- Spatial indexing")
+    }
+}
+
+System_Boundary(review_subgraph_optimized, "Optimized Review Subgraph") {
+    
+    System_Boundary(review_api_layer, "Review API Layer") {
+        Component(review_schema, "Review GraphQL Schema", "Apollo Server", "Схема отзывов:\n- Review types\n- Rating aggregations\n- Moderation fields")
+        Component(review_resolvers, "Review Resolvers", "TypeScript", "Резолверы отзывов:\n- Review CRUD\n- Rating calculations\n- Moderation resolvers")
+        Component(review_dataloaders, "Review DataLoaders", "DataLoader + Aggregation", "Оптимизация загрузки отзывов:\n- Batch by offer\n- Batch by user\n- Rating aggregation")
+    }
+    
+    System_Boundary(review_business_logic, "Review Business Logic") {
+        Component(review_service, "Review Service", "Domain Service", "Бизнес-логика отзывов:\n- Review validation\n- Spam detection\n- Rating algorithms")
+        Component(moderation_engine, "Moderation Engine", "ML + Rules Engine", "Модерация отзывов:\n- Content filtering\n- Sentiment analysis\n- Auto-moderation")
+        Component(rating_aggregator, "Rating Aggregator", "Real-time Aggregation", "Агрегация рейтингов:\n- Real-time updates\n- Weighted averages\n- Trend analysis")
+    }
+    
+    System_Boundary(review_data_access, "Review Data Access") {
+        Component(review_repository, "Review Repository", "Prisma + Partitioning", "Доступ к данным отзывов:\n- Partitioned tables\n- Optimized indexes\n- Bulk operations")
+        Component(analytics_client, "Analytics Client", "ClickHouse Client", "Аналитика отзывов:\n- Time-series data\n- Aggregated metrics\n- Trend analysis")
+    }
+}
+
+' External Systems
+ContainerDb(postgres_optimized, "PostgreSQL Cluster", "Primary + Read Replicas", "Оптимизированная БД")
+ContainerDb(redis_cluster, "Redis Cluster", "Partitioned Cache", "Распределенный кеш")
+ContainerDb(elasticsearch_cluster, "Elasticsearch Cluster", "Multi-node Search", "Поисковый кластер")
+System_Ext(monitoring_stack, "Monitoring Stack", "Prometheus + Grafana + Jaeger")
+
+' Client to Gateway
+Rel(client, http_handler, "GraphQL запросы", "HTTPS")
+
+' Request Processing Flow
+Rel(http_handler, rate_limiter_component, "Rate limiting check", "Function call")
+Rel(rate_limiter_component, auth_middleware, "Authentication", "Function call")
+Rel(auth_middleware, graphql_parser, "Parse GraphQL", "Function call")
+Rel(graphql_parser, complexity_analyzer, "Analyze complexity", "Function call")
+
+' Query Planning Flow
+Rel(complexity_analyzer, query_planner, "Plan query", "Function call")
+Rel(query_planner, plan_cache, "Cache lookup/store", "Redis Protocol")
+Rel(query_planner, batch_optimizer, "Optimize batching", "Function call")
+
+' Execution Flow
+Rel(batch_optimizer, executor, "Execute query", "Function call")
+Rel(executor, subgraph_client, "Subgraph requests", "HTTP/GraphQL")
+Rel(executor, response_cache, "Cache lookup/store", "Redis Protocol")
+Rel(executor, result_composer, "Compose results", "Function call")
+
+' Monitoring Flow
+Rel(executor, metrics_collector, "Collect metrics", "Function call")
+Rel(executor, tracer, "Create traces", "Function call")
+Rel(executor, logger, "Log events", "Function call")
+Rel(health_checker, subgraph_client, "Health checks", "HTTP")
+
+' Gateway to User Subgraph
+Rel(subgraph_client, user_schema, "User queries", "HTTP/GraphQL")
+Rel(user_schema, user_resolvers, "Resolve fields", "Function call")
+Rel(user_resolvers, user_dataloaders, "Load data", "Function call")
+Rel(user_resolvers, user_service, "Business logic", "Function call")
+Rel(user_service, user_validator, "Validate input", "Function call")
+Rel(user_service, user_cache_manager, "Cache operations", "Function call")
+Rel(user_service, user_repository, "Data access", "Function call")
+Rel(user_dataloaders, user_repository, "Batch queries", "Function call")
+
+' Gateway to Offer Subgraph
+Rel(subgraph_client, offer_schema, "Offer queries", "HTTP/GraphQL")
+Rel(offer_schema, offer_resolvers, "Resolve fields", "Function call")
+Rel(offer_resolvers, offer_dataloaders, "Load data", "Function call")
+Rel(offer_resolvers, offer_service, "Business logic", "Function call")
+Rel(offer_service, search_optimizer, "Optimize search", "Function call")
+Rel(offer_service, image_processor, "Process images", "Function call")
+Rel(offer_service, offer_repository, "Data access", "Function call")
+Rel(offer_dataloaders, search_engine, "Search queries", "Function call")
+Rel(offer_service, geo_service, "Geo operations", "Function call")
+
+' Gateway to Review Subgraph
+Rel(subgraph_client, review_schema, "Review queries", "HTTP/GraphQL")
+Rel(review_schema, review_resolvers, "Resolve fields", "Function call")
+Rel(review_resolvers, review_dataloaders, "Load data", "Function call")
+Rel(review_resolvers, review_service, "Business logic", "Function call")
+Rel(review_service, moderation_engine, "Moderate content", "Function call")
+Rel(review_service, rating_aggregator, "Aggregate ratings", "Function call")
+Rel(review_service, review_repository, "Data access", "Function call")
+Rel(review_dataloaders, analytics_client, "Analytics queries", "Function call")
+
+' Database Connections
+Rel(user_repository, postgres_optimized, "User data queries", "PostgreSQL")
+Rel(offer_repository, postgres_optimized, "Offer data queries", "PostgreSQL")
+Rel(review_repository, postgres_optimized, "Review data queries", "PostgreSQL")
+
+Rel(user_cache_manager, redis_cluster, "User cache", "Redis Protocol")
+Rel(plan_cache, redis_cluster, "Query plan cache", "Redis Protocol")
+Rel(response_cache, redis_cluster, "Response cache", "Redis Protocol")
+
+Rel(user_search_client, elasticsearch_cluster, "User search", "HTTP/REST")
+Rel(search_engine, elasticsearch_cluster, "Offer search", "HTTP/REST")
+
+' Monitoring Connections
+Rel(metrics_collector, monitoring_stack, "Send metrics", "HTTP")
+Rel(tracer, monitoring_stack, "Send traces", "HTTP")
+Rel(logger, monitoring_stack, "Send logs", "HTTP")
+
+SHOW_LEGEND()
+@enduml

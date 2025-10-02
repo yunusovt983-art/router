@@ -1,0 +1,22 @@
+federation_version: "2.5"
+subgraphs:
+  ugc:
+    routing_url: http://ugc-subgraph:4001/graphql
+    schema:
+      file: ./schemas/ugc.graphql
+  users:
+    routing_url: http://users-subgraph:4002/graphql
+    schema:
+      file: ./schemas/users.graphql
+  offers:
+    routing_url: http://offers-subgraph:4004/graphql
+    schema:
+      file: ./schemas/offers.graphql
+  catalog:
+    routing_url: http://catalog-subgraph:4003/graphql
+    schema:
+      file: ./schemas/catalog.graphql
+  search:
+    routing_url: http://search-subgraph:4005/graphql
+    schema:
+      file: ./schemas/search.graphql

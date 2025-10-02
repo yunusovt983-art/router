@@ -1,0 +1,97 @@
+@startuml C4_Component_Task12
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Task 12: Development and Deployment Environment Setup - Component Diagram
+
+Person(developer, "Developer", "Software developer")
+
+System_Boundary(docker_configuration, "Docker Configuration (Task 12.1)") {
+    Component(dockerfile_ugc, "UGC Dockerfile", "Multi-stage Docker", "Optimized Rust build with security")
+    Component(dockerfile_users, "Users Dockerfile", "Multi-stage Docker", "Optimized Rust build for stub service")
+    Component(dockerfile_offers, "Offers Dockerfile", "Multi-stage Docker", "Optimized Rust build for stub service")
+    Component(dockerfile_router, "Router Dockerfile", "Node.js Docker", "Apollo Router container")
+    
+    Component(compose_main, "docker-compose.yml", "YAML Configuration", "Main orchestration file")
+    Component(compose_dev, "docker-compose.dev.yml", "YAML Configuration", "Development overrides with hot reload")
+    Component(compose_prod, "docker-compose.prod.yml", "YAML Configuration", "Production optimizations")
+    Component(compose_test, "docker-compose.test.yml", "YAML Configuration", "Testing environment setup")
+    
+    Component(dockerignore, ".dockerignore", "Docker Ignore", "Build context optimization")
+}
+
+System_Boundary(ci_cd_configuration, "CI/CD Configuration (Task 12.2)") {
+    Component(ci_workflow, "ci.yml", "GitHub Actions", "Main CI pipeline with testing")
+    Component(deploy_staging, "deploy-staging.yml", "GitHub Actions", "Automated staging deployment")
+    Component(deploy_prod, "deploy-production.yml", "GitHub Actions", "Production deployment workflow")
+    Component(security_workflow, "security.yml", "GitHub Actions", "Security scanning and vulnerability checks")
+    
+    Component(test_matrix, "Test Matrix", "GitHub Actions", "Multi-environment testing strategy")
+    Component(docker_build_matrix, "Docker Build Matrix", "GitHub Actions", "Multi-service container building")
+    Component(schema_validation, "Schema Validation", "Apollo Rover", "Federation schema composition check")
+}
+
+System_Boundary(documentation_components, "Documentation (Task 12.3)") {
+    Component(readme_main, "README.md", "Markdown", "Main project documentation")
+    Component(api_documentation, "API.md", "Markdown", "GraphQL API reference with examples")
+    Component(architecture_docs, "Architecture.md", "Markdown", "System architecture overview")
+    Component(deployment_guide, "Deployment.md", "Markdown", "Deployment instructions and runbooks")
+    
+    Component(makefile_automation, "Makefile", "Make", "Development task automation")
+    Component(scripts_dir, "scripts/", "Shell Scripts", "Utility scripts for common tasks")
+}
+
+System_Boundary(infrastructure_config, "Infrastructure Configuration") {
+    Component(router_config, "router.yaml", "YAML", "Apollo Router federation configuration")
+    Component(supergraph_config, "supergraph.yaml", "YAML", "Federation schema composition config")
+    Component(k8s_manifests, "k8s/", "Kubernetes YAML", "Deployment manifests for staging/prod")
+    Component(helm_charts, "helm/", "Helm Charts", "Parameterized Kubernetes deployments")
+}
+
+System_Ext(github_repo, "GitHub Repository", "Source code and configuration storage")
+System_Ext(docker_registry, "Docker Registry", "Container image storage")
+System_Ext(aws_eks, "AWS EKS", "Kubernetes deployment target")
+
+' Docker Configuration Relationships
+Rel(developer, compose_main, "Runs", "docker-compose up")
+Rel(compose_main, dockerfile_ugc, "Builds", "UGC service image")
+Rel(compose_main, dockerfile_users, "Builds", "Users service image")
+Rel(compose_main, dockerfile_offers, "Builds", "Offers service image")
+Rel(compose_main, dockerfile_router, "Builds", "Router service image")
+
+Rel(compose_dev, compose_main, "Extends", "Development overrides")
+Rel(compose_prod, compose_main, "Extends", "Production optimizations")
+Rel(compose_test, compose_main, "Extends", "Testing configuration")
+
+' CI/CD Configuration Relationships
+Rel(ci_workflow, test_matrix, "Executes", "Multi-environment tests")
+Rel(ci_workflow, docker_build_matrix, "Executes", "Multi-service builds")
+Rel(ci_workflow, schema_validation, "Executes", "Schema composition")
+
+Rel(deploy_staging, docker_registry, "Pulls from", "Container images")
+Rel(deploy_prod, docker_registry, "Pulls from", "Container images")
+Rel(deploy_staging, aws_eks, "Deploys to", "Staging cluster")
+Rel(deploy_prod, aws_eks, "Deploys to", "Production cluster")
+
+' Documentation Relationships
+Rel(developer, readme_main, "Reads", "Setup instructions")
+Rel(developer, api_documentation, "References", "API usage")
+Rel(developer, makefile_automation, "Uses", "Development commands")
+
+Rel(makefile_automation, compose_main, "Orchestrates", "make dev/prod/test")
+Rel(scripts_dir, compose_main, "Automates", "Common operations")
+
+' Infrastructure Configuration Relationships
+Rel(dockerfile_router, router_config, "Uses", "Router configuration")
+Rel(schema_validation, supergraph_config, "Uses", "Schema composition")
+Rel(deploy_staging, k8s_manifests, "Applies", "Kubernetes resources")
+Rel(deploy_prod, helm_charts, "Deploys", "Parameterized manifests")
+
+' External System Relationships
+Rel(ci_workflow, github_repo, "Triggered by", "Git push/PR")
+Rel(docker_build_matrix, docker_registry, "Pushes to", "Built images")
+Rel(k8s_manifests, aws_eks, "Deployed to", "Kubernetes API")
+
+SHOW_LEGEND()
+@enduml

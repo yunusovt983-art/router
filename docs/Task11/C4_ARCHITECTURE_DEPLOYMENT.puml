@@ -1,0 +1,160 @@
+@startuml Task11_Deployment_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title Auto.ru Federation - Deployment Diagram (Task 11: Subgraph Stubs Deployment)
+
+Deployment_Node(local_development, "Local Development Environment", "Developer Machine + Docker") {
+    
+    Deployment_Node(docker_compose_stack, "Docker Compose Stack", "Docker Compose + Networks") {
+        
+        Deployment_Node(apollo_router_container, "Apollo Router Container", "Docker Container") {
+            Container(apollo_router_app, "Apollo Router", "Apollo Router Binary", "Federation Gateway:\n- Port 4000\n- Schema composition\n- Query routing\n- Response aggregation")
+        }
+        
+        Deployment_Node(users_subgraph_container, "Users Subgraph Container", "Docker Container") {
+            Container(users_subgraph_app, "Users Subgraph", "Rust + async-graphql", "Users API Stub:\n- Port 4002\n- Mock user data\n- Federation directives\n- Health endpoints")
+        }
+        
+        Deployment_Node(offers_subgraph_container, "Offers Subgraph Container", "Docker Container") {
+            Container(offers_subgraph_app, "Offers Subgraph", "Rust + async-graphql", "Offers API Stub:\n- Port 4004\n- Mock offer data\n- Car specifications\n- CRUD operations")
+        }
+        
+        Deployment_Node(ugc_subgraph_container, "UGC Subgraph Container", "Docker Container") {
+            Container(ugc_subgraph_app, "UGC Subgraph", "Rust + PostgreSQL", "Reviews API:\n- Port 4001\n- Full implementation\n- Database integration\n- Business logic")
+        }
+    }
+    
+    Deployment_Node(development_databases, "Development Databases", "Docker Containers") {
+        
+        Deployment_Node(postgres_container, "PostgreSQL Container", "Docker + PostgreSQL 14") {
+            ContainerDb(ugc_postgres, "UGC Database", "PostgreSQL", "Reviews data:\n- Port 5432\n- Persistent volume\n- Migration scripts\n- Test data")
+        }
+        
+        Deployment_Node(redis_container, "Redis Container", "Docker + Redis 7") {
+            ContainerDb(redis_cache, "Redis Cache", "Redis", "Caching layer:\n- Port 6379\n- In-memory storage\n- Session data\n- Query caching")
+        }
+    }
+    
+    Deployment_Node(development_tools, "Development Tools", "Local Tools + IDE") {
+        Container(graphql_playground, "GraphQL Playground", "Web Interface", "Development UI:\n- Schema exploration\n- Query testing\n- Federation debugging\n- Documentation")
+        Container(docker_compose_cli, "Docker Compose CLI", "Command Line Tool", "Container orchestration:\n- Service management\n- Log aggregation\n- Health monitoring\n- Volume management")
+    }
+}
+
+Deployment_Node(ci_cd_environment, "CI/CD Environment", "GitHub Actions + Runners") {
+    
+    Deployment_Node(github_actions_runner, "GitHub Actions Runner", "Ubuntu + Docker") {
+        
+        Deployment_Node(test_execution_env, "Test Execution Environment", "Containerized Testing") {
+            Container(users_test_runner, "Users Test Runner", "Rust + cargo test", "Users testing:\n- Unit tests\n- Integration tests\n- Contract tests\n- Performance tests")
+            Container(offers_test_runner, "Offers Test Runner", "Rust + cargo test", "Offers testing:\n- Mock data validation\n- Federation tests\n- API compliance\n- Error handling")
+            Container(federation_test_runner, "Federation Test Runner", "GraphQL + Test Suite", "Federation testing:\n- Cross-subgraph queries\n- Entity resolution\n- Schema composition\n- E2E scenarios")
+        }
+        
+        Deployment_Node(build_environment, "Build Environment", "Multi-stage Docker Build") {
+            Container(rust_builder, "Rust Builder", "Rust 1.75 + Cargo", "Code compilation:\n- Dependency resolution\n- Binary compilation\n- Optimization\n- Artifact generation")
+            Container(docker_builder, "Docker Builder", "Docker BuildKit", "Image building:\n- Multi-stage builds\n- Layer caching\n- Security scanning\n- Registry push")
+        }
+    }
+    
+    Deployment_Node(test_infrastructure, "Test Infrastructure", "Containerized Services") {
+        Container(test_postgres, "Test PostgreSQL", "PostgreSQL + Testcontainers", "Test database:\n- Isolated test data\n- Transaction rollback\n- Migration testing\n- Performance testing")
+        Container(test_redis, "Test Redis", "Redis + Testcontainers", "Test cache:\n- Cache testing\n- Performance validation\n- Memory analysis\n- Cluster simulation")
+        Container(wiremock_server, "WireMock Server", "WireMock + Docker", "External API mocking:\n- HTTP mocking\n- Response simulation\n- Latency testing\n- Failure injection")
+    }
+}
+
+Deployment_Node(staging_environment, "Staging Environment", "AWS EKS + Kubernetes") {
+    
+    Deployment_Node(staging_cluster, "Staging Kubernetes Cluster", "EKS + Worker Nodes") {
+        
+        Deployment_Node(apollo_router_pod, "Apollo Router Pod", "Kubernetes Pod") {
+            Container(staging_apollo_router, "Apollo Router", "Apollo Router + Config", "Staging gateway:\n- Load balancing\n- Health checks\n- Metrics collection\n- Schema validation")
+        }
+        
+        Deployment_Node(users_subgraph_pod, "Users Subgraph Pod", "Kubernetes Pod") {
+            Container(staging_users_subgraph, "Users Subgraph", "Rust Application", "Staging users API:\n- Horizontal scaling\n- Health probes\n- Resource limits\n- Logging")
+        }
+        
+        Deployment_Node(offers_subgraph_pod, "Offers Subgraph Pod", "Kubernetes Pod") {
+            Container(staging_offers_subgraph, "Offers Subgraph", "Rust Application", "Staging offers API:\n- Auto-scaling\n- Rolling updates\n- Circuit breakers\n- Monitoring")
+        }
+        
+        Deployment_Node(ugc_subgraph_pod, "UGC Subgraph Pod", "Kubernetes Pod") {
+            Container(staging_ugc_subgraph, "UGC Subgraph", "Rust + Database", "Staging reviews API:\n- Database connectivity\n- Transaction handling\n- Performance monitoring\n- Error tracking")
+        }
+    }
+    
+    Deployment_Node(staging_data_layer, "Staging Data Layer", "AWS RDS + ElastiCache") {
+        ContainerDb(staging_postgres, "Staging PostgreSQL", "AWS RDS", "Managed database:\n- Multi-AZ deployment\n- Automated backups\n- Performance insights\n- Security groups")
+        ContainerDb(staging_redis, "Staging Redis", "AWS ElastiCache", "Managed cache:\n- Cluster mode\n- Automatic failover\n- Monitoring\n- Security")
+    }
+}
+
+Deployment_Node(monitoring_infrastructure, "Monitoring Infrastructure", "Observability Stack") {
+    
+    Deployment_Node(metrics_collection, "Metrics Collection", "Prometheus + Grafana") {
+        Container(prometheus_server, "Prometheus", "Metrics Database", "Metrics storage:\n- Time series data\n- Alert rules\n- Service discovery\n- Data retention")
+        Container(grafana_dashboard, "Grafana", "Visualization", "Monitoring dashboards:\n- Performance metrics\n- Federation health\n- Error rates\n- Business metrics")
+    }
+    
+    Deployment_Node(logging_stack, "Logging Stack", "ELK Stack") {
+        Container(elasticsearch, "Elasticsearch", "Log Storage", "Log aggregation:\n- Structured logging\n- Search capabilities\n- Log retention\n- Performance analysis")
+        Container(kibana_dashboard, "Kibana", "Log Visualization", "Log analysis:\n- Query debugging\n- Error tracking\n- Performance analysis\n- Alerting")
+    }
+}
+
+' Developer workflow
+Person(developers, "Developers", "Разрабатывают заглушки подграфов")
+Person(qa_engineers, "QA Engineers", "Тестируют федеративную интеграцию")
+Person(devops_engineers, "DevOps Engineers", "Управляют инфраструктурой")
+
+Rel(developers, docker_compose_cli, "Локальная разработка", "Docker commands")
+Rel(developers, graphql_playground, "Тестирование API", "GraphQL queries")
+Rel(qa_engineers, federation_test_runner, "Тестирование федерации", "Test execution")
+
+' Local development network
+Rel(apollo_router_app, users_subgraph_app, "Users queries", "HTTP GraphQL")
+Rel(apollo_router_app, offers_subgraph_app, "Offers queries", "HTTP GraphQL")
+Rel(apollo_router_app, ugc_subgraph_app, "Reviews queries", "HTTP GraphQL")
+Rel(ugc_subgraph_app, ugc_postgres, "Database operations", "PostgreSQL protocol")
+Rel(users_subgraph_app, redis_cache, "Caching", "Redis protocol")
+Rel(offers_subgraph_app, redis_cache, "Caching", "Redis protocol")
+
+' CI/CD pipeline flow
+Rel(users_test_runner, test_postgres, "Database testing", "Test connections")
+Rel(offers_test_runner, test_redis, "Cache testing", "Redis testing")
+Rel(federation_test_runner, wiremock_server, "External API mocking", "HTTP mocking")
+Rel(rust_builder, docker_builder, "Build artifacts", "Binary transfer")
+
+' Staging deployment
+Rel(staging_apollo_router, staging_users_subgraph, "Federation routing", "Kubernetes service mesh")
+Rel(staging_apollo_router, staging_offers_subgraph, "Federation routing", "Kubernetes service mesh")
+Rel(staging_apollo_router, staging_ugc_subgraph, "Federation routing", "Kubernetes service mesh")
+Rel(staging_ugc_subgraph, staging_postgres, "Database connectivity", "AWS VPC")
+Rel(staging_users_subgraph, staging_redis, "Cache operations", "ElastiCache connection")
+Rel(staging_offers_subgraph, staging_redis, "Cache operations", "ElastiCache connection")
+
+' Monitoring integration
+Rel(staging_apollo_router, prometheus_server, "Metrics export", "Prometheus scraping")
+Rel(staging_users_subgraph, prometheus_server, "Metrics export", "Prometheus scraping")
+Rel(staging_offers_subgraph, prometheus_server, "Metrics export", "Prometheus scraping")
+Rel(prometheus_server, grafana_dashboard, "Metrics visualization", "Grafana queries")
+
+' Logging flow
+Rel(staging_apollo_router, elasticsearch, "Log shipping", "Structured logs")
+Rel(staging_users_subgraph, elasticsearch, "Log shipping", "Application logs")
+Rel(staging_offers_subgraph, elasticsearch, "Log shipping", "Application logs")
+Rel(elasticsearch, kibana_dashboard, "Log visualization", "Kibana queries")
+
+' Cross-environment promotion
+Rel(docker_builder, staging_cluster, "Image deployment", "Container registry")
+Rel(federation_test_runner, staging_apollo_router, "Test validation", "Staging promotion")
+
+' Health monitoring
+Rel(staging_postgres, prometheus_server, "Database metrics", "RDS monitoring")
+Rel(staging_redis, prometheus_server, "Cache metrics", "ElastiCache monitoring")
+Rel(grafana_dashboard, devops_engineers, "Monitoring alerts", "Alert notifications")
+
+SHOW_LEGEND()
+@enduml

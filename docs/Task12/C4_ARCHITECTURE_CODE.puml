@@ -1,0 +1,309 @@
+@startuml C4_Code_Task12
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Task 12: Development and Deployment Environment Setup - Code Level Diagram
+
+System_Boundary(docker_files, "Docker Configuration Files") {
+    Component(dockerfile_ugc_code, "ugc-subgraph/Dockerfile", "Multi-stage Dockerfile", "
+    FROM rust:1.75-slim as builder
+    WORKDIR /app
+    # Install dependencies
+    RUN apt-get update && apt-get install -y pkg-config libssl-dev libpq-dev
+    # Copy and build dependencies first (caching)
+    COPY Cargo.toml Cargo.lock ./
+    RUN cargo build --release --package ugc-subgraph
+    # Copy source and rebuild
+    COPY . .
+    RUN cargo build --release --package ugc-subgraph
+    
+    FROM debian:bookworm-slim
+    RUN apt-get update && apt-get install -y ca-certificates libpq5 libssl3
+    RUN useradd -r -s /bin/false ugc
+    COPY --from=builder /app/target/release/ugc-subgraph /usr/local/bin/
+    USER ugc
+    EXPOSE 4001
+    CMD [\"ugc-subgraph\"]")
+    
+    Component(compose_main_code, "docker-compose.yml", "Docker Compose Configuration", "
+    version: '3.8'
+    services:
+      apollo-router:
+        build: ./apollo-router
+        ports: [\"4000:4000\"]
+        depends_on: [ugc-subgraph, users-subgraph, offers-subgraph]
+        
+      ugc-subgraph:
+        build: ./ugc-subgraph
+        ports: [\"4001:4001\"]
+        depends_on: [ugc-postgres, redis]
+        environment:
+          - DATABASE_URL=postgresql://ugc_user:ugc_password@ugc-postgres:5432/ugc_db
+          - REDIS_URL=redis://redis:6379
+          
+      ugc-postgres:
+        image: postgres:14
+        environment:
+          - POSTGRES_DB=ugc_db
+          - POSTGRES_USER=ugc_user
+          - POSTGRES_PASSWORD=ugc_password")
+    
+    Component(compose_dev_code, "docker-compose.dev.yml", "Development Overrides", "
+    version: '3.8'
+    services:
+      ugc-subgraph:
+        build:
+          target: builder
+        volumes:
+          - ./ugc-subgraph/src:/app/ugc-subgraph/src:ro
+        environment:
+          - RUST_LOG=debug
+          - RUST_BACKTRACE=1
+        command: cargo run --package ugc-subgraph")
+}
+
+System_Boundary(ci_cd_files, "CI/CD Configuration Files") {
+    Component(ci_workflow_code, ".github/workflows/ci.yml", "GitHub Actions CI", "
+    name: CI
+    on:
+      push: { branches: [main, develop] }
+      pull_request: { branches: [main] }
+      
+    jobs:
+      test:
+        runs-on: ubuntu-latest
+        services:
+          postgres:
+            image: postgres:14
+            env: { POSTGRES_PASSWORD: test_password }
+            options: --health-cmd pg_isready
+        steps:
+          - uses: actions/checkout@v3
+          - uses: actions-rs/toolchain@v1
+            with: { toolchain: stable, components: rustfmt, clippy }
+          - run: cargo fmt --all -- --check
+          - run: cargo clippy --all-targets -- -D warnings
+          - run: cargo test --all-features")
+    
+    Component(deploy_staging_code, ".github/workflows/deploy-staging.yml", "Staging Deployment", "
+    name: Deploy to Staging
+    on:
+      push: { branches: [develop] }
+      workflow_dispatch:
+      
+    jobs:
+      deploy:
+        runs-on: ubuntu-latest
+        environment: staging
+        steps:
+          - uses: actions/checkout@v3
+          - uses: aws-actions/configure-aws-credentials@v2
+          - uses: aws-actions/amazon-ecr-login@v1
+          - run: |
+              docker build -t $ECR_REGISTRY/ugc-subgraph:$GITHUB_SHA .
+              docker push $ECR_REGISTRY/ugc-subgraph:$GITHUB_SHA
+          - run: |
+              aws eks update-kubeconfig --name auto-ru-staging
+              kubectl set image deployment/ugc-subgraph ugc-subgraph=$ECR_REGISTRY/ugc-subgraph:$GITHUB_SHA")
+    
+    Component(security_workflow_code, ".github/workflows/security.yml", "Security Scanning", "
+    name: Security Scan
+    on: [push, pull_request]
+    
+    jobs:
+      security:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v3
+          - uses: actions-rs/audit-check@v1
+            with: { token: ${{ secrets.GITHUB_TOKEN }} }
+          - uses: aquasecurity/trivy-action@master
+            with:
+              scan-type: 'fs'
+              scan-ref: '.'
+              format: 'sarif'
+              output: 'trivy-results.sarif'")
+}
+
+System_Boundary(documentation_files, "Documentation Files") {
+    Component(readme_code, "README.md", "Main Documentation", "
+    # Auto.ru GraphQL Federation
+    
+    ## Quick Start
+    
+    ### Prerequisites
+    - Docker and Docker Compose
+    - Rust 1.75+
+    - Node.js 18+ (for Apollo CLI)
+    
+    ### Local Development
+    
+    1. Clone repository:
+    ```bash
+    git clone <repository-url>
+    cd auto-ru-graphql-federation
+    ```
+    
+    2. Start all services:
+    ```bash
+    docker-compose up -d
+    ```
+    
+    3. Check health:
+    ```bash
+    curl http://localhost:4001/health  # UGC Subgraph
+    curl http://localhost:4000/graphql # GraphQL Playground
+    ```")
+    
+    Component(makefile_code, "Makefile", "Development Automation", "
+    .PHONY: help build test clean dev prod logs
+    
+    help: ## Show this help message
+    	@awk 'BEGIN {FS = \":.*?## \"} /^[a-zA-Z_-]+:.*?## / {printf \"  %-15s %s\\n\", $1, $2}' $(MAKEFILE_LIST)
+    
+    build: ## Build all Docker images
+    	docker-compose build
+    
+    test: ## Run all tests
+    	cargo test --all-features
+    
+    dev: ## Start development environment
+    	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+    
+    prod: ## Start production environment
+    	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+    
+    logs: ## Show logs from all services
+    	docker-compose logs -f
+    
+    health: ## Check health of all services
+    	@curl -s http://localhost:4001/health | jq .
+    	@curl -s http://localhost:4002/health | jq .")
+    
+    Component(api_docs_code, "docs/API.md", "API Documentation", "
+    # GraphQL API Documentation
+    
+    ## Federated Queries
+    
+    ### Get review with user and offer details
+    
+    ```graphql
+    query GetReviewWithDetails($reviewId: ID!) {
+      review(id: $reviewId) {
+        id
+        content
+        rating
+        author {          # Resolved from Users subgraph
+          id
+          name
+          email
+        }
+        offer {           # Resolved from Offers subgraph
+          id
+          title
+          price
+        }
+      }
+    }
+    ```
+    
+    ## Endpoints
+    - Federation Gateway: http://localhost:4000/graphql
+    - UGC Subgraph: http://localhost:4001/graphql")
+}
+
+System_Boundary(infrastructure_config_files, "Infrastructure Configuration") {
+    Component(router_config_code, "router.yaml", "Apollo Router Config", "
+    listen: 0.0.0.0:4000
+    
+    supergraph:
+      path: ./supergraph.graphql
+      
+    subgraphs:
+      ugc:
+        routing_url: http://ugc-subgraph:4001/graphql
+      users:
+        routing_url: http://users-subgraph:4002/graphql
+      offers:
+        routing_url: http://offers-subgraph:4004/graphql
+        
+    telemetry:
+      metrics:
+        prometheus:
+          enabled: true
+      tracing:
+        jaeger:
+          enabled: true
+          endpoint: http://jaeger:14268/api/traces")
+    
+    Component(supergraph_config_code, "supergraph.yaml", "Federation Schema Config", "
+    federation_version: 2
+    
+    subgraphs:
+      ugc:
+        routing_url: http://localhost:4001/graphql
+        schema:
+          file: ./ugc-subgraph/schema.graphql
+      users:
+        routing_url: http://localhost:4002/graphql
+        schema:
+          file: ./users-subgraph/schema.graphql
+      offers:
+        routing_url: http://localhost:4004/graphql
+        schema:
+          file: ./offers-subgraph/schema.graphql")
+    
+    Component(k8s_deployment_code, "k8s/ugc-deployment.yaml", "Kubernetes Deployment", "
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ugc-subgraph
+      namespace: auto-ru
+    spec:
+      replicas: 3
+      selector:
+        matchLabels:
+          app: ugc-subgraph
+      template:
+        metadata:
+          labels:
+            app: ugc-subgraph
+        spec:
+          containers:
+          - name: ugc-subgraph
+            image: auto-ru/ugc-subgraph:latest
+            ports:
+            - containerPort: 4001
+            env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ugc-secrets
+                  key: database-url
+            resources:
+              requests:
+                memory: \"256Mi\"
+                cpu: \"250m\"
+              limits:
+                memory: \"512Mi\"
+                cpu: \"500m\"")
+}
+
+' File Relationships
+Rel(dockerfile_ugc_code, compose_main_code, "Referenced by", "build context")
+Rel(compose_dev_code, compose_main_code, "Extends", "development overrides")
+
+Rel(ci_workflow_code, dockerfile_ugc_code, "Builds", "docker build")
+Rel(deploy_staging_code, k8s_deployment_code, "Applies", "kubectl apply")
+Rel(security_workflow_code, dockerfile_ugc_code, "Scans", "vulnerability check")
+
+Rel(makefile_code, compose_main_code, "Orchestrates", "make dev/prod")
+Rel(readme_code, makefile_code, "References", "usage instructions")
+Rel(api_docs_code, router_config_code, "Documents", "endpoint configuration")
+
+Rel(router_config_code, supergraph_config_code, "Uses", "schema composition")
+Rel(supergraph_config_code, k8s_deployment_code, "Deployed as", "Kubernetes resources")
+
+SHOW_LEGEND()
+@enduml

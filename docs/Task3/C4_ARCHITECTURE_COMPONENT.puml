@@ -1,0 +1,130 @@
+@startuml Task3_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation Integration & Monitoring - Component Diagram (Task 3: Internal Architecture)
+
+Container(client, "Integration Client", "Web/API", "Клиент для управления интеграциями")
+
+System_Boundary(integration_hub, "Integration Hub Internal Structure") {
+    
+    System_Boundary(api_layer, "API Layer") {
+        Component(integration_controller, "Integration Controller", "Express.js", "REST API контроллеры\n- /api/integrations\n- /api/configurations\n- /api/health-checks")
+        
+        Component(graphql_gateway, "GraphQL Gateway", "Apollo Gateway", "Федеративный GraphQL роутер\n- Schema composition\n- Query planning\n- Result merging")
+        
+        Component(websocket_server, "WebSocket Server", "Socket.io", "Real-time уведомления\n- Метрики в реальном времени\n- Алерты и события\n- Статус интеграций")
+        
+        Component(auth_middleware, "Auth Middleware", "JWT/OAuth", "Аутентификация и авторизация\n- JWT валидация\n- Role-based access\n- API key management")
+    }
+    
+    System_Boundary(integration_layer, "Integration Management Layer") {
+        Component(subgraph_manager, "Subgraph Manager", "Node.js", "Управление подграфами\n- Schema registration\n- Health monitoring\n- Version management")
+        
+        Component(federation_composer, "Federation Composer", "Apollo Federation", "Композиция федеративной схемы\n- Schema merging\n- Conflict resolution\n- Validation")
+        
+        Component(config_synchronizer, "Config Synchronizer", "Node.js", "Синхронизация конфигураций\n- Config distribution\n- Hot reloading\n- Rollback management")
+        
+        Component(test_runner, "Test Runner", "Jest/Playwright", "Выполнение интеграционных тестов\n- Contract testing\n- E2E scenarios\n- Performance tests")
+    }
+    
+    System_Boundary(monitoring_layer, "Monitoring & Analytics Layer") {
+        Component(metrics_collector, "Metrics Collector", "Prometheus Client", "Сбор метрик производительности\n- GraphQL metrics\n- Business metrics\n- Infrastructure metrics")
+        
+        Component(trace_processor, "Trace Processor", "Jaeger SDK", "Обработка трассировок\n- Span collection\n- Trace analysis\n- Performance insights")
+        
+        Component(log_aggregator, "Log Aggregator", "Winston/Fluentd", "Агрегация логов\n- Structured logging\n- Log correlation\n- Error tracking")
+        
+        Component(alert_manager, "Alert Manager", "Custom Logic", "Управление алертами\n- Threshold monitoring\n- Notification routing\n- Escalation policies")
+    }
+    
+    System_Boundary(analytics_layer, "Analytics & Optimization Layer") {
+        Component(performance_analyzer, "Performance Analyzer", "Python/Pandas", "Анализ производительности\n- Query optimization\n- Bottleneck detection\n- Capacity planning")
+        
+        Component(schema_analyzer, "Schema Analyzer", "GraphQL Tools", "Анализ схем\n- Breaking changes detection\n- Usage analytics\n- Deprecation tracking")
+        
+        Component(cost_optimizer, "Cost Optimizer", "Custom Algorithm", "Оптимизация затрат\n- Query cost analysis\n- Resource optimization\n- Caching strategies")
+        
+        Component(recommendation_engine, "Recommendation Engine", "ML/Python", "Рекомендации по оптимизации\n- Performance suggestions\n- Architecture improvements\n- Best practices")
+    }
+    
+    System_Boundary(storage_layer, "Storage & Cache Layer") {
+        Component(config_store, "Config Store", "Redis/etcd", "Хранение конфигураций\n- Subgraph configs\n- Feature flags\n- Environment settings")
+        
+        Component(metrics_cache, "Metrics Cache", "Redis", "Кеширование метрик\n- Aggregated data\n- Dashboard cache\n- Query results")
+        
+        Component(schema_cache, "Schema Cache", "Redis", "Кеширование схем\n- Composed schemas\n- Query plans\n- Validation results")
+        
+        Component(session_store, "Session Store", "Redis", "Управление сессиями\n- User sessions\n- API tokens\n- Rate limiting")
+    }
+}
+
+ContainerDb(prometheus, "Prometheus", "Time Series DB", "Метрики")
+ContainerDb(jaeger, "Jaeger", "Tracing Storage", "Трассировки")
+ContainerDb(elasticsearch, "Elasticsearch", "Log Storage", "Логи")
+
+System_Boundary(external_subgraphs, "External Subgraphs") {
+    Container(ugc_subgraph, "UGC Subgraph", "Rust", "Подграф UGC")
+    Container(users_subgraph, "Users Subgraph", "Node.js", "Подграф пользователей")
+    Container(offers_subgraph, "Offers Subgraph", "Java", "Подграф объявлений")
+}
+
+' API Layer relationships
+Rel(client, integration_controller, "REST API запросы", "HTTPS/JSON")
+Rel(client, graphql_gateway, "GraphQL запросы", "HTTPS/GraphQL")
+Rel(client, websocket_server, "Real-time подключения", "WebSocket")
+
+Rel(integration_controller, auth_middleware, "Проверка авторизации", "Function call")
+Rel(graphql_gateway, auth_middleware, "Проверка прав доступа", "Function call")
+
+' Integration Layer relationships
+Rel(integration_controller, subgraph_manager, "Управление подграфами", "Function call")
+Rel(integration_controller, config_synchronizer, "Синхронизация конфигов", "Function call")
+Rel(integration_controller, test_runner, "Запуск тестов", "Function call")
+
+Rel(graphql_gateway, federation_composer, "Композиция схемы", "Function call")
+Rel(subgraph_manager, federation_composer, "Регистрация схем", "Function call")
+
+' Monitoring Layer relationships
+Rel(graphql_gateway, metrics_collector, "Сбор GraphQL метрик", "Function call")
+Rel(graphql_gateway, trace_processor, "Отправка трассировок", "Function call")
+Rel(integration_controller, log_aggregator, "Логирование событий", "Function call")
+
+Rel(metrics_collector, alert_manager, "Проверка пороговых значений", "Function call")
+Rel(trace_processor, alert_manager, "Анализ производительности", "Function call")
+
+' Analytics Layer relationships
+Rel(metrics_collector, performance_analyzer, "Данные производительности", "Function call")
+Rel(federation_composer, schema_analyzer, "Анализ схем", "Function call")
+Rel(performance_analyzer, cost_optimizer, "Данные для оптимизации", "Function call")
+Rel(performance_analyzer, recommendation_engine, "Метрики для рекомендаций", "Function call")
+
+' Storage Layer relationships
+Rel(subgraph_manager, config_store, "Хранение конфигураций", "Redis Protocol")
+Rel(metrics_collector, metrics_cache, "Кеширование метрик", "Redis Protocol")
+Rel(federation_composer, schema_cache, "Кеширование схем", "Redis Protocol")
+Rel(auth_middleware, session_store, "Управление сессиями", "Redis Protocol")
+
+' External Storage relationships
+Rel(metrics_collector, prometheus, "Отправка метрик", "HTTP/Prometheus")
+Rel(trace_processor, jaeger, "Отправка трассировок", "HTTP/Jaeger")
+Rel(log_aggregator, elasticsearch, "Отправка логов", "HTTP/Elasticsearch")
+
+' External Subgraphs relationships
+Rel(subgraph_manager, ugc_subgraph, "Мониторинг здоровья", "HTTP/Health")
+Rel(subgraph_manager, users_subgraph, "Мониторинг здоровья", "HTTP/Health")
+Rel(subgraph_manager, offers_subgraph, "Мониторинг здоровья", "HTTP/Health")
+
+Rel(graphql_gateway, ugc_subgraph, "Федеративные запросы", "HTTP/GraphQL")
+Rel(graphql_gateway, users_subgraph, "Федеративные запросы", "HTTP/GraphQL")
+Rel(graphql_gateway, offers_subgraph, "Федеративные запросы", "HTTP/GraphQL")
+
+Rel(test_runner, ugc_subgraph, "Интеграционные тесты", "HTTP/GraphQL")
+Rel(test_runner, users_subgraph, "Интеграционные тесты", "HTTP/GraphQL")
+Rel(test_runner, offers_subgraph, "Интеграционные тесты", "HTTP/GraphQL")
+
+' Real-time notifications
+Rel(alert_manager, websocket_server, "Отправка алертов", "Function call")
+Rel(metrics_collector, websocket_server, "Real-time метрики", "Function call")
+
+SHOW_LEGEND()
+@enduml

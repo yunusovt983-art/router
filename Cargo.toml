@@ -1,0 +1,64 @@
+[workspace]
+members = [
+    "ugc-subgraph",
+    "users-subgraph", 
+    "offers-subgraph",
+    "catalog-subgraph",
+    "search-subgraph",
+]
+resolver = "2"
+
+[workspace.dependencies]
+# GraphQL dependencies
+async-graphql = "7.0"
+async-graphql-axum = "7.0"
+
+# Web framework
+axum = "0.8"
+tokio = { version = "1.0", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "sqlite", "uuid", "chrono", "json"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# UUID and time
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+rust_decimal = { version = "1.0", features = ["serde"] }
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Tracing and observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-opentelemetry = "0.22"
+opentelemetry = "0.21"
+opentelemetry-jaeger = "0.20"
+
+# Metrics
+prometheus = "0.13"
+
+# Authentication
+jsonwebtoken = "9.0"
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json"] }
+
+# Configuration
+config = "0.14"
+
+# Testing
+testcontainers = "0.15"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Auto.ru GraphQL Federation Team"]
+license = "MIT"

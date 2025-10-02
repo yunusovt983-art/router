@@ -1,0 +1,83 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.5", import: [])
+
+type SearchResult {
+  id: ID!
+  title: String!
+  description: String!
+  price: Int!
+  location: String!
+  imageUrl: String
+  relevanceScore: Float!
+  resultType: SearchResultType!
+}
+
+enum SearchResultType {
+  OFFER
+  BRAND
+  MODEL
+}
+
+enum SortDirection {
+  ASC
+  DESC
+}
+
+input SortInput {
+  field: String!
+  direction: SortDirection!
+}
+
+input SearchFilters {
+  query: String
+  minPrice: Int
+  maxPrice: Int
+  location: String
+  brand: String
+  model: String
+  yearFrom: Int
+  yearTo: Int
+}
+
+type SearchFacetValue {
+  value: String!
+  count: Int!
+}
+
+type SearchFacet {
+  name: String!
+  values: [SearchFacetValue!]!
+}
+
+type SearchConnection {
+  edges: [SearchEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+  facets: [SearchFacet!]!
+}
+
+type SearchEdge {
+  node: SearchResult!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type Suggestion {
+  text: String!
+  category: String!
+  count: Int!
+}
+
+type Query {
+  search(filters: SearchFilters, sort: [SortInput!], first: Int, after: String): SearchConnection!
+  autocomplete(query: String!): [Suggestion!]!
+}
+
+type Mutation {
+  placeholder: String
+}

@@ -1,0 +1,262 @@
+@startuml Task3_Deployment_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title Auto.ru Federation Integration & Monitoring - Deployment Diagram (Task 3: Production Environment)
+
+Deployment_Node(cloud_provider, "Cloud Provider", "AWS/GCP/Azure") {
+    
+    Deployment_Node(k8s_cluster, "Kubernetes Cluster", "EKS/GKE/AKS") {
+        
+        Deployment_Node(integration_namespace, "Integration Namespace", "Kubernetes Namespace") {
+            
+            Deployment_Node(integration_deployment, "Integration Hub Deployment", "Kubernetes Deployment") {
+                Deployment_Node(integration_pod1, "Integration Pod 1", "Kubernetes Pod") {
+                    Container(integration_app1, "Integration Hub", "Node.js", "Основное приложение интеграции\nПорт: 3000\nMemory: 1Gi\nCPU: 500m")
+                }
+                
+                Deployment_Node(integration_pod2, "Integration Pod 2", "Kubernetes Pod") {
+                    Container(integration_app2, "Integration Hub", "Node.js", "Реплика приложения\nПорт: 3000\nMemory: 1Gi\nCPU: 500m")
+                }
+                
+                Deployment_Node(integration_pod3, "Integration Pod 3", "Kubernetes Pod") {
+                    Container(integration_app3, "Integration Hub", "Node.js", "Реплика приложения\nПорт: 3000\nMemory: 1Gi\nCPU: 500m")
+                }
+            }
+            
+            Deployment_Node(gateway_deployment, "Apollo Gateway Deployment", "Kubernetes Deployment") {
+                Deployment_Node(gateway_pod1, "Gateway Pod 1", "Kubernetes Pod") {
+                    Container(apollo_gateway1, "Apollo Gateway", "Node.js", "Федеративный роутер\nПорт: 4000\nMemory: 2Gi\nCPU: 1000m")
+                }
+                
+                Deployment_Node(gateway_pod2, "Gateway Pod 2", "Kubernetes Pod") {
+                    Container(apollo_gateway2, "Apollo Gateway", "Node.js", "Реплика роутера\nПорт: 4000\nMemory: 2Gi\nCPU: 1000m")
+                }
+            }
+            
+            Deployment_Node(cache_deployment, "Redis Cache Deployment", "Kubernetes StatefulSet") {
+                Deployment_Node(redis_master, "Redis Master", "Kubernetes Pod") {
+                    ContainerDb(redis_primary, "Redis Primary", "Redis 7", "Основной кеш\nПорт: 6379\nMemory: 4Gi\nPersistent Volume: 20Gi")
+                }
+                
+                Deployment_Node(redis_replica1, "Redis Replica 1", "Kubernetes Pod") {
+                    ContainerDb(redis_secondary1, "Redis Replica", "Redis 7", "Реплика кеша\nПорт: 6379\nMemory: 4Gi\nPersistent Volume: 20Gi")
+                }
+                
+                Deployment_Node(redis_replica2, "Redis Replica 2", "Kubernetes Pod") {
+                    ContainerDb(redis_secondary2, "Redis Replica", "Redis 7", "Реплика кеша\nПорт: 6379\nMemory: 4Gi\nPersistent Volume: 20Gi")
+                }
+            }
+        }
+        
+        Deployment_Node(subgraphs_namespace, "Subgraphs Namespace", "Kubernetes Namespace") {
+            
+            Deployment_Node(ugc_deployment, "UGC Subgraph Deployment", "Kubernetes Deployment") {
+                Deployment_Node(ugc_pod1, "UGC Pod 1", "Kubernetes Pod") {
+                    Container(ugc_service1, "UGC Subgraph", "Rust", "UGC сервис\nПорт: 4001\nMemory: 512Mi\nCPU: 250m")
+                }
+                
+                Deployment_Node(ugc_pod2, "UGC Pod 2", "Kubernetes Pod") {
+                    Container(ugc_service2, "UGC Subgraph", "Rust", "UGC реплика\nПорт: 4001\nMemory: 512Mi\nCPU: 250m")
+                }
+            }
+            
+            Deployment_Node(users_deployment, "Users Subgraph Deployment", "Kubernetes Deployment") {
+                Deployment_Node(users_pod1, "Users Pod 1", "Kubernetes Pod") {
+                    Container(users_service1, "Users Subgraph", "Node.js", "Users сервис\nПорт: 4002\nMemory: 512Mi\nCPU: 250m")
+                }
+                
+                Deployment_Node(users_pod2, "Users Pod 2", "Kubernetes Pod") {
+                    Container(users_service2, "Users Subgraph", "Node.js", "Users реплика\nПорт: 4002\nMemory: 512Mi\nCPU: 250m")
+                }
+            }
+            
+            Deployment_Node(offers_deployment, "Offers Subgraph Deployment", "Kubernetes Deployment") {
+                Deployment_Node(offers_pod1, "Offers Pod 1", "Kubernetes Pod") {
+                    Container(offers_service1, "Offers Subgraph", "Java", "Offers сервис\nПорт: 4003\nMemory: 1Gi\nCPU: 500m")
+                }
+                
+                Deployment_Node(offers_pod2, "Offers Pod 2", "Kubernetes Pod") {
+                    Container(offers_service2, "Offers Subgraph", "Java", "Offers реплика\nПорт: 4003\nMemory: 1Gi\nCPU: 500m")
+                }
+            }
+        }
+        
+        Deployment_Node(monitoring_namespace, "Monitoring Namespace", "Kubernetes Namespace") {
+            
+            Deployment_Node(prometheus_deployment, "Prometheus Deployment", "Kubernetes StatefulSet") {
+                Deployment_Node(prometheus_pod, "Prometheus Pod", "Kubernetes Pod") {
+                    Container(prometheus_server, "Prometheus Server", "Prometheus", "Сбор метрик\nПорт: 9090\nMemory: 4Gi\nCPU: 1000m\nStorage: 100Gi")
+                }
+            }
+            
+            Deployment_Node(grafana_deployment, "Grafana Deployment", "Kubernetes Deployment") {
+                Deployment_Node(grafana_pod, "Grafana Pod", "Kubernetes Pod") {
+                    Container(grafana_server, "Grafana Server", "Grafana", "Визуализация\nПорт: 3000\nMemory: 1Gi\nCPU: 500m")
+                }
+            }
+            
+            Deployment_Node(jaeger_deployment, "Jaeger Deployment", "Kubernetes Deployment") {
+                Deployment_Node(jaeger_pod, "Jaeger Pod", "Kubernetes Pod") {
+                    Container(jaeger_server, "Jaeger All-in-One", "Jaeger", "Трассировка\nПорт: 16686\nMemory: 2Gi\nCPU: 500m")
+                }
+            }
+            
+            Deployment_Node(elasticsearch_deployment, "Elasticsearch Deployment", "Kubernetes StatefulSet") {
+                Deployment_Node(elasticsearch_pod1, "Elasticsearch Pod 1", "Kubernetes Pod") {
+                    ContainerDb(elasticsearch_node1, "Elasticsearch Node", "Elasticsearch", "Логи и поиск\nПорт: 9200\nMemory: 4Gi\nCPU: 1000m\nStorage: 200Gi")
+                }
+                
+                Deployment_Node(elasticsearch_pod2, "Elasticsearch Pod 2", "Kubernetes Pod") {
+                    ContainerDb(elasticsearch_node2, "Elasticsearch Node", "Elasticsearch", "Реплика ES\nПорт: 9200\nMemory: 4Gi\nCPU: 1000m\nStorage: 200Gi")
+                }
+            }
+        }
+        
+        Deployment_Node(data_namespace, "Data Namespace", "Kubernetes Namespace") {
+            
+            Deployment_Node(postgres_deployment, "PostgreSQL Deployment", "Kubernetes StatefulSet") {
+                Deployment_Node(postgres_master_pod, "PostgreSQL Master Pod", "Kubernetes Pod") {
+                    ContainerDb(postgres_primary, "PostgreSQL Primary", "PostgreSQL 15", "Основная БД\nПорт: 5432\nMemory: 8Gi\nCPU: 2000m\nStorage: 500Gi")
+                }
+                
+                Deployment_Node(postgres_replica_pod, "PostgreSQL Replica Pod", "Kubernetes Pod") {
+                    ContainerDb(postgres_replica, "PostgreSQL Replica", "PostgreSQL 15", "Реплика БД\nПорт: 5432\nMemory: 8Gi\nCPU: 2000m\nStorage: 500Gi")
+                }
+            }
+        }
+        
+        Deployment_Node(ingress_layer, "Ingress Layer", "Kubernetes Ingress") {
+            
+            Deployment_Node(nginx_deployment, "NGINX Ingress Deployment", "Kubernetes DaemonSet") {
+                Deployment_Node(nginx_pod1, "NGINX Pod 1", "Kubernetes Pod") {
+                    Container(nginx_controller1, "NGINX Ingress Controller", "NGINX", "Load Balancer\nПорт: 80/443\nMemory: 512Mi\nCPU: 250m")
+                }
+                
+                Deployment_Node(nginx_pod2, "NGINX Pod 2", "Kubernetes Pod") {
+                    Container(nginx_controller2, "NGINX Ingress Controller", "NGINX", "Load Balancer\nПорт: 80/443\nMemory: 512Mi\nCPU: 250m")
+                }
+            }
+            
+            Deployment_Node(cert_manager, "Cert Manager", "Kubernetes Deployment") {
+                Container(cert_manager_controller, "Cert Manager Controller", "Go", "SSL сертификаты\nLet's Encrypt\nMemory: 256Mi\nCPU: 100m")
+            }
+        }
+    }
+    
+    Deployment_Node(managed_services, "Managed Services", "Cloud Provider Services") {
+        
+        Deployment_Node(rds_cluster, "RDS Cluster", "AWS RDS/Cloud SQL") {
+            ContainerDb(rds_primary, "RDS Primary", "PostgreSQL", "Управляемая БД\nMulti-AZ\nBackup: 30 days\nStorage: 1TB")
+            ContainerDb(rds_replica, "RDS Read Replica", "PostgreSQL", "Read-only реплика\nCross-region\nStorage: 1TB")
+        }
+        
+        Deployment_Node(elasticache_cluster, "ElastiCache Cluster", "AWS ElastiCache/Memorystore") {
+            ContainerDb(elasticache_primary, "ElastiCache Primary", "Redis", "Управляемый кеш\nCluster mode\nBackup enabled\nMemory: 16GB")
+            ContainerDb(elasticache_replica, "ElastiCache Replica", "Redis", "Кеш реплика\nCross-AZ\nMemory: 16GB")
+        }
+        
+        Deployment_Node(s3_storage, "Object Storage", "AWS S3/Cloud Storage") {
+            ContainerDb(logs_bucket, "Logs Bucket", "S3", "Архив логов\nLifecycle policy\nEncryption enabled")
+            ContainerDb(backups_bucket, "Backups Bucket", "S3", "Бэкапы БД\nVersioning enabled\nCross-region replication")
+        }
+    }
+    
+    Deployment_Node(external_services, "External Services", "Third-party Services") {
+        Container(apollo_studio, "Apollo Studio", "SaaS", "Schema registry\nPerformance monitoring\nFederation insights")
+        
+        Container(datadog, "Datadog", "SaaS", "APM мониторинг\nLog aggregation\nAlerts и dashboards")
+        
+        Container(sentry, "Sentry", "SaaS", "Error tracking\nPerformance monitoring\nRelease tracking")
+    }
+}
+
+Deployment_Node(cdn_layer, "CDN Layer", "CloudFlare/CloudFront") {
+    Container(cdn_edge, "CDN Edge Locations", "Global CDN", "Static content caching\nDDoS protection\nSSL termination")
+}
+
+Deployment_Node(client_devices, "Client Devices", "End Users") {
+    Container(web_browser, "Web Browser", "React SPA", "Frontend приложение\nGraphQL клиент")
+    Container(mobile_app, "Mobile App", "React Native", "Мобильное приложение\nGraphQL клиент")
+    Container(api_client, "API Client", "Various", "Внешние интеграции\nREST/GraphQL API")
+}
+
+' Network connections
+Rel(cdn_edge, nginx_controller1, "HTTPS трафик", "443")
+Rel(cdn_edge, nginx_controller2, "HTTPS трафик", "443")
+
+Rel(nginx_controller1, apollo_gateway1, "GraphQL запросы", "HTTP:4000")
+Rel(nginx_controller2, apollo_gateway2, "GraphQL запросы", "HTTP:4000")
+
+Rel(nginx_controller1, integration_app1, "API запросы", "HTTP:3000")
+Rel(nginx_controller2, integration_app2, "API запросы", "HTTP:3000")
+
+' Federation connections
+Rel(apollo_gateway1, ugc_service1, "Федеративные запросы", "HTTP:4001")
+Rel(apollo_gateway1, users_service1, "Федеративные запросы", "HTTP:4002")
+Rel(apollo_gateway1, offers_service1, "Федеративные запросы", "HTTP:4003")
+
+Rel(apollo_gateway2, ugc_service2, "Федеративные запросы", "HTTP:4001")
+Rel(apollo_gateway2, users_service2, "Федеративные запросы", "HTTP:4002")
+Rel(apollo_gateway2, offers_service2, "Федеративные запросы", "HTTP:4003")
+
+' Integration Hub connections
+Rel(integration_app1, apollo_gateway1, "Управление роутером", "HTTP:4000")
+Rel(integration_app2, apollo_gateway2, "Управление роутером", "HTTP:4000")
+
+Rel(integration_app1, redis_primary, "Конфигурации", "Redis:6379")
+Rel(integration_app2, redis_primary, "Конфигурации", "Redis:6379")
+Rel(integration_app3, redis_primary, "Конфигурации", "Redis:6379")
+
+' Database connections
+Rel(ugc_service1, postgres_primary, "UGC данные", "PostgreSQL:5432")
+Rel(ugc_service2, postgres_replica, "UGC чтение", "PostgreSQL:5432")
+
+Rel(users_service1, postgres_primary, "Users данные", "PostgreSQL:5432")
+Rel(users_service2, postgres_replica, "Users чтение", "PostgreSQL:5432")
+
+Rel(offers_service1, postgres_primary, "Offers данные", "PostgreSQL:5432")
+Rel(offers_service2, postgres_replica, "Offers чтение", "PostgreSQL:5432")
+
+' Cache connections
+Rel(apollo_gateway1, redis_primary, "Query cache", "Redis:6379")
+Rel(apollo_gateway2, redis_secondary1, "Query cache", "Redis:6379")
+
+Rel(ugc_service1, redis_primary, "UGC cache", "Redis:6379")
+Rel(users_service1, redis_secondary1, "Users cache", "Redis:6379")
+Rel(offers_service1, redis_secondary2, "Offers cache", "Redis:6379")
+
+' Monitoring connections
+Rel(integration_app1, prometheus_server, "Метрики", "HTTP:9090")
+Rel(apollo_gateway1, prometheus_server, "Метрики", "HTTP:9090")
+Rel(ugc_service1, prometheus_server, "Метрики", "HTTP:9090")
+
+Rel(integration_app1, jaeger_server, "Трассировки", "HTTP:14268")
+Rel(apollo_gateway1, jaeger_server, "Трассировки", "HTTP:14268")
+Rel(ugc_service1, jaeger_server, "Трассировки", "HTTP:14268")
+
+Rel(prometheus_server, grafana_server, "Данные метрик", "HTTP:9090")
+Rel(jaeger_server, grafana_server, "Данные трассировок", "HTTP:16686")
+
+Rel(integration_app1, elasticsearch_node1, "Логи", "HTTP:9200")
+Rel(apollo_gateway1, elasticsearch_node1, "Логи", "HTTP:9200")
+
+' External services
+Rel(apollo_gateway1, apollo_studio, "Schema registry", "HTTPS")
+Rel(integration_app1, datadog, "APM данные", "HTTPS")
+Rel(integration_app1, sentry, "Error tracking", "HTTPS")
+
+' Client connections
+Rel(web_browser, cdn_edge, "HTTPS запросы", "443")
+Rel(mobile_app, cdn_edge, "HTTPS запросы", "443")
+Rel(api_client, cdn_edge, "API запросы", "443")
+
+' Managed services (alternative deployment)
+Rel_U(ugc_service1, rds_primary, "Альтернатива: Управляемая БД", "PostgreSQL:5432")
+Rel_U(apollo_gateway1, elasticache_primary, "Альтернатива: Управляемый кеш", "Redis:6379")
+
+' Backup and archival
+Rel(postgres_primary, backups_bucket, "Бэкапы БД", "S3 API")
+Rel(elasticsearch_node1, logs_bucket, "Архив логов", "S3 API")
+
+SHOW_LEGEND()
+@enduml

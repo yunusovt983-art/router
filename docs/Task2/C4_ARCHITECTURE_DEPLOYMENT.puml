@@ -1,0 +1,135 @@
+@startuml Task2_Deployment_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title Auto.ru UGC Subgraph - Deployment Diagram (Task 2: UGC Service Deployment)
+
+Deployment_Node(developer_machine, "Developer Machine", "Linux/macOS/Windows") {
+    Deployment_Node(docker_engine, "Docker Engine", "Docker 24.x") {
+        
+        Deployment_Node(ugc_network, "UGC Network", "Docker Bridge Network") {
+            
+            Deployment_Node(ugc_container, "UGC Subgraph Container", "Debian Bookworm Slim") {
+                Container(ugc_service, "UGC Subgraph", "Rust Binary", "GraphQL сервис для UGC\nПорт: 4001\nMemory: 256MB\nCPU: 0.5 cores")
+                
+                Deployment_Node(ugc_volumes, "UGC Volumes", "Docker Volumes") {
+                    Container(ugc_logs, "Application Logs", "Log Files", "Структурированные логи\nJSON формат\nRotation policy")
+                    Container(ugc_config, "Configuration", "Config Files", "Environment variables\nGraphQL schema\nDatabase config")
+                }
+            }
+        }
+        
+        Deployment_Node(data_network, "Data Network", "Docker Internal Network") {
+            
+            Deployment_Node(postgres_container, "PostgreSQL Container", "PostgreSQL 15 Alpine") {
+                ContainerDb(postgres_db, "PostgreSQL Database", "Relational DB", "UGC данные\nПорт: 5432\nMemory: 1GB")
+                
+                Deployment_Node(postgres_storage, "PostgreSQL Storage", "Docker Volume") {
+                    ContainerDb(reviews_table, "Reviews Table", "Table", "Основная таблица отзывов\nИндексы для производительности\nConstraints для целостности")
+                    ContainerDb(ratings_table, "Offer Ratings Table", "Table", "Агрегированные рейтинги\nJSONB для статистики\nТриггеры для обновления")
+                }
+            }
+            
+            Deployment_Node(redis_container, "Redis Container", "Redis 7 Alpine") {
+                ContainerDb(redis_cache, "Redis Cache", "In-Memory DB", "Кеш UGC данных\nПорт: 6379\nMemory: 128MB")
+                
+                Deployment_Node(redis_storage, "Redis Storage", "Docker Volume") {
+                    ContainerDb(cached_ratings, "Cached Ratings", "Key-Value", "Агрегированные рейтинги\nTTL: 1 час\nLRU eviction policy")
+                    ContainerDb(session_data, "Session Data", "Key-Value", "Пользовательские сессии\nRate limiting counters\nTemporary data")
+                }
+            }
+        }
+        
+        Deployment_Node(monitoring_network, "Monitoring Network", "Docker Network") {
+            
+            Deployment_Node(prometheus_container, "Prometheus Container", "Prometheus") {
+                Container(prometheus, "Prometheus", "Metrics DB", "Сбор метрик UGC\nПорт: 9090\nScrape interval: 15s")
+                
+                Deployment_Node(prometheus_storage, "Prometheus Storage", "Docker Volume") {
+                    Container(ugc_metrics, "UGC Metrics", "Time Series", "GraphQL операции/сек\nВремя ответа\nОшибки и успешные запросы\nБизнес-метрики (отзывы, рейтинги)")
+                }
+            }
+            
+            Deployment_Node(jaeger_container, "Jaeger Container", "Jaeger All-in-One") {
+                Container(jaeger, "Jaeger", "Tracing System", "Трассировка UGC запросов\nПорт: 16686\nSampling rate: 10%")
+                
+                Deployment_Node(jaeger_storage, "Jaeger Storage", "Docker Volume") {
+                    Container(ugc_traces, "UGC Traces", "Trace Data", "GraphQL request traces\nDatabase query spans\nCache operation spans\nFederation call traces")
+                }
+            }
+        }
+    }
+    
+    Deployment_Node(host_filesystem, "Host File System", "Local Development") {
+        
+        Deployment_Node(ugc_workspace, "UGC Workspace", "Cargo Crate") {
+            Container(ugc_source, "UGC Source Code", "Rust Files", "src/main.rs\nsrc/models/\nsrc/resolvers/\nsrc/services/\nsrc/repository/")
+            
+            Container(ugc_tests, "UGC Tests", "Test Files", "Unit tests\nIntegration tests\nMock implementations\nTest fixtures")
+            
+            Container(ugc_migrations, "Database Migrations", "SQL Files", "001_create_reviews_table.sql\n002_create_offer_ratings_table.sql\n003_add_indexes.sql")
+        }
+        
+        Deployment_Node(docker_configs, "Docker Configuration", "Container Config") {
+            Container(ugc_dockerfile, "UGC Dockerfile", "Multi-stage Build", "Builder stage: Rust compilation\nRuntime stage: Debian slim\nSecurity: non-root user\nOptimization: minimal layers")
+            
+            Container(compose_config, "Docker Compose", "Service Definition", "UGC service configuration\nNetwork definitions\nVolume mappings\nEnvironment variables")
+        }
+        
+        Deployment_Node(dev_tools, "Development Tools", "Local Tools") {
+            Container(cargo_tools, "Cargo Tools", "Rust Toolchain", "cargo build\ncargo test\ncargo clippy\ncargo fmt")
+            
+            Container(dev_scripts, "Development Scripts", "Automation", "dev-setup.sh\ntest-runner.sh\nmigration-runner.sh\nhealth-check.sh")
+        }
+    }
+}
+
+Deployment_Node(external_services, "External Services", "Federation Network") {
+    Container(apollo_router, "Apollo Router", "GraphQL Gateway", "Федеративный роутер\nПорт: 4000\nМаршрутизация к UGC")
+    
+    Container(users_subgraph, "Users Subgraph", "GraphQL Service", "Сервис пользователей\nПорт: 4002\nФедеративные ссылки")
+    
+    Container(offers_subgraph, "Offers Subgraph", "GraphQL Service", "Сервис объявлений\nПорт: 4003\nФедеративные ссылки")
+}
+
+' Network connections
+Rel(ugc_service, postgres_db, "SQL запросы", "TCP:5432")
+Rel(ugc_service, redis_cache, "Cache операции", "TCP:6379")
+
+Rel(ugc_service, prometheus, "Метрики", "HTTP:9090")
+Rel(ugc_service, jaeger, "Трассировки", "HTTP:14268")
+
+' Storage relationships
+Rel(postgres_db, reviews_table, "Хранение отзывов", "File system")
+Rel(postgres_db, ratings_table, "Хранение рейтингов", "File system")
+Rel(redis_cache, cached_ratings, "Кеш рейтингов", "Memory")
+Rel(redis_cache, session_data, "Сессии", "Memory")
+
+Rel(prometheus, ugc_metrics, "Сохранение метрик", "File system")
+Rel(jaeger, ugc_traces, "Сохранение трассировок", "File system")
+
+' Development relationships
+Rel(ugc_source, ugc_dockerfile, "Сборка образа", "Docker build")
+Rel(ugc_dockerfile, ugc_container, "Создание контейнера", "Docker run")
+Rel(ugc_migrations, postgres_db, "Схема БД", "SQL execution")
+
+Rel(dev_scripts, compose_config, "Управление сервисами", "Docker Compose")
+Rel(cargo_tools, ugc_source, "Сборка и тестирование", "Rust toolchain")
+
+' Federation relationships
+Rel_Back(apollo_router, ugc_service, "GraphQL запросы", "HTTP:4001")
+Rel_Back(ugc_service, users_subgraph, "Федеративные ссылки", "HTTP:4002")
+Rel_Back(ugc_service, offers_subgraph, "Федеративные ссылки", "HTTP:4003")
+
+' Volume mappings
+Rel(ugc_service, ugc_logs, "Запись логов", "Volume mount")
+Rel(ugc_service, ugc_config, "Чтение конфигурации", "Volume mount")
+
+' Port mappings
+Rel_U(developer_machine, ugc_service, "GraphQL API", "localhost:4001")
+Rel_U(developer_machine, postgres_db, "Database access", "localhost:5432")
+Rel_U(developer_machine, redis_cache, "Cache access", "localhost:6379")
+Rel_U(developer_machine, prometheus, "Metrics UI", "localhost:9090")
+Rel_U(developer_machine, jaeger, "Tracing UI", "localhost:16686")
+
+SHOW_LEGEND()
+@enduml

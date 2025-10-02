@@ -1,0 +1,132 @@
+@startuml Task6_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation - Component Diagram (Task 6: Authentication & Authorization Components)
+
+Container(client, "GraphQL Client", "Apollo Client", "Клиент с JWT токенами")
+
+System_Boundary(auth_service_internal, "Authentication Service - Internal Components") {
+    
+    System_Boundary(jwt_components, "JWT Management Components") {
+        Component(jwt_validator, "JWT Validator", "Rust, jsonwebtoken", "Валидация JWT токенов:\n- Проверка подписи\n- Валидация claims\n- Проверка истечения\n- Algorithm validation")
+        Component(jwt_issuer, "JWT Issuer", "Rust, jsonwebtoken", "Создание JWT токенов:\n- Генерация токенов\n- Подписание ключами\n- Установка claims\n- Refresh token logic")
+        Component(jwks_client, "JWKS Client", "Rust, reqwest", "Клиент для JWKS:\n- Получение публичных ключей\n- Кеширование ключей\n- Ротация ключей\n- Fallback mechanisms")
+        Component(token_cache, "Token Cache", "Rust, Redis client", "Кеширование токенов:\n- Валидированные токены\n- Blacklisted tokens\n- Refresh tokens\n- Cache invalidation")
+    }
+    
+    System_Boundary(oauth2_components, "OAuth2 Integration Components") {
+        Component(oauth2_client, "OAuth2 Client", "Rust, oauth2 crate", "OAuth2 клиент:\n- Authorization flow\n- Token exchange\n- Provider integration\n- State management")
+        Component(provider_registry, "Provider Registry", "Rust, Configuration", "Реестр провайдеров:\n- Provider configurations\n- Client credentials\n- Scope management\n- Dynamic registration")
+        Component(callback_handler, "Callback Handler", "Rust, Axum handler", "Обработка OAuth2 callbacks:\n- Authorization code handling\n- State validation\n- Error handling\n- User mapping")
+    }
+    
+    System_Boundary(session_components, "Session Management Components") {
+        Component(session_store, "Session Store", "Rust, Redis", "Хранилище сессий:\n- Session creation\n- Session validation\n- Session expiration\n- Concurrent session control")
+        Component(session_validator, "Session Validator", "Rust, Business logic", "Валидация сессий:\n- Session integrity\n- Device fingerprinting\n- Anomaly detection\n- Security policies")
+        Component(logout_handler, "Logout Handler", "Rust, Session cleanup", "Обработка выхода:\n- Session termination\n- Token revocation\n- Cleanup procedures\n- Audit logging")
+    }
+}
+
+System_Boundary(authorization_service_internal, "Authorization Service - Internal Components") {
+    
+    System_Boundary(rbac_components, "RBAC Components") {
+        Component(role_manager, "Role Manager", "Rust, RBAC engine", "Управление ролями:\n- Role definitions\n- Role hierarchies\n- Role assignments\n- Dynamic roles")
+        Component(permission_engine, "Permission Engine", "Rust, Policy engine", "Движок разрешений:\n- Permission evaluation\n- Policy enforcement\n- Context-aware decisions\n- Permission caching")
+        Component(policy_evaluator, "Policy Evaluator", "Rust, Rule engine", "Оценка политик:\n- ABAC policies\n- Conditional logic\n- Resource-based access\n- Time-based access")
+    }
+    
+    System_Boundary(guard_components, "GraphQL Guard Components") {
+        Component(role_guard, "Role Guard", "Rust, async-graphql", "Guard для ролей:\n- Role-based access\n- Field-level security\n- Operation protection\n- Error handling")
+        Component(permission_guard, "Permission Guard", "Rust, async-graphql", "Guard для разрешений:\n- Permission checks\n- Resource validation\n- Context evaluation\n- Audit integration")
+        Component(rate_limit_guard, "Rate Limit Guard", "Rust, async-graphql", "Guard для rate limiting:\n- User-based limits\n- Operation limits\n- Adaptive thresholds\n- Quota management")
+        Component(gdpr_guard, "GDPR Guard", "Rust, async-graphql", "Guard для GDPR:\n- Data access control\n- Consent validation\n- Privacy enforcement\n- Audit requirements")
+    }
+}
+
+System_Boundary(security_service_internal, "Security Service - Internal Components") {
+    
+    System_Boundary(rate_limiting_components, "Rate Limiting Components") {
+        Component(rate_limiter, "Rate Limiter", "Rust, Token bucket", "Rate limiting engine:\n- Token bucket algorithm\n- Sliding window\n- Distributed limiting\n- Burst handling")
+        Component(quota_manager, "Quota Manager", "Rust, Redis", "Управление квотами:\n- User quotas\n- API quotas\n- Resource quotas\n- Quota enforcement")
+        Component(throttle_controller, "Throttle Controller", "Rust, Adaptive logic", "Контроль троттлинга:\n- Adaptive throttling\n- Load-based adjustment\n- Priority queuing\n- Circuit breaker")
+    }
+    
+    System_Boundary(audit_components, "Security Audit Components") {
+        Component(event_logger, "Event Logger", "Rust, Structured logging", "Логирование событий:\n- Security events\n- Access logs\n- Error tracking\n- Performance metrics")
+        Component(threat_detector, "Threat Detector", "Rust, ML integration", "Детектор угроз:\n- Anomaly detection\n- Pattern recognition\n- Risk scoring\n- Alert generation")
+        Component(compliance_reporter, "Compliance Reporter", "Rust, Report generator", "Отчеты соответствия:\n- GDPR reports\n- Audit trails\n- Compliance metrics\n- Regulatory reporting")
+    }
+    
+    System_Boundary(gdpr_components, "GDPR Compliance Components") {
+        Component(data_classifier, "Data Classifier", "Rust, Privacy engine", "Классификация данных:\n- PII identification\n- Sensitivity levels\n- Data categories\n- Processing purposes")
+        Component(consent_manager, "Consent Manager", "Rust, Consent engine", "Управление согласиями:\n- Consent collection\n- Consent validation\n- Consent withdrawal\n- Consent history")
+        Component(privacy_controller, "Privacy Controller", "Rust, Privacy logic", "Контроль приватности:\n- Data minimization\n- Purpose limitation\n- Retention policies\n- Right to erasure")
+    }
+}
+
+System_Boundary(middleware_components, "Middleware Components") {
+    Component(auth_middleware, "Auth Middleware", "Rust, Axum middleware", "Middleware аутентификации:\n- Token extraction\n- Token validation\n- Context injection\n- Error handling")
+    Component(cors_middleware, "CORS Middleware", "Rust, tower-http", "CORS обработка:\n- Origin validation\n- Preflight handling\n- Credential support\n- Security headers")
+    Component(security_headers, "Security Headers", "Rust, tower-http", "Заголовки безопасности:\n- CSP headers\n- HSTS headers\n- X-Frame-Options\n- Security policies")
+}
+
+' Client to middleware
+Rel(client, auth_middleware, "HTTP запросы с JWT", "HTTPS")
+
+' Middleware flow
+Rel(auth_middleware, jwt_validator, "Валидация JWT", "Function call")
+Rel(auth_middleware, session_validator, "Проверка сессии", "Function call")
+Rel(auth_middleware, cors_middleware, "CORS обработка", "Middleware chain")
+Rel(cors_middleware, security_headers, "Заголовки безопасности", "Middleware chain")
+
+' JWT management flow
+Rel(jwt_validator, jwks_client, "Получение ключей", "Function call")
+Rel(jwt_validator, token_cache, "Кеширование результатов", "Function call")
+Rel(jwt_issuer, token_cache, "Сохранение токенов", "Function call")
+
+' OAuth2 flow
+Rel(oauth2_client, provider_registry, "Конфигурация провайдера", "Function call")
+Rel(oauth2_client, callback_handler, "Обработка callback", "Function call")
+Rel(callback_handler, jwt_issuer, "Создание JWT", "Function call")
+
+' Session management flow
+Rel(session_validator, session_store, "Проверка сессии", "Function call")
+Rel(logout_handler, session_store, "Удаление сессии", "Function call")
+Rel(logout_handler, token_cache, "Инвалидация токенов", "Function call")
+
+' Authorization flow
+Rel(role_guard, role_manager, "Проверка ролей", "Function call")
+Rel(permission_guard, permission_engine, "Проверка разрешений", "Function call")
+Rel(permission_engine, policy_evaluator, "Оценка политик", "Function call")
+
+' Rate limiting flow
+Rel(rate_limit_guard, rate_limiter, "Проверка лимитов", "Function call")
+Rel(rate_limiter, quota_manager, "Управление квотами", "Function call")
+Rel(throttle_controller, rate_limiter, "Контроль троттлинга", "Function call")
+
+' GDPR flow
+Rel(gdpr_guard, data_classifier, "Классификация данных", "Function call")
+Rel(gdpr_guard, consent_manager, "Проверка согласий", "Function call")
+Rel(privacy_controller, consent_manager, "Управление приватностью", "Function call")
+
+' Audit and logging
+Rel(role_guard, event_logger, "Логирование доступа", "Function call")
+Rel(permission_guard, event_logger, "Логирование разрешений", "Function call")
+Rel(rate_limit_guard, event_logger, "Логирование лимитов", "Function call")
+Rel(gdpr_guard, event_logger, "Логирование GDPR событий", "Function call")
+
+Rel(event_logger, threat_detector, "Анализ событий", "Function call")
+Rel(threat_detector, compliance_reporter, "Отчеты угроз", "Function call")
+
+' Cross-component integrations
+Rel(jwt_validator, event_logger, "Логирование валидации", "Function call")
+Rel(oauth2_client, event_logger, "Логирование OAuth2", "Function call")
+Rel(session_validator, threat_detector, "Детекция аномалий", "Function call")
+
+' Cache and performance optimizations
+Rel(role_manager, token_cache, "Кеширование ролей", "Function call")
+Rel(permission_engine, token_cache, "Кеширование разрешений", "Function call")
+Rel(policy_evaluator, token_cache, "Кеширование политик", "Function call")
+
+SHOW_LEGEND()
+@enduml

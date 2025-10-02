@@ -1,0 +1,77 @@
+@startuml C4_Component_Task13
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Task 13: Migration Strategy Implementation - Component Diagram
+
+Person(developer, "Developer", "Migration management")
+Person(client, "Client Application", "REST/GraphQL requests")
+
+System_Boundary(migration_service, "Migration Service") {
+    Component(rest_endpoints, "REST Endpoints", "Axum Routes", "Legacy REST API endpoints")
+    Component(graphql_endpoint, "GraphQL Endpoint", "Axum Route", "GraphQL federation endpoint")
+    Component(migration_middleware, "Migration Middleware", "Axum Middleware", "Request interception and routing")
+    
+    Component(feature_flag_engine, "Feature Flag Engine", "Rust Service", "Flag evaluation and caching")
+    Component(user_targeting, "User Targeting", "Rust Module", "User segmentation and targeting logic")
+    Component(rollout_controller, "Rollout Controller", "Rust Service", "Gradual rollout management")
+    
+    Component(ab_test_engine, "A/B Test Engine", "Rust Service", "Experiment management and variant assignment")
+    Component(conversion_tracker, "Conversion Tracker", "Rust Module", "Event tracking and analytics")
+    
+    Component(canary_controller, "Canary Controller", "Rust Service", "Canary deployment automation")
+    Component(health_checker, "Health Checker", "Rust Module", "Service health monitoring")
+    Component(rollback_manager, "Rollback Manager", "Rust Service", "Automatic and manual rollback")
+    
+    Component(config_loader, "Configuration Loader", "Rust Module", "YAML configuration management")
+    Component(redis_client, "Redis Client", "Rust Module", "Cache operations and session management")
+    Component(metrics_collector, "Metrics Collector", "Rust Module", "Performance and business metrics")
+    
+    Component(cli_handler, "CLI Handler", "Clap Parser", "Command-line interface processing")
+    Component(api_handlers, "API Handlers", "Axum Handlers", "REST API for migration management")
+}
+
+ContainerDb(redis_cache, "Redis Cache", "Redis", "Feature flags and session cache")
+ContainerDb(config_files, "Config Files", "YAML", "Feature flag and migration configuration")
+
+System_Ext(ugc_service, "UGC GraphQL Service", "Target GraphQL service")
+System_Ext(legacy_service, "Legacy REST Service", "Original REST implementation")
+System_Ext(prometheus, "Prometheus", "Metrics storage")
+
+Rel(client, rest_endpoints, "REST API calls", "HTTP/JSON")
+Rel(client, graphql_endpoint, "GraphQL queries", "HTTP/GraphQL")
+Rel(developer, cli_handler, "CLI commands", "Terminal")
+Rel(developer, api_handlers, "Management API", "HTTP/REST")
+
+Rel(rest_endpoints, migration_middleware, "Request processing", "Internal")
+Rel(graphql_endpoint, migration_middleware, "Request processing", "Internal")
+Rel(migration_middleware, feature_flag_engine, "Check flags", "Internal")
+
+Rel(feature_flag_engine, user_targeting, "User evaluation", "Internal")
+Rel(feature_flag_engine, redis_client, "Cache operations", "Internal")
+Rel(feature_flag_engine, config_loader, "Load configuration", "Internal")
+
+Rel(rollout_controller, feature_flag_engine, "Flag management", "Internal")
+Rel(rollout_controller, canary_controller, "Canary coordination", "Internal")
+
+Rel(ab_test_engine, feature_flag_engine, "Experiment flags", "Internal")
+Rel(ab_test_engine, conversion_tracker, "Track events", "Internal")
+
+Rel(canary_controller, health_checker, "Health monitoring", "Internal")
+Rel(canary_controller, rollback_manager, "Rollback triggers", "Internal")
+Rel(rollback_manager, feature_flag_engine, "Emergency rollback", "Internal")
+
+Rel(config_loader, config_files, "Read config", "File I/O")
+Rel(redis_client, redis_cache, "Cache operations", "Redis protocol")
+Rel(metrics_collector, prometheus, "Send metrics", "HTTP")
+
+Rel(cli_handler, api_handlers, "Internal API calls", "Internal")
+Rel(api_handlers, feature_flag_engine, "Flag operations", "Internal")
+Rel(api_handlers, canary_controller, "Canary management", "Internal")
+
+Rel(migration_middleware, ugc_service, "GraphQL requests", "HTTP/GraphQL")
+Rel(migration_middleware, legacy_service, "REST fallback", "HTTP/REST")
+
+SHOW_LEGEND()
+@enduml

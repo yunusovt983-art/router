@@ -1,0 +1,75 @@
+@startuml Task8_Code_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation - Code Diagram (Task 8: Telemetry & Monitoring Implementation)
+
+System_Boundary(telemetry_implementation, "Telemetry Implementation") {
+    
+    System_Boundary(tracing_impl, "Distributed Tracing Implementation") {
+        Component(tracing_config_impl, "TracingConfig", "Rust Struct", "pub struct TracingConfig {\n    pub service_name: String,\n    pub service_version: String,\n    pub jaeger_endpoint: Option<String>,\n    pub sample_rate: f64,\n    pub enable_console: bool,\n}\n\nimpl Default for TracingConfig {\n    fn default() -> Self {\n        Self {\n            service_name: \"ugc-subgraph\".to_string(),\n            service_version: env!(\"CARGO_PKG_VERSION\").to_string(),\n            jaeger_endpoint: std::env::var(\"JAEGER_ENDPOINT\").ok(),\n            sample_rate: 1.0,\n            enable_console: true,\n        }\n    }\n}")
+        
+        Component(tracing_init_impl, "init_tracing", "Rust Function", "pub fn init_tracing(config: TracingConfig) -> Result<()> {\n    let env_filter = EnvFilter::try_from_default_env()\n        .unwrap_or_else(|_| \"ugc_subgraph=debug,tower_http=debug,sqlx=info\".into());\n\n    let registry = Registry::default().with(env_filter);\n\n    if let Some(jaeger_endpoint) = &config.jaeger_endpoint {\n        let tracer = init_tracer(&config)?;\n        let telemetry_layer = OpenTelemetryLayer::new(tracer);\n        registry.with(telemetry_layer).try_init()?;\n    } else {\n        registry.try_init()?;\n    }\n\n    Ok(())\n}")
+        
+        Component(correlation_id_impl, "CorrelationId", "Rust Struct", "pub struct CorrelationId(pub Uuid);\n\nimpl CorrelationId {\n    pub fn new() -> Self {\n        Self(Uuid::new_v4())\n    }\n\n    pub fn from_string(s: &str) -> Result<Self, uuid::Error> {\n        Ok(Self(Uuid::parse_str(s)?))\n    }\n\n    pub fn to_string(&self) -> String {\n        self.0.to_string()\n    }\n}\n\npub fn extract_correlation_id(headers: &HeaderMap) -> CorrelationId {\n    headers.get(\"x-correlation-id\")\n        .and_then(|h| h.to_str().ok())\n        .and_then(|s| CorrelationId::from_string(s).ok())\n        .unwrap_or_else(CorrelationId::new)\n}")
+    }
+    
+    System_Boundary(metrics_impl, "Prometheus Metrics Implementation") {
+        Component(metrics_struct_impl, "Metrics", "Rust Struct", "pub struct Metrics {\n    pub registry: Arc<Registry>,\n    \n    // HTTP metrics\n    pub http_requests_total: IntCounter,\n    pub http_request_duration: Histogram,\n    pub http_requests_in_flight: IntGauge,\n    \n    // GraphQL metrics\n    pub graphql_requests_total: IntCounter,\n    pub graphql_request_duration: Histogram,\n    pub graphql_errors_total: IntCounter,\n    pub graphql_query_complexity: Histogram,\n    \n    // Business metrics\n    pub reviews_created_total: IntCounter,\n    pub reviews_updated_total: IntCounter,\n    pub active_reviews_gauge: IntGauge,\n    pub average_rating_gauge: prometheus::Gauge,\n}")
+        
+        Component(metrics_middleware_impl, "http_metrics_middleware", "Rust Async Function", "pub async fn http_metrics_middleware<B>(\n    State(metrics): State<Arc<Metrics>>,\n    request: axum::extract::Request<B>,\n    next: axum::middleware::Next<B>,\n) -> Response {\n    let start = std::time::Instant::now();\n    metrics.http_requests_in_flight.inc();\n    metrics.http_requests_total.inc();\n    \n    let response = next.run(request).await;\n    \n    let duration = start.elapsed().as_secs_f64();\n    metrics.http_request_duration.observe(duration);\n    metrics.http_requests_in_flight.dec();\n    \n    response\n}")
+        
+        Component(metrics_handler_impl, "metrics_handler", "Rust Async Function", "pub async fn metrics_handler(\n    State(metrics): State<Arc<Metrics>>\n) -> Response {\n    let encoder = TextEncoder::new();\n    let metric_families = metrics.registry.gather();\n    \n    match encoder.encode_to_string(&metric_families) {\n        Ok(output) => {\n            (\n                StatusCode::OK,\n                [(\"content-type\", \"text/plain; version=0.0.4; charset=utf-8\")],\n                output,\n            ).into_response()\n        }\n        Err(e) => {\n            error!(\"Failed to encode metrics: {}\", e);\n            (StatusCode::INTERNAL_SERVER_ERROR, \"Failed to encode metrics\").into_response()\n        }\n    }\n}")
+    }
+    
+    System_Boundary(logging_impl, "Structured Logging Implementation") {
+        Component(json_formatter_impl, "JsonFormatter", "Rust Struct", "pub struct JsonFormatter;\n\nimpl<S, N> FormatEvent<S, N> for JsonFormatter\nwhere\n    S: Subscriber + for<'a> LookupSpan<'a>,\n    N: for<'a> FormatFields<'a> + 'static,\n{\n    fn format_event(\n        &self,\n        ctx: &FmtContext<'_, S, N>,\n        mut writer: Writer<'_>,\n        event: &Event<'_>,\n    ) -> std::fmt::Result {\n        let log_entry = json!({\n            \"timestamp\": chrono::Utc::now().to_rfc3339(),\n            \"level\": metadata.level().to_string(),\n            \"target\": metadata.target(),\n            \"correlation_id\": correlation_id,\n            \"service\": \"ugc-subgraph\",\n            \"fields\": fields,\n        });\n        writeln!(writer, \"{}\", log_entry)?;\n        Ok(())\n    }\n}")
+        
+        Component(business_logger_impl, "BusinessEventLogger", "Rust Struct", "pub struct BusinessEventLogger;\n\nimpl BusinessEventLogger {\n    pub fn review_created(review_id: Uuid, offer_id: Uuid, author_id: Uuid, rating: i32) {\n        tracing::info!(\n            event_type = \"review_created\",\n            review_id = %review_id,\n            offer_id = %offer_id,\n            author_id = %author_id,\n            rating = rating,\n            \"Review created successfully\"\n        );\n    }\n\n    pub fn external_service_error(service: &str, error: &str, duration_ms: u64) {\n        tracing::error!(\n            event_type = \"external_service_error\",\n            service = service,\n            error = error,\n            duration_ms = duration_ms,\n            \"External service call failed\"\n        );\n    }\n}")
+        
+        Component(correlation_middleware_impl, "correlation_middleware", "Rust Async Function", "pub async fn correlation_middleware<B>(\n    mut request: axum::extract::Request<B>,\n    next: axum::middleware::Next<B>,\n) -> axum::response::Response {\n    let correlation_id = extract_correlation_id(request.headers());\n    \n    request.extensions_mut().insert(correlation_id.clone());\n    \n    let span = Span::current();\n    span.record(\"correlation_id\", &correlation_id.to_string());\n    \n    let mut response = next.run(request).await;\n    \n    response.headers_mut().insert(\n        \"x-correlation-id\",\n        correlation_id.to_string().parse().unwrap(),\n    );\n    \n    response\n}")
+    }
+    
+    System_Boundary(business_metrics_impl, "Business Metrics Implementation") {
+        Component(business_metrics_service_impl, "BusinessMetricsService", "Rust Struct", "pub struct BusinessMetricsService {\n    metrics: Arc<Metrics>,\n    db_pool: PgPool,\n    update_interval: Duration,\n}\n\nimpl BusinessMetricsService {\n    pub async fn start_metrics_collection(&self) {\n        let mut interval = tokio::time::interval(self.update_interval);\n        \n        loop {\n            interval.tick().await;\n            self.update_business_metrics().await;\n        }\n    }\n\n    async fn update_business_metrics(&self) {\n        if let Ok(count) = sqlx::query_scalar::<_, i64>(\n            \"SELECT COUNT(*) FROM reviews WHERE is_moderated = true\"\n        ).fetch_one(&self.db_pool).await {\n            self.metrics.active_reviews_gauge.set(count);\n        }\n        \n        if let Ok(avg_rating) = sqlx::query_scalar::<_, Option<Decimal>>(\n            \"SELECT AVG(rating) FROM reviews WHERE is_moderated = true\"\n        ).fetch_one(&self.db_pool).await {\n            if let Some(rating) = avg_rating {\n                self.metrics.average_rating_gauge.set(rating.to_f64().unwrap_or(0.0));\n            }\n        }\n    }\n}")
+        
+        Component(metrics_timer_impl, "MetricsTimer", "Rust Struct", "pub struct MetricsTimer {\n    histogram: Histogram,\n    start: std::time::Instant,\n}\n\nimpl MetricsTimer {\n    pub fn new(histogram: Histogram) -> Self {\n        Self {\n            histogram,\n            start: std::time::Instant::now(),\n        }\n    }\n}\n\nimpl Drop for MetricsTimer {\n    fn drop(&mut self) {\n        let duration = self.start.elapsed().as_secs_f64();\n        self.histogram.observe(duration);\n    }\n}")
+    }
+    
+    System_Boundary(graphql_instrumentation_impl, "GraphQL Instrumentation Implementation") {
+        Component(graphql_resolver_impl, "Instrumented GraphQL Resolver", "Rust Implementation", "impl Mutation {\n    #[tracing::instrument(skip(self, ctx))]\n    async fn create_review(\n        &self,\n        ctx: &Context<'_>,\n        input: CreateReviewInput,\n    ) -> FieldResult<Review> {\n        let metrics = ctx.data::<Arc<Metrics>>()?;\n        let _timer = MetricsTimer::new(metrics.graphql_request_duration.clone());\n        \n        metrics.graphql_requests_total.inc();\n        \n        let correlation_id = ctx.data::<CorrelationId>()?;\n        \n        match self.review_service.create_review(input).await {\n            Ok(review) => {\n                metrics.reviews_created_total.inc();\n                BusinessEventLogger::review_created(\n                    review.id,\n                    review.offer_id,\n                    review.author_id,\n                    review.rating\n                );\n                Ok(review)\n            }\n            Err(e) => {\n                metrics.graphql_errors_total.inc();\n                Err(e.into())\n            }\n        }\n    }\n}")
+        
+        Component(query_complexity_impl, "Query Complexity Analyzer", "Rust Implementation", "pub struct QueryComplexityAnalyzer;\n\nimpl QueryComplexityAnalyzer {\n    pub fn analyze_complexity(query: &str) -> Result<f64, AnalysisError> {\n        let document = parse_query(query)?;\n        let mut complexity = 0.0;\n        \n        for definition in document.definitions {\n            if let Definition::OperationDefinition(op) = definition {\n                complexity += self.calculate_selection_complexity(&op.selection_set);\n            }\n        }\n        \n        Ok(complexity)\n    }\n    \n    fn calculate_selection_complexity(&self, selection_set: &SelectionSet) -> f64 {\n        let mut complexity = 0.0;\n        \n        for selection in &selection_set.items {\n            match selection {\n                Selection::Field(field) => {\n                    complexity += 1.0; // Base field cost\n                    if !field.selection_set.items.is_empty() {\n                        complexity += self.calculate_selection_complexity(&field.selection_set);\n                    }\n                }\n                Selection::InlineFragment(fragment) => {\n                    complexity += self.calculate_selection_complexity(&fragment.selection_set);\n                }\n                _ => {}\n            }\n        }\n        \n        complexity\n    }\n}")
+    }
+    
+    System_Boundary(integration_impl, "Application Integration Implementation") {
+        Component(main_integration_impl, "main.rs Integration", "Rust Main Function", "#[tokio::main]\nasync fn main() -> Result<(), Box<dyn std::error::Error>> {\n    // Initialize tracing\n    let tracing_config = TracingConfig::default();\n    init_tracing(tracing_config)?;\n\n    // Create metrics\n    let metrics = Arc::new(Metrics::new()?);\n\n    // Start business metrics collection\n    let business_metrics = BusinessMetricsService::new(metrics.clone(), db_pool.clone());\n    tokio::spawn(async move {\n        business_metrics.start_metrics_collection().await;\n    });\n\n    // Create application with telemetry\n    let app = Router::new()\n        .route(\"/graphql\", post(graphql_handler))\n        .route(\"/health\", get(health_check))\n        .merge(create_metrics_router(metrics.clone()))\n        .layer(middleware::from_fn_with_state(\n            metrics.clone(),\n            http_metrics_middleware,\n        ))\n        .layer(middleware::from_fn(correlation_middleware))\n        .with_state(AppState { metrics, db_pool });\n\n    info!(\"UGC Subgraph server starting on port 4001\");\n    \n    let listener = tokio::net::TcpListener::bind(\"0.0.0.0:4001\").await?;\n    axum::serve(listener, app).await?;\n\n    Ok(())\n}")
+        
+        Component(macros_impl, "Telemetry Macros", "Rust Macros", "#[macro_export]\nmacro_rules! trace_span {\n    ($name:expr) => {\n        tracing::info_span!($name, correlation_id = %uuid::Uuid::new_v4())\n    };\n    ($name:expr, $($field:tt)*) => {\n        tracing::info_span!($name, correlation_id = %uuid::Uuid::new_v4(), $($field)*)\n    };\n}\n\n#[macro_export]\nmacro_rules! time_operation {\n    ($metrics:expr, $histogram:ident, $operation:expr) => {{\n        let _timer = MetricsTimer::new($metrics.$histogram.clone());\n        $operation\n    }};\n}\n\n#[macro_export]\nmacro_rules! log_business_event {\n    ($event_type:expr, $($field:tt)*) => {\n        tracing::info!(\n            event_type = $event_type,\n            service = \"ugc-subgraph\",\n            $($field)*\n        );\n    };\n}")
+    }
+}
+
+' Relationships between implementation components
+Rel(tracing_config_impl, tracing_init_impl, "configuration", "struct usage")
+Rel(tracing_init_impl, correlation_id_impl, "correlation setup", "function calls")
+
+Rel(metrics_struct_impl, metrics_middleware_impl, "metrics collection", "struct usage")
+Rel(metrics_struct_impl, metrics_handler_impl, "metrics export", "struct usage")
+Rel(metrics_middleware_impl, metrics_timer_impl, "timing measurement", "timer usage")
+
+Rel(json_formatter_impl, business_logger_impl, "log formatting", "formatter usage")
+Rel(correlation_middleware_impl, correlation_id_impl, "correlation management", "struct usage")
+
+Rel(business_metrics_service_impl, metrics_struct_impl, "business metrics", "metrics updates")
+Rel(business_metrics_service_impl, metrics_timer_impl, "operation timing", "timer usage")
+
+Rel(graphql_resolver_impl, metrics_struct_impl, "GraphQL metrics", "metrics collection")
+Rel(graphql_resolver_impl, business_logger_impl, "business events", "event logging")
+Rel(query_complexity_impl, metrics_struct_impl, "complexity metrics", "metrics updates")
+
+Rel(main_integration_impl, tracing_init_impl, "tracing setup", "initialization")
+Rel(main_integration_impl, metrics_struct_impl, "metrics setup", "initialization")
+Rel(main_integration_impl, business_metrics_service_impl, "business metrics", "service startup")
+Rel(macros_impl, correlation_id_impl, "correlation macros", "macro expansion")
+
+SHOW_LEGEND()
+@enduml

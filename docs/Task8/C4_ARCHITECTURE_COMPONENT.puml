@@ -1,0 +1,158 @@
+@startuml Task8_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation - Component Diagram (Task 8: Telemetry & Monitoring Components)
+
+Container(client, "GraphQL Client", "Apollo Client", "Клиент с correlation ID")
+
+System_Boundary(tracing_components, "Distributed Tracing Components") {
+    
+    System_Boundary(opentelemetry_integration, "OpenTelemetry Integration") {
+        Component(tracer_provider, "Tracer Provider", "Rust, opentelemetry", "Провайдер трассировщика:\n- Service identification\n- Resource attributes\n- Sampling configuration\n- Exporter management")
+        Component(span_processor, "Span Processor", "Rust, batch processor", "Обработка спанов:\n- Batch processing\n- Export optimization\n- Memory management\n- Error handling")
+        Component(jaeger_exporter, "Jaeger Exporter", "Rust, OTLP exporter", "Экспорт в Jaeger:\n- OTLP protocol\n- Compression\n- Retry logic\n- Connection pooling")
+    }
+    
+    System_Boundary(tracing_instrumentation, "Tracing Instrumentation") {
+        Component(http_tracer, "HTTP Tracer", "Rust, tower-http", "HTTP трассировка:\n- Request/response spans\n- Header propagation\n- Error tracking\n- Timing measurement")
+        Component(graphql_tracer, "GraphQL Tracer", "Rust, async-graphql", "GraphQL трассировка:\n- Query spans\n- Resolver tracing\n- Field-level timing\n- Error correlation")
+        Component(database_tracer, "Database Tracer", "Rust, sqlx tracing", "База данных трассировка:\n- Query spans\n- Connection tracking\n- Performance monitoring\n- Error detection")
+    }
+    
+    System_Boundary(correlation_management, "Correlation Management") {
+        Component(correlation_generator, "Correlation Generator", "Rust, uuid", "Генерация correlation ID:\n- UUID v4 generation\n- Header extraction\n- Context propagation\n- Span annotation")
+        Component(context_propagator, "Context Propagator", "Rust, W3C TraceContext", "Распространение контекста:\n- W3C Trace Context\n- Baggage handling\n- Cross-service correlation\n- Header management")
+    }
+}
+
+System_Boundary(metrics_components, "Prometheus Metrics Components") {
+    
+    System_Boundary(metrics_collection, "Metrics Collection") {
+        Component(metrics_registry, "Metrics Registry", "Rust, prometheus", "Реестр метрик:\n- Metric registration\n- Label management\n- Type validation\n- Export formatting")
+        Component(http_metrics, "HTTP Metrics", "Rust, counters + histograms", "HTTP метрики:\n- Request counters\n- Response time histograms\n- Status code tracking\n- In-flight requests")
+        Component(graphql_metrics, "GraphQL Metrics", "Rust, custom metrics", "GraphQL метрики:\n- Query complexity\n- Execution time\n- Error rates\n- Field usage stats")
+    }
+    
+    System_Boundary(business_metrics, "Business Metrics") {
+        Component(review_metrics, "Review Metrics", "Rust, gauges + counters", "Метрики отзывов:\n- Creation rate\n- Update frequency\n- Deletion tracking\n- Moderation stats")
+        Component(rating_metrics, "Rating Metrics", "Rust, histograms", "Метрики рейтингов:\n- Average rating\n- Rating distribution\n- Trend analysis\n- Quality scores")
+        Component(user_activity_metrics, "User Activity Metrics", "Rust, time-series", "Активность пользователей:\n- Session tracking\n- Action frequency\n- Engagement metrics\n- Retention stats")
+    }
+    
+    System_Boundary(infrastructure_metrics, "Infrastructure Metrics") {
+        Component(database_metrics, "Database Metrics", "Rust, connection pool", "Метрики БД:\n- Connection pool stats\n- Query performance\n- Lock contention\n- Error rates")
+        Component(external_service_metrics, "External Service Metrics", "Rust, circuit breaker", "Внешние сервисы:\n- Response times\n- Error rates\n- Circuit breaker states\n- Dependency health")
+        Component(system_metrics, "System Metrics", "Rust, system stats", "Системные метрики:\n- CPU usage\n- Memory consumption\n- GC statistics\n- Thread pool stats")
+    }
+}
+
+System_Boundary(logging_components, "Structured Logging Components") {
+    
+    System_Boundary(log_formatting, "Log Formatting") {
+        Component(json_formatter, "JSON Formatter", "Rust, serde_json", "JSON форматирование:\n- Structured output\n- Field serialization\n- Timestamp formatting\n- Level mapping")
+        Component(field_extractor, "Field Extractor", "Rust, tracing visitor", "Извлечение полей:\n- Event field extraction\n- Type conversion\n- Value serialization\n- Error handling")
+        Component(context_enricher, "Context Enricher", "Rust, span context", "Обогащение контекста:\n- Span context injection\n- Correlation ID addition\n- Service metadata\n- Environment info")
+    }
+    
+    System_Boundary(business_logging, "Business Event Logging") {
+        Component(business_event_logger, "Business Event Logger", "Rust, structured events", "Бизнес-события:\n- Review lifecycle events\n- User action logging\n- Moderation events\n- Performance milestones")
+        Component(security_event_logger, "Security Event Logger", "Rust, security events", "События безопасности:\n- Authentication events\n- Authorization failures\n- Suspicious activity\n- Rate limiting")
+        Component(audit_logger, "Audit Logger", "Rust, compliance", "Аудит логирование:\n- Data access logs\n- Configuration changes\n- Administrative actions\n- Compliance tracking")
+    }
+    
+    System_Boundary(log_processing, "Log Processing") {
+        Component(log_aggregator, "Log Aggregator", "Rust, async batching", "Агрегация логов:\n- Batch processing\n- Buffer management\n- Compression\n- Error recovery")
+        Component(log_shipper, "Log Shipper", "Rust, HTTP client", "Отправка логов:\n- HTTP transport\n- Retry logic\n- Backpressure handling\n- Connection pooling")
+    }
+}
+
+System_Boundary(middleware_components, "Telemetry Middleware Components") {
+    
+    System_Boundary(http_middleware, "HTTP Middleware") {
+        Component(telemetry_middleware, "Telemetry Middleware", "Rust, Axum middleware", "Телеметрия middleware:\n- Request interception\n- Metric collection\n- Trace creation\n- Error handling")
+        Component(correlation_middleware, "Correlation Middleware", "Rust, header processing", "Correlation middleware:\n- Header extraction\n- ID generation\n- Context injection\n- Response headers")
+        Component(timing_middleware, "Timing Middleware", "Rust, duration tracking", "Измерение времени:\n- Request timing\n- Operation duration\n- Performance tracking\n- SLA monitoring")
+    }
+    
+    System_Boundary(graphql_middleware, "GraphQL Middleware") {
+        Component(query_analyzer, "Query Analyzer", "Rust, GraphQL AST", "Анализ запросов:\n- Complexity calculation\n- Depth analysis\n- Field usage tracking\n- Performance prediction")
+        Component(resolver_instrumentor, "Resolver Instrumentor", "Rust, async-graphql", "Инструментация резолверов:\n- Resolver timing\n- Error tracking\n- Field-level metrics\n- Cache hit rates")
+        Component(error_tracker, "Error Tracker", "Rust, error categorization", "Отслеживание ошибок:\n- Error classification\n- Stack trace capture\n- Context preservation\n- Recovery tracking")
+    }
+}
+
+System_Boundary(configuration_components, "Configuration Components") {
+    
+    System_Boundary(telemetry_config, "Telemetry Configuration") {
+        Component(tracing_config, "Tracing Config", "Rust, config management", "Конфигурация трассировки:\n- Sampling rates\n- Exporter settings\n- Service metadata\n- Environment config")
+        Component(metrics_config, "Metrics Config", "Rust, prometheus config", "Конфигурация метрик:\n- Collection intervals\n- Label management\n- Retention policies\n- Export settings")
+        Component(logging_config, "Logging Config", "Rust, log configuration", "Конфигурация логирования:\n- Log levels\n- Output formats\n- Filtering rules\n- Destination config")
+    }
+    
+    System_Boundary(environment_management, "Environment Management") {
+        Component(env_loader, "Environment Loader", "Rust, dotenv", "Загрузка окружения:\n- Environment variables\n- Configuration files\n- Secret management\n- Validation")
+        Component(config_validator, "Config Validator", "Rust, validation", "Валидация конфигурации:\n- Schema validation\n- Type checking\n- Range validation\n- Dependency verification")
+    }
+}
+
+' Client to middleware
+Rel(client, telemetry_middleware, "HTTP requests", "HTTPS")
+Rel(telemetry_middleware, correlation_middleware, "Request processing", "Middleware chain")
+Rel(correlation_middleware, timing_middleware, "Timed requests", "Middleware chain")
+
+' Tracing flow
+Rel(http_tracer, tracer_provider, "Span creation", "OpenTelemetry API")
+Rel(graphql_tracer, tracer_provider, "GraphQL spans", "OpenTelemetry API")
+Rel(database_tracer, tracer_provider, "DB spans", "OpenTelemetry API")
+
+Rel(tracer_provider, span_processor, "Span processing", "Batch processing")
+Rel(span_processor, jaeger_exporter, "Span export", "OTLP protocol")
+
+' Correlation management
+Rel(correlation_middleware, correlation_generator, "ID generation", "Function calls")
+Rel(correlation_generator, context_propagator, "Context creation", "W3C TraceContext")
+Rel(context_propagator, http_tracer, "Context injection", "Header propagation")
+
+' Metrics collection
+Rel(telemetry_middleware, http_metrics, "HTTP data", "Metric updates")
+Rel(resolver_instrumentor, graphql_metrics, "GraphQL data", "Metric updates")
+Rel(database_tracer, database_metrics, "DB data", "Metric updates")
+
+Rel(http_metrics, metrics_registry, "Metric registration", "Registry API")
+Rel(graphql_metrics, metrics_registry, "Metric registration", "Registry API")
+Rel(business_metrics, metrics_registry, "Business metrics", "Registry API")
+
+' Business metrics
+Rel(business_event_logger, review_metrics, "Review events", "Metric updates")
+Rel(business_event_logger, rating_metrics, "Rating events", "Metric updates")
+Rel(business_event_logger, user_activity_metrics, "User events", "Metric updates")
+
+' Logging flow
+Rel(telemetry_middleware, json_formatter, "Log events", "Structured logging")
+Rel(business_event_logger, json_formatter, "Business events", "Event formatting")
+Rel(security_event_logger, json_formatter, "Security events", "Event formatting")
+
+Rel(json_formatter, field_extractor, "Field extraction", "Event processing")
+Rel(field_extractor, context_enricher, "Context enrichment", "Metadata addition")
+Rel(context_enricher, log_aggregator, "Enriched logs", "Log batching")
+Rel(log_aggregator, log_shipper, "Batched logs", "HTTP transport")
+
+' GraphQL instrumentation
+Rel(query_analyzer, resolver_instrumentor, "Query analysis", "Performance data")
+Rel(resolver_instrumentor, error_tracker, "Error detection", "Error handling")
+Rel(error_tracker, business_event_logger, "Error events", "Event logging")
+
+' Configuration management
+Rel(tracing_config, tracer_provider, "Tracing setup", "Configuration")
+Rel(metrics_config, metrics_registry, "Metrics setup", "Configuration")
+Rel(logging_config, json_formatter, "Logging setup", "Configuration")
+
+Rel(env_loader, config_validator, "Config validation", "Validation rules")
+Rel(config_validator, tracing_config, "Validated config", "Configuration data")
+
+' External service monitoring
+Rel(external_service_metrics, system_metrics, "System data", "Resource monitoring")
+Rel(database_metrics, infrastructure_metrics, "Infrastructure data", "Health monitoring")
+
+SHOW_LEGEND()
+@enduml

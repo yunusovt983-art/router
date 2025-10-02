@@ -1,0 +1,128 @@
+@startuml Task1_Deployment_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title Auto.ru GraphQL Federation - Deployment Diagram (Task 1: Local Development Environment)
+
+Deployment_Node(developer_machine, "Developer Machine", "Linux/macOS/Windows") {
+    Deployment_Node(docker_engine, "Docker Engine", "Docker 24.x") {
+        
+        Deployment_Node(app_network, "Application Network", "Docker Bridge Network") {
+            
+            Deployment_Node(router_container, "Apollo Router Container", "Debian Slim") {
+                Container(apollo_router, "Apollo Router", "Rust Binary", "GraphQL Federation Router\nPort: 4000")
+            }
+            
+            Deployment_Node(ugc_container, "UGC Subgraph Container", "Debian Slim") {
+                Container(ugc_service, "UGC Subgraph", "Rust Binary", "User Generated Content\nPort: 4001")
+            }
+            
+            Deployment_Node(users_container, "Users Subgraph Container", "Debian Slim") {
+                Container(users_service, "Users Subgraph", "Rust Binary", "User Management\nPort: 4002")
+            }
+            
+            Deployment_Node(offers_container, "Offers Subgraph Container", "Debian Slim") {
+                Container(offers_service, "Offers Subgraph", "Rust Binary", "Car Offers\nPort: 4003")
+            }
+        }
+        
+        Deployment_Node(data_network, "Data Network", "Docker Internal Network") {
+            
+            Deployment_Node(postgres_container, "PostgreSQL Container", "PostgreSQL 15") {
+                ContainerDb(postgres_db, "PostgreSQL", "Database", "Primary Data Store\nPort: 5432")
+                
+                Deployment_Node(postgres_volume, "PostgreSQL Volume", "Docker Volume") {
+                    ContainerDb(postgres_data, "Database Files", "Persistent Storage", "Data Persistence")
+                }
+            }
+            
+            Deployment_Node(redis_container, "Redis Container", "Redis 7 Alpine") {
+                ContainerDb(redis_cache, "Redis", "Cache", "Session & Cache Store\nPort: 6379")
+            }
+        }
+        
+        Deployment_Node(monitoring_network, "Monitoring Network", "Docker Network") {
+            
+            Deployment_Node(prometheus_container, "Prometheus Container", "Prometheus") {
+                Container(prometheus, "Prometheus", "Metrics DB", "Metrics Collection\nPort: 9090")
+            }
+            
+            Deployment_Node(jaeger_container, "Jaeger Container", "Jaeger All-in-One") {
+                Container(jaeger, "Jaeger", "Tracing", "Distributed Tracing\nPort: 16686")
+            }
+        }
+    }
+    
+    Deployment_Node(host_filesystem, "Host File System", "Local Storage") {
+        
+        Deployment_Node(project_workspace, "Project Workspace", "Cargo Workspace") {
+            Container(source_code, "Source Code", "Rust Crates", "Application Code\n- apollo-router\n- ugc-subgraph\n- users-subgraph\n- offers-subgraph\n- shared")
+            
+            Container(docker_configs, "Docker Configs", "YAML/Dockerfile", "Container Definitions\n- docker-compose.yml\n- Dockerfiles\n- .env files")
+            
+            Container(build_tools, "Build Tools", "Scripts/Makefiles", "Development Automation\n- Makefile\n- dev-setup.sh\n- dev-stop.sh")
+        }
+        
+        Deployment_Node(cargo_cache, "Cargo Cache", "Local Cache") {
+            Container(rust_deps, "Rust Dependencies", "Compiled Crates", "Dependency Cache\n~/.cargo")
+        }
+        
+        Deployment_Node(docker_cache, "Docker Cache", "Image Cache") {
+            Container(docker_images, "Docker Images", "Container Images", "Built Images\n- rust:1.75\n- debian:bookworm-slim\n- postgres:15\n- redis:7-alpine")
+        }
+    }
+}
+
+Deployment_Node(external_services, "External Services", "Internet") {
+    Container(crates_io, "Crates.io", "Package Registry", "Rust Package Repository")
+    Container(docker_hub, "Docker Hub", "Image Registry", "Container Image Repository")
+}
+
+' Network Relationships
+Rel(apollo_router, ugc_service, "GraphQL Federation", "HTTP/4001")
+Rel(apollo_router, users_service, "GraphQL Federation", "HTTP/4002")
+Rel(apollo_router, offers_service, "GraphQL Federation", "HTTP/4003")
+
+Rel(ugc_service, postgres_db, "Database Queries", "PostgreSQL/5432")
+Rel(users_service, postgres_db, "Database Queries", "PostgreSQL/5432")
+Rel(offers_service, postgres_db, "Database Queries", "PostgreSQL/5432")
+
+Rel(ugc_service, redis_cache, "Caching", "Redis/6379")
+Rel(users_service, redis_cache, "Session Storage", "Redis/6379")
+Rel(offers_service, redis_cache, "Caching", "Redis/6379")
+
+Rel(apollo_router, prometheus, "Metrics Export", "HTTP/9090")
+Rel(ugc_service, prometheus, "Metrics Export", "HTTP/9090")
+Rel(users_service, prometheus, "Metrics Export", "HTTP/9090")
+Rel(offers_service, prometheus, "Metrics Export", "HTTP/9090")
+
+Rel(apollo_router, jaeger, "Trace Export", "HTTP/14268")
+Rel(ugc_service, jaeger, "Trace Export", "HTTP/14268")
+Rel(users_service, jaeger, "Trace Export", "HTTP/14268")
+Rel(offers_service, jaeger, "Trace Export", "HTTP/14268")
+
+' Storage Relationships
+Rel(postgres_db, postgres_data, "Data Persistence", "File System")
+
+' Build Relationships
+Rel(source_code, docker_configs, "Container Build", "Docker Build Context")
+Rel(docker_configs, router_container, "Container Creation", "Docker Run")
+Rel(docker_configs, ugc_container, "Container Creation", "Docker Run")
+Rel(docker_configs, users_container, "Container Creation", "Docker Run")
+Rel(docker_configs, offers_container, "Container Creation", "Docker Run")
+
+Rel(source_code, rust_deps, "Dependency Resolution", "Cargo")
+Rel(docker_configs, docker_images, "Image Caching", "Docker")
+
+' External Dependencies
+Rel(source_code, crates_io, "Dependency Download", "HTTPS")
+Rel(docker_configs, docker_hub, "Base Image Pull", "HTTPS")
+
+' Port Mappings (Host to Container)
+Rel_U(developer_machine, apollo_router, "GraphQL API", "localhost:4000")
+Rel_U(developer_machine, postgres_db, "Database Access", "localhost:5432")
+Rel_U(developer_machine, redis_cache, "Cache Access", "localhost:6379")
+Rel_U(developer_machine, prometheus, "Metrics UI", "localhost:9090")
+Rel_U(developer_machine, jaeger, "Tracing UI", "localhost:16686")
+
+SHOW_LEGEND()
+@enduml

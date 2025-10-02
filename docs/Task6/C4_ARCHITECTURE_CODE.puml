@@ -1,0 +1,94 @@
+@startuml Task6_Code_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation - Code Diagram (Task 6: Authentication & Authorization Implementation)
+
+System_Boundary(auth_implementation, "Authentication Implementation") {
+    
+    System_Boundary(jwt_classes, "JWT Management Classes") {
+        Component(auth_service_impl, "AuthService", "Rust Struct", "pub struct AuthService {\n    decoding_key: DecodingKey,\n    validation: Validation,\n    cache: Arc<AuthCache>,\n}\n\nimpl AuthService {\n    pub fn new(secret: &str) -> Self\n    pub fn validate_token(&self, token: &str) -> Result<Claims, AuthError>\n    pub async fn refresh_token(&self, refresh_token: &str) -> Result<TokenPair, AuthError>\n    pub fn create_token(&self, claims: &Claims) -> Result<String, AuthError>\n    fn extract_claims(token_data: TokenData<Claims>) -> Claims\n}")
+        
+        Component(claims_impl, "Claims", "Rust Struct", "pub struct Claims {\n    pub sub: String,\n    pub exp: usize,\n    pub iat: usize,\n    pub roles: Vec<String>,\n    pub permissions: Vec<String>,\n    pub session_id: String,\n}\n\nimpl Claims {\n    pub fn new(user_id: String, roles: Vec<String>) -> Self\n    pub fn is_expired(&self) -> bool\n    pub fn has_role(&self, role: &str) -> bool\n    pub fn has_permission(&self, permission: &str) -> bool\n    pub fn time_to_expiry(&self) -> Duration\n}")
+        
+        Component(auth_middleware_impl, "AuthMiddleware", "Rust Function", "pub async fn auth_middleware(\n    mut request: Request,\n    next: Next,\n) -> Result<Response, AuthError> {\n    let auth_header = extract_auth_header(&request)?;\n    let token = extract_bearer_token(auth_header)?;\n    \n    let auth_service = request.extensions().get::<AuthService>()?;\n    let claims = auth_service.validate_token(&token).await?;\n    \n    let user_context = UserContext::from_claims(claims);\n    request.extensions_mut().insert(user_context);\n    \n    Ok(next.run(request).await)\n}")
+        
+        Component(auth_cache_impl, "AuthCache", "Rust Struct", "pub struct AuthCache {\n    redis_client: Client,\n    default_ttl: Duration,\n}\n\nimpl AuthCache {\n    pub fn new(redis_url: &str, ttl: Duration) -> Result<Self, RedisError>\n    pub async fn get_user_context(&self, token_hash: &str) -> Result<Option<CachedUserContext>, AuthCacheError>\n    pub async fn cache_user_context(&self, token_hash: &str, context: &UserContext) -> Result<(), AuthCacheError>\n    pub async fn invalidate_user_cache(&self, user_id: &str) -> Result<(), AuthCacheError>\n    fn generate_cache_key(token_hash: &str) -> String\n}")
+    }
+    
+    System_Boundary(authorization_classes, "Authorization Classes") {
+        Component(role_guard_impl, "RoleGuard", "Rust Struct", "pub struct RoleGuard {\n    required_roles: Vec<String>,\n}\n\n#[async_trait::async_trait]\nimpl Guard for RoleGuard {\n    async fn check(&self, ctx: &Context<'_>) -> Result<()> {\n        let user_context = ctx.data_opt::<UserContext>()\n            .ok_or_else(|| \"User not authenticated\")?;\n        \n        let has_role = self.required_roles.iter()\n            .any(|role| user_context.roles.contains(role));\n        \n        if has_role { Ok(()) } else { Err(\"Insufficient permissions\".into()) }\n    }\n}")
+        
+        Component(permission_guard_impl, "PermissionGuard", "Rust Struct", "pub struct PermissionGuard {\n    required_permissions: Vec<String>,\n    resource_type: Option<String>,\n}\n\n#[async_trait::async_trait]\nimpl Guard for PermissionGuard {\n    async fn check(&self, ctx: &Context<'_>) -> Result<()> {\n        let user_context = ctx.data::<UserContext>()?;\n        let permission_engine = ctx.data::<PermissionEngine>()?;\n        \n        let has_permission = permission_engine\n            .check_permissions(&user_context, &self.required_permissions, self.resource_type.as_ref())\n            .await?;\n        \n        if has_permission { Ok(()) } else { Err(\"Permission denied\".into()) }\n    }\n}")
+        
+        Component(user_context_impl, "UserContext", "Rust Struct", "pub struct UserContext {\n    pub user_id: String,\n    pub roles: Vec<String>,\n    pub permissions: Vec<String>,\n    pub session_id: String,\n    pub ip_address: Option<String>,\n}\n\nimpl UserContext {\n    pub fn from_claims(claims: Claims) -> Self\n    pub fn has_role(&self, role: &str) -> bool\n    pub fn has_permission(&self, permission: &str) -> bool\n    pub fn is_admin(&self) -> bool\n    pub fn can_access_resource(&self, resource: &str) -> bool\n}")
+        
+        Component(permission_engine_impl, "PermissionEngine", "Rust Struct", "pub struct PermissionEngine {\n    policy_store: Arc<PolicyStore>,\n    cache: Arc<PermissionCache>,\n}\n\nimpl PermissionEngine {\n    pub fn new(policy_store: Arc<PolicyStore>) -> Self\n    pub async fn check_permissions(&self, user: &UserContext, permissions: &[String], resource: Option<&String>) -> Result<bool, PermissionError>\n    pub async fn evaluate_policy(&self, user: &UserContext, resource: &str, action: &str) -> Result<bool, PermissionError>\n    pub async fn get_user_permissions(&self, user_id: &str) -> Result<Vec<String>, PermissionError>\n    fn build_permission_context(user: &UserContext, resource: Option<&String>) -> PermissionContext\n}")
+    }
+    
+    System_Boundary(rate_limiting_classes, "Rate Limiting Classes") {
+        Component(rate_limiter_impl, "RateLimiter", "Rust Struct", "pub struct RateLimiter {\n    requests: Arc<Mutex<HashMap<String, Vec<Instant>>>>,\n    max_requests: usize,\n    window: Duration,\n    redis_client: Option<Client>,\n}\n\nimpl RateLimiter {\n    pub fn new(max_requests: usize, window: Duration) -> Self\n    pub async fn check_rate_limit(&self, user_id: &str) -> Result<(), RateLimitError>\n    pub async fn increment_counter(&self, user_id: &str) -> Result<u32, RateLimitError>\n    pub async fn get_remaining_quota(&self, user_id: &str) -> Result<u32, RateLimitError>\n    fn cleanup_expired_entries(&self, user_requests: &mut Vec<Instant>)\n}")
+        
+        Component(rate_limit_guard_impl, "RateLimitGuard", "Rust Struct", "pub struct RateLimitGuard {\n    max_requests: usize,\n    window: Duration,\n    per_user: bool,\n}\n\n#[async_trait::async_trait]\nimpl Guard for RateLimitGuard {\n    async fn check(&self, ctx: &Context<'_>) -> Result<()> {\n        let rate_limiter = ctx.data::<RateLimiter>()?;\n        \n        let key = if self.per_user {\n            let user_context = ctx.data::<UserContext>()?;\n            user_context.user_id.clone()\n        } else {\n            \"global\".to_string()\n        };\n        \n        rate_limiter.check_rate_limit(&key).await\n            .map_err(|_| \"Rate limit exceeded\")?;\n        \n        Ok(())\n    }\n}")
+        
+        Component(quota_manager_impl, "QuotaManager", "Rust Struct", "pub struct QuotaManager {\n    redis_client: Client,\n    default_quotas: HashMap<String, u32>,\n}\n\nimpl QuotaManager {\n    pub fn new(redis_client: Client) -> Self\n    pub async fn get_user_quota(&self, user_id: &str, resource: &str) -> Result<u32, QuotaError>\n    pub async fn consume_quota(&self, user_id: &str, resource: &str, amount: u32) -> Result<u32, QuotaError>\n    pub async fn reset_quota(&self, user_id: &str, resource: &str) -> Result<(), QuotaError>\n    pub async fn set_custom_quota(&self, user_id: &str, resource: &str, quota: u32) -> Result<(), QuotaError>\n    fn get_quota_key(user_id: &str, resource: &str) -> String\n}")
+    }
+    
+    System_Boundary(gdpr_classes, "GDPR Compliance Classes") {
+        Component(gdpr_compliance_impl, "GdprCompliance", "Rust Struct", "pub struct GdprCompliance {\n    sensitive_fields: HashSet<String>,\n    audit_logger: Arc<AuditLogger>,\n    consent_manager: Arc<ConsentManager>,\n}\n\nimpl GdprCompliance {\n    pub fn new() -> Self\n    pub async fn filter_sensitive_data(&self, ctx: &Context<'_>, field_name: &str, data: Value) -> FieldResult<Value>\n    pub async fn check_data_access_permission(&self, user: &UserContext, field: &str) -> Result<bool, GdprError>\n    pub async fn log_data_access(&self, user_id: &str, field: &str, action: &str) -> Result<(), GdprError>\n    pub async fn handle_erasure_request(&self, user_id: &str) -> Result<(), GdprError>\n}")
+        
+        Component(consent_manager_impl, "ConsentManager", "Rust Struct", "pub struct ConsentManager {\n    db_pool: Pool<Postgres>,\n    cache: Arc<ConsentCache>,\n}\n\nimpl ConsentManager {\n    pub fn new(db_pool: Pool<Postgres>) -> Self\n    pub async fn get_user_consents(&self, user_id: &str) -> Result<Vec<Consent>, ConsentError>\n    pub async fn update_consent(&self, user_id: &str, purpose: &str, granted: bool) -> Result<(), ConsentError>\n    pub async fn check_consent(&self, user_id: &str, purpose: &str) -> Result<bool, ConsentError>\n    pub async fn revoke_all_consents(&self, user_id: &str) -> Result<(), ConsentError>\n    fn validate_consent_purpose(purpose: &str) -> Result<(), ConsentError>\n}")
+        
+        Component(audit_logger_impl, "AuditLogger", "Rust Struct", "pub struct AuditLogger {\n    elasticsearch_client: Client,\n    log_buffer: Arc<Mutex<Vec<AuditEvent>>>,\n}\n\nimpl AuditLogger {\n    pub fn new(elasticsearch_url: &str) -> Self\n    pub async fn log_access(&self, user_id: Option<&str>, resource: &str) -> Result<(), AuditError>\n    pub async fn log_security_event(&self, event: SecurityEvent) -> Result<(), AuditError>\n    pub async fn log_gdpr_event(&self, user_id: &str, action: &str, details: &str) -> Result<(), AuditError>\n    pub async fn flush_logs(&self) -> Result<(), AuditError>\n    fn create_audit_event(user_id: Option<&str>, action: &str, resource: &str) -> AuditEvent\n}")
+    }
+    
+    System_Boundary(oauth2_classes, "OAuth2 Integration Classes") {
+        Component(oauth2_service_impl, "OAuth2Service", "Rust Struct", "pub struct OAuth2Service {\n    client: BasicClient,\n    http_client: Client,\n    provider_config: OAuth2Config,\n}\n\nimpl OAuth2Service {\n    pub fn new(config: OAuth2Config) -> Result<Self, OAuth2Error>\n    pub fn get_authorization_url(&self) -> (String, CsrfToken)\n    pub async fn exchange_code(&self, code: AuthorizationCode) -> Result<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>, OAuth2Error>\n    pub async fn get_user_info(&self, access_token: &str) -> Result<UserInfo, OAuth2Error>\n    pub async fn revoke_token(&self, token: &str) -> Result<(), OAuth2Error>\n}")
+        
+        Component(oauth2_config_impl, "OAuth2Config", "Rust Struct", "pub struct OAuth2Config {\n    pub client_id: String,\n    pub client_secret: String,\n    pub auth_url: String,\n    pub token_url: String,\n    pub redirect_url: String,\n    pub scopes: Vec<String>,\n}\n\nimpl OAuth2Config {\n    pub fn new(provider: &str) -> Result<Self, ConfigError>\n    pub fn validate(&self) -> Result<(), ConfigError>\n    pub fn get_provider_name(&self) -> &str\n    pub fn supports_refresh(&self) -> bool\n}")
+    }
+}
+
+System_Boundary(graphql_integration, "GraphQL Integration") {
+    Component(secured_mutation_impl, "SecuredMutation", "Rust Implementation", "impl Mutation {\n    #[graphql(guard = \"RoleGuard::new(vec![\\\"user\\\", \\\"premium_user\\\"])\")]\n    async fn create_review(\n        &self,\n        ctx: &Context<'_>,\n        input: CreateReviewInput,\n    ) -> FieldResult<Review> {\n        let user_context = ctx.data::<UserContext>()?;\n        \n        // Rate limiting check\n        let rate_limiter = ctx.data::<RateLimiter>()?;\n        rate_limiter.check_rate_limit(&user_context.user_id).await?;\n        \n        // GDPR compliance check\n        let gdpr_service = ctx.data::<GdprCompliance>()?;\n        gdpr_service.log_data_access(&user_context.user_id, \"create_review\", \"create\").await?;\n        \n        // Business logic\n        self.review_service.create_review(input, &user_context).await\n    }\n}")
+    
+    Component(secured_query_impl, "SecuredQuery", "Rust Implementation", "impl Query {\n    #[graphql(guard = \"PermissionGuard::new(vec![\\\"read:user_data\\\"])\")]\n    async fn user(\n        &self,\n        ctx: &Context<'_>,\n        id: ID,\n    ) -> FieldResult<User> {\n        let user_context = ctx.data::<UserContext>()?;\n        \n        // Check if user can access this specific user's data\n        if user_context.user_id != id.to_string() && !user_context.has_role(\"admin\") {\n            return Err(\"Access denied\".into());\n        }\n        \n        // GDPR filtering\n        let gdpr_service = ctx.data::<GdprCompliance>()?;\n        let user_data = self.user_service.get_user(&id).await?;\n        \n        gdpr_service.filter_user_data(ctx, user_data).await\n    }\n}")
+}
+
+' Relationships between authentication classes
+Rel(auth_service_impl, claims_impl, "creates and validates", "composition")
+Rel(auth_service_impl, auth_cache_impl, "uses for caching", "composition")
+Rel(auth_middleware_impl, auth_service_impl, "uses for validation", "dependency")
+Rel(auth_middleware_impl, user_context_impl, "creates context", "creates")
+
+' Authorization relationships
+Rel(role_guard_impl, user_context_impl, "checks roles", "uses")
+Rel(permission_guard_impl, permission_engine_impl, "evaluates permissions", "uses")
+Rel(permission_guard_impl, user_context_impl, "gets user info", "uses")
+Rel(permission_engine_impl, user_context_impl, "evaluates for user", "uses")
+
+' Rate limiting relationships
+Rel(rate_limit_guard_impl, rate_limiter_impl, "checks limits", "uses")
+Rel(rate_limiter_impl, quota_manager_impl, "manages quotas", "uses")
+
+' GDPR relationships
+Rel(gdpr_compliance_impl, consent_manager_impl, "checks consents", "uses")
+Rel(gdpr_compliance_impl, audit_logger_impl, "logs access", "uses")
+
+' OAuth2 relationships
+Rel(oauth2_service_impl, oauth2_config_impl, "uses configuration", "composition")
+Rel(oauth2_service_impl, auth_service_impl, "creates JWT after OAuth", "uses")
+
+' GraphQL integration
+Rel(secured_mutation_impl, role_guard_impl, "protected by guard", "uses")
+Rel(secured_mutation_impl, rate_limiter_impl, "rate limited", "uses")
+Rel(secured_mutation_impl, gdpr_compliance_impl, "GDPR compliant", "uses")
+Rel(secured_query_impl, permission_guard_impl, "protected by guard", "uses")
+Rel(secured_query_impl, gdpr_compliance_impl, "filters data", "uses")
+
+' Cross-cutting concerns
+Rel(role_guard_impl, audit_logger_impl, "logs access attempts", "uses")
+Rel(permission_guard_impl, audit_logger_impl, "logs permission checks", "uses")
+Rel(rate_limit_guard_impl, audit_logger_impl, "logs rate limit events", "uses")
+
+SHOW_LEGEND()
+@enduml

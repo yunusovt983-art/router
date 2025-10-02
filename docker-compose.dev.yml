@@ -1,0 +1,128 @@
+version: '3.8'
+
+# Development overrides for docker-compose.yml
+services:
+  # Apollo Router - Development settings
+  apollo-router:
+    environment:
+      - APOLLO_ROUTER_LOG=debug
+      - APOLLO_ROUTER_DEV_MODE=true
+    volumes:
+      # Mount source files for hot reload
+      - ./router.yaml:/dist/config/router.yaml:ro
+      - ./supergraph.graphql:/dist/config/supergraph.graphql:ro
+
+  # UGC Subgraph - Development settings
+  ugc-subgraph:
+    environment:
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=1
+    volumes:
+      # Mount source for development
+      - ./ugc-subgraph/src:/app/ugc-subgraph/src:ro
+    # Override build for development
+    build:
+      context: .
+      dockerfile: ugc-subgraph/Dockerfile
+      target: builder
+    command: cargo run --package ugc-subgraph
+
+  # Users Subgraph - Development settings
+  users-subgraph:
+    environment:
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=1
+    volumes:
+      - ./users-subgraph/src:/app/users-subgraph/src:ro
+    build:
+      context: .
+      dockerfile: users-subgraph/Dockerfile
+      target: builder
+    command: cargo run --package users-subgraph
+
+  # Catalog Subgraph - Development settings
+  catalog-subgraph:
+    environment:
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=1
+    volumes:
+      - ./catalog-subgraph/src:/app/catalog-subgraph/src:ro
+    build:
+      context: .
+      dockerfile: catalog-subgraph/Dockerfile
+      target: builder
+    command: cargo run --package catalog-subgraph
+
+  # Offers Subgraph - Development settings
+  offers-subgraph:
+    environment:
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=1
+    volumes:
+      - ./offers-subgraph/src:/app/offers-subgraph/src:ro
+    build:
+      context: .
+      dockerfile: offers-subgraph/Dockerfile
+      target: builder
+    command: cargo run --package offers-subgraph
+
+  # Search Subgraph - Development settings
+  search-subgraph:
+    environment:
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=1
+    volumes:
+      - ./search-subgraph/src:/app/search-subgraph/src:ro
+    build:
+      context: .
+      dockerfile: search-subgraph/Dockerfile
+      target: builder
+    command: cargo run --package search-subgraph
+
+  # PostgreSQL databases - Development settings
+  ugc-postgres:
+    ports:
+      - "5432:5432"  # Expose for local development
+    
+  users-postgres:
+    ports:
+      - "5433:5432"
+      
+  catalog-postgres:
+    ports:
+      - "5434:5432"
+      
+  offers-postgres:
+    ports:
+      - "5435:5432"
+
+  # Elasticsearch - Development settings
+  elasticsearch:
+    ports:
+      - "9200:9200"
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"  # Lower memory for dev
+
+  # Redis - Development settings
+  redis:
+    ports:
+      - "6379:6379"
+
+  # Jaeger - Development settings
+  jaeger:
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # HTTP collector
+
+  # Prometheus - Development settings
+  prometheus:
+    ports:
+      - "9091:9090"
+
+  # Grafana - Development settings
+  grafana:
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel

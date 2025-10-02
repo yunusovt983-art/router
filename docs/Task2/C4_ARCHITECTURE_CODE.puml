@@ -1,0 +1,100 @@
+@startuml Task2_Code_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru UGC Subgraph - Code Level Diagram (Task 2: Implementation Details)
+
+System_Boundary(ugc_crate, "UGC Subgraph Crate Structure") {
+    
+    System_Boundary(main_module, "Main Module (src/main.rs)") {
+        Component(http_server, "HTTP Server", "Axum", "HTTP сервер настройка\n- Router configuration\n- Middleware setup\n- GraphQL endpoint\n- Health check endpoint")
+        
+        Component(schema_builder, "Schema Builder", "async-graphql", "Построение GraphQL схемы\n- Query + Mutation + Subscription\n- Data injection\n- Extension configuration")
+        
+        Component(app_state, "Application State", "Rust struct", "Состояние приложения\n- Database pool\n- Cache client\n- Configuration\n- Services")
+    }
+    
+    System_Boundary(models_module, "Models Module (src/models/)") {
+        Component(review_struct, "Review Struct", "Rust + SQLx + GraphQL", "struct Review {\n  id: ReviewId,\n  offer_id: OfferId,\n  user_id: UserId,\n  rating: i32,\n  text: String,\n  is_moderated: bool,\n  created_at: DateTime<Utc>\n}")
+        
+        Component(offer_rating_struct, "OfferRating Struct", "Rust + SQLx + GraphQL", "struct OfferRating {\n  offer_id: OfferId,\n  average_rating: f64,\n  total_reviews: i32,\n  rating_distribution: HashMap<String, i32>\n}")
+        
+        Component(input_structs, "Input Structs", "GraphQL InputObject", "CreateReviewInput {\n  offer_id: OfferId,\n  rating: i32,\n  text: String\n}\nUpdateReviewInput {\n  rating: Option<i32>,\n  text: Option<String>\n}")
+        
+        Component(connection_structs, "Connection Structs", "GraphQL Types", "ReviewConnection {\n  edges: Vec<ReviewEdge>,\n  page_info: PageInfo\n}\nReviewEdge {\n  node: Review,\n  cursor: String\n}")
+    }
+    
+    System_Boundary(resolvers_module, "Resolvers Module (src/resolvers/)") {
+        Component(query_impl, "Query Implementation", "#[Object] impl Query", "async fn review(&self, id: ID) -> Result<Option<Review>>\nasync fn reviews(&self, offer_id: ID, first: Option<i32>) -> Result<ReviewConnection>\nasync fn offer_rating(&self, offer_id: ID) -> Result<OfferRating>")
+        
+        Component(mutation_impl, "Mutation Implementation", "#[Object] impl Mutation", "async fn create_review(&self, input: CreateReviewInput) -> Result<Review>\nasync fn update_review(&self, id: ID, input: UpdateReviewInput) -> Result<Review>\nasync fn delete_review(&self, id: ID) -> Result<bool>")
+        
+        Component(federation_resolvers, "Federation Resolvers", "Entity Resolvers", "#[graphql(entity)]\nasync fn find_review_by_id(id: ID) -> Result<Review>\n\n@extends type User @key(fields: \"id\")\n@extends type Offer @key(fields: \"id\")")
+    }
+    
+    System_Boundary(services_module, "Services Module (src/services/)") {
+        Component(review_service_impl, "ReviewService Implementation", "Business Logic", "impl ReviewService {\n  async fn create_review(&self, input, user_ctx) -> Result<Review>\n  async fn validate_review_data(&self, input) -> Result<()>\n  async fn check_duplicate_review(&self, user_id, offer_id) -> Result<bool>\n  async fn update_offer_rating(&self, offer_id) -> Result<()>\n}")
+        
+        Component(rating_service_impl, "RatingService Implementation", "Business Logic", "impl RatingService {\n  async fn calculate_offer_rating(&self, offer_id) -> Result<OfferRating>\n  async fn get_cached_rating(&self, offer_id) -> Result<Option<OfferRating>>\n  async fn invalidate_rating_cache(&self, offer_id) -> Result<()>\n}")
+        
+        Component(validation_logic, "Validation Logic", "Business Rules", "fn validate_rating(rating: i32) -> Result<()>\nfn validate_review_text(text: &str) -> Result<()>\nfn sanitize_review_content(text: &str) -> String")
+    }
+    
+    System_Boundary(repository_module, "Repository Module (src/repository/)") {
+        Component(review_repo_trait, "ReviewRepository Trait", "Async Trait", "#[async_trait]\ntrait ReviewRepositoryTrait {\n  async fn create_review(&self, input, user_id) -> Result<Review>;\n  async fn get_review_by_id(&self, id) -> Result<Option<Review>>;\n  async fn get_reviews_by_offer(&self, offer_id, limit, offset) -> Result<Vec<Review>>;\n}")
+        
+        Component(review_repo_impl, "ReviewRepository Implementation", "SQLx", "impl ReviewRepositoryTrait for ReviewRepository {\n  async fn create_review(&self, input, user_id) -> Result<Review> {\n    sqlx::query_as!(\n      Review,\n      \"INSERT INTO reviews (offer_id, user_id, rating, text) VALUES ($1, $2, $3, $4) RETURNING *\",\n      input.offer_id, user_id, input.rating, input.text\n    ).fetch_one(&self.pool).await\n  }\n}")
+        
+        Component(cache_repo_impl, "CacheRepository Implementation", "Redis", "impl CacheRepository {\n  async fn get<T>(&self, key: &str) -> Result<Option<T>>\n  async fn set<T>(&self, key: &str, value: &T, ttl: u64) -> Result<()>\n  async fn delete(&self, key: &str) -> Result<()>\n  async fn invalidate_pattern(&self, pattern: &str) -> Result<()>\n}")
+    }
+    
+    System_Boundary(database_module, "Database Module (src/database.rs)") {
+        Component(pool_config, "Connection Pool Config", "SQLx PgPoolOptions", "PgPoolOptions::new()\n  .max_connections(20)\n  .min_connections(5)\n  .acquire_timeout(Duration::from_secs(30))\n  .idle_timeout(Duration::from_secs(600))\n  .connect(database_url)")
+        
+        Component(migrations, "Database Migrations", "SQLx Migrate", "CREATE TABLE reviews (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  offer_id UUID NOT NULL,\n  user_id UUID NOT NULL,\n  rating INTEGER CHECK (rating >= 1 AND rating <= 5),\n  text TEXT NOT NULL,\n  is_moderated BOOLEAN DEFAULT FALSE\n);")
+        
+        Component(health_check, "Health Check", "Database Ping", "async fn health_check(pool: &PgPool) -> Result<()> {\n  sqlx::query(\"SELECT 1\")\n    .execute(pool)\n    .await?;\n  Ok(())\n}")
+    }
+}
+
+System_Boundary(cargo_config, "Cargo Configuration") {
+    Component(cargo_toml, "Cargo.toml", "Package Config", "[package]\nname = \"ugc-subgraph\"\nversion = \"0.1.0\"\n\n[dependencies]\nasync-graphql = { workspace = true }\naxum = { workspace = true }\nsqlx = { workspace = true }\nshared = { path = \"../shared\" }")
+    
+    Component(dockerfile, "Dockerfile", "Multi-stage Build", "FROM rust:1.75-slim as builder\nWORKDIR /app\nCOPY . .\nRUN cargo build --release --bin ugc-subgraph\n\nFROM debian:bookworm-slim\nCOPY --from=builder /app/target/release/ugc-subgraph /usr/local/bin/\nEXPOSE 4001\nCMD [\"ugc-subgraph\"]")
+}
+
+System_Boundary(test_module, "Test Module (tests/)") {
+    Component(unit_tests, "Unit Tests", "Mockall + Tokio", "#[tokio::test]\nasync fn test_create_review_success() {\n  let mut mock_repo = MockReviewRepo::new();\n  mock_repo.expect_create_review()\n    .returning(|input, user_id| Ok(Review { ... }));\n  \n  let service = ReviewService::new(mock_repo);\n  let result = service.create_review(input, &user_ctx).await;\n  assert!(result.is_ok());\n}")
+    
+    Component(integration_tests, "Integration Tests", "Testcontainers", "#[tokio::test]\nasync fn test_database_integration() {\n  let container = docker.run(Postgres::default());\n  let pool = create_test_pool(&container).await;\n  \n  let repo = ReviewRepository::new(pool);\n  let review = repo.create_review(input, user_id).await.unwrap();\n  \n  assert_eq!(review.rating, 4);\n}")
+}
+
+' Relationships between modules
+Rel(http_server, schema_builder, "Создает схему", "Code")
+Rel(schema_builder, query_impl, "Регистрирует Query", "Code")
+Rel(schema_builder, mutation_impl, "Регистрирует Mutation", "Code")
+
+Rel(query_impl, review_service_impl, "Вызывает сервис", "Function call")
+Rel(mutation_impl, review_service_impl, "Вызывает сервис", "Function call")
+
+Rel(review_service_impl, validation_logic, "Валидирует данные", "Function call")
+Rel(review_service_impl, review_repo_impl, "Сохраняет данные", "Function call")
+Rel(rating_service_impl, cache_repo_impl, "Кеширует рейтинги", "Function call")
+
+Rel(review_repo_impl, review_repo_trait, "Реализует trait", "Implementation")
+Rel(review_repo_impl, pool_config, "Использует пул", "Database connection")
+
+Rel(query_impl, review_struct, "Возвращает модель", "Return type")
+Rel(mutation_impl, input_structs, "Принимает input", "Parameter")
+Rel(query_impl, connection_structs, "Пагинация", "Return type")
+
+Rel(review_repo_impl, migrations, "Использует схему БД", "SQL")
+Rel(http_server, health_check, "Health endpoint", "Function call")
+
+Rel(unit_tests, review_service_impl, "Тестирует сервис", "Test")
+Rel(integration_tests, review_repo_impl, "Тестирует репозиторий", "Test")
+
+Rel(cargo_toml, http_server, "Конфигурирует зависимости", "Build")
+Rel(dockerfile, cargo_toml, "Собирает образ", "Docker build")
+
+SHOW_LEGEND()
+@enduml

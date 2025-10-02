@@ -1,0 +1,99 @@
+@startuml Task9_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Auto.ru Federation - Container Diagram (Task 9: Caching & Performance Architecture)
+
+Person(user, "Пользователь", "Выполняет GraphQL запросы")
+Person(admin, "Администратор", "Управляет производительностью")
+
+System_Boundary(optimized_ugc_system, "Optimized UGC System") {
+    
+    System_Boundary(caching_layer, "Caching Layer") {
+        Container(redis_cache, "Redis Cache", "Redis, Cluster Mode", "Distributed кеширование:\n- Query result cache\n- Aggregated ratings cache\n- User session cache\n- Invalidation strategies")
+        Container(cache_manager, "Cache Manager", "Rust, redis-rs", "Управление кешем:\n- Cache key generation\n- TTL management\n- Invalidation logic\n- Cache warming")
+        Container(cache_invalidator, "Cache Invalidator", "Rust, Event-driven", "Инвалидация кеша:\n- Event-based invalidation\n- Pattern-based cleanup\n- Scheduled cleanup\n- Manual invalidation")
+    }
+    
+    System_Boundary(performance_layer, "Performance Optimization Layer") {
+        Container(dataloader_service, "DataLoader Service", "Rust, async-graphql DataLoader", "N+1 оптимизация:\n- Batch loading\n- Request deduplication\n- Connection pooling\n- Query optimization")
+        Container(query_optimizer, "Query Optimizer", "Rust, SQL optimization", "Оптимизация запросов:\n- Query planning\n- Index utilization\n- JOIN optimization\n- Execution analysis")
+        Container(connection_pool, "Connection Pool Manager", "Rust, sqlx Pool", "Управление подключениями:\n- Pool sizing\n- Connection lifecycle\n- Health monitoring\n- Load balancing")
+    }
+    
+    System_Boundary(rate_limiting_layer, "Rate Limiting & Security Layer") {
+        Container(rate_limiter, "Rate Limiter", "Rust, Token bucket", "Ограничение запросов:\n- User-based limits\n- IP-based limits\n- Query complexity limits\n- Sliding window")
+        Container(query_complexity_analyzer, "Query Complexity Analyzer", "Rust, GraphQL AST", "Анализ сложности:\n- Depth analysis\n- Field counting\n- Complexity scoring\n- Cost estimation")
+        Container(security_guard, "Security Guard", "Rust, Middleware", "Защита от злоупотреблений:\n- Pattern detection\n- Anomaly detection\n- Blacklist management\n- Emergency throttling")
+    }
+    
+    System_Boundary(instrumented_application, "Instrumented Application Layer") {
+        Container(ugc_graphql_optimized, "UGC GraphQL Server (Optimized)", "Rust, async-graphql + optimizations", "GraphQL сервер с оптимизациями:\n- Cached resolvers\n- DataLoader integration\n- Query complexity limits\n- Performance monitoring")
+        Container(performance_middleware, "Performance Middleware", "Rust, Axum middleware", "Middleware для производительности:\n- Request timing\n- Cache headers\n- Compression\n- Response optimization")
+        Container(metrics_collector, "Performance Metrics Collector", "Rust, Prometheus", "Сбор метрик производительности:\n- Query execution time\n- Cache hit rates\n- DataLoader statistics\n- Resource utilization")
+    }
+}
+
+System_Boundary(apollo_router_optimized, "Apollo Router (Performance Optimized)") {
+    Container(router_query_planner, "Query Planner (Optimized)", "Apollo Router + Query optimization", "Оптимизированное планирование:\n- Query analysis\n- Execution optimization\n- Caching strategies\n- Performance prediction")
+    Container(router_cache, "Router Cache", "Apollo Router + Redis", "Кеширование на уровне роутера:\n- Query plan cache\n- Schema cache\n- Response cache\n- Persisted queries")
+    Container(router_rate_limiter, "Router Rate Limiter", "Apollo Router + Rate limiting", "Ограничения на уровне роутера:\n- Global rate limits\n- Query complexity limits\n- Depth limiting\n- Cost analysis")
+}
+
+System_Boundary(data_layer_optimized, "Optimized Data Layer") {
+    Container(postgres_optimized, "PostgreSQL (Optimized)", "PostgreSQL + Performance tuning", "Оптимизированная БД:\n- Performance indexes\n- Query optimization\n- Connection pooling\n- Monitoring")
+    Container(external_cache, "External Services Cache", "Rust, HTTP client + Cache", "Кеширование внешних вызовов:\n- Response caching\n- Circuit breaker\n- Retry logic\n- Fallback data")
+}
+
+System_Boundary(monitoring_performance, "Performance Monitoring") {
+    Container(performance_dashboard, "Performance Dashboard", "Grafana + Custom panels", "Дашборды производительности:\n- Query performance\n- Cache statistics\n- Resource utilization\n- Bottleneck analysis")
+    Container(alerting_system, "Performance Alerting", "AlertManager + Custom rules", "Алерты производительности:\n- Slow query alerts\n- Cache miss alerts\n- Resource alerts\n- SLA violations")
+    Container(profiler, "Application Profiler", "Rust, pprof + Custom", "Профилирование приложения:\n- CPU profiling\n- Memory analysis\n- Query tracing\n- Performance bottlenecks")
+}
+
+' User interactions
+Rel(user, router_query_planner, "GraphQL запросы", "HTTPS")
+Rel(admin, performance_dashboard, "Мониторинг производительности", "HTTPS")
+
+' Router optimization flow
+Rel(router_query_planner, router_cache, "Query plan caching", "In-memory cache")
+Rel(router_query_planner, router_rate_limiter, "Rate limiting", "Request validation")
+Rel(router_rate_limiter, query_complexity_analyzer, "Complexity analysis", "Query AST analysis")
+
+' Application layer optimization
+Rel(router_query_planner, ugc_graphql_optimized, "Оптимизированные запросы", "HTTP/GraphQL")
+Rel(ugc_graphql_optimized, performance_middleware, "Request processing", "Middleware chain")
+Rel(performance_middleware, rate_limiter, "Rate limiting", "Request throttling")
+
+' Caching integration
+Rel(ugc_graphql_optimized, cache_manager, "Cache operations", "Redis protocol")
+Rel(cache_manager, redis_cache, "Cache storage", "Redis commands")
+Rel(cache_manager, cache_invalidator, "Invalidation events", "Event notifications")
+
+' DataLoader optimization
+Rel(ugc_graphql_optimized, dataloader_service, "Batch loading", "N+1 optimization")
+Rel(dataloader_service, query_optimizer, "Query optimization", "SQL optimization")
+Rel(query_optimizer, connection_pool, "Connection management", "Pool operations")
+Rel(connection_pool, postgres_optimized, "Optimized queries", "PostgreSQL")
+
+' External services caching
+Rel(ugc_graphql_optimized, external_cache, "Cached external calls", "HTTP with caching")
+
+' Performance monitoring
+Rel(ugc_graphql_optimized, metrics_collector, "Performance metrics", "Metrics collection")
+Rel(cache_manager, metrics_collector, "Cache metrics", "Cache statistics")
+Rel(dataloader_service, metrics_collector, "DataLoader metrics", "Batch statistics")
+
+Rel(metrics_collector, performance_dashboard, "Metrics data", "Prometheus protocol")
+Rel(performance_dashboard, alerting_system, "Alert triggers", "Alert rules")
+Rel(ugc_graphql_optimized, profiler, "Profiling data", "Performance traces")
+
+' Security and rate limiting
+Rel(rate_limiter, security_guard, "Security events", "Rate limit violations")
+Rel(query_complexity_analyzer, security_guard, "Complex queries", "Anomaly detection")
+
+' Cache invalidation flow
+Rel(ugc_graphql_optimized, cache_invalidator, "Data changes", "Invalidation events")
+Rel(cache_invalidator, redis_cache, "Cache cleanup", "Invalidation commands")
+
+SHOW_LEGEND()
+@enduml

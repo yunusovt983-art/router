@@ -1,0 +1,148 @@
+@startuml Task5_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation - Component Diagram (Task 5: AI-Driven Internal Architecture)
+
+Container(client, "GraphQL Client", "Apollo Client AI", "Клиент с AI оптимизацией")
+
+System_Boundary(apollo_gateway_ai_internal, "Apollo Gateway AI - Internal Architecture") {
+    
+    System_Boundary(ai_request_processing, "AI Request Processing Layer") {
+        Component(request_classifier, "Request Classifier", "TensorFlow.js", "ML классификация запросов:\n- Определение типа запроса\n- Предсказание сложности\n- Выбор стратегии обработки")
+        Component(query_optimizer_ml, "Query Optimizer ML", "GraphQL AST + ML", "ML оптимизатор запросов:\n- Анализ AST структуры\n- Предсказание производительности\n- Автоматическая оптимизация")
+        Component(adaptive_rate_limiter, "Adaptive Rate Limiter", "Redis + ML", "Адаптивное ограничение:\n- ML предсказание нагрузки\n- Динамические лимиты\n- Персонализированные квоты")
+        Component(intelligent_auth, "Intelligent Auth", "JWT + Behavioral ML", "Умная аутентификация:\n- Поведенческий анализ\n- Детекция аномалий\n- Адаптивная безопасность")
+    }
+    
+    System_Boundary(ml_query_planning, "ML Query Planning Engine") {
+        Component(performance_predictor_engine, "Performance Predictor", "PyTorch Model", "Предсказатель производительности:\n- Модель времени выполнения\n- Анализ сложности запроса\n- Предсказание ресурсов")
+        Component(execution_planner, "Execution Planner", "ML Planning Algorithm", "ML планировщик выполнения:\n- Оптимальная стратегия\n- Параллелизация запросов\n- Адаптивные таймауты")
+        Component(cache_predictor, "Cache Predictor", "ML Cache Model", "Предсказатель кеширования:\n- Вероятность cache hit\n- Оптимальное TTL\n- Предзагрузка данных")
+        Component(routing_intelligence, "Routing Intelligence", "Reinforcement Learning", "Интеллектуальная маршрутизация:\n- Обучение на основе результатов\n- Адаптивная балансировка\n- Оптимизация латентности")
+    }
+    
+    System_Boundary(ab_testing_engine, "A/B Testing Engine") {
+        Component(experiment_manager, "Experiment Manager", "Statistical Engine", "Менеджер экспериментов:\n- Дизайн экспериментов\n- Статистическая мощность\n- Автоматическое завершение")
+        Component(user_segmentation, "User Segmentation", "ML Clustering", "ML сегментация пользователей:\n- Поведенческие кластеры\n- Динамическая сегментация\n- Персонализация экспериментов")
+        Component(variant_selector, "Variant Selector", "Multi-Armed Bandit", "Селектор вариантов:\n- Оптимизация конверсий\n- Адаптивное распределение\n- Минимизация regret")
+        Component(metrics_analyzer, "Metrics Analyzer", "Causal Inference", "Анализатор метрик:\n- Причинно-следственный анализ\n- Статистическая значимость\n- Автоматические инсайты")
+    }
+    
+    System_Boundary(real_time_optimization, "Real-time Optimization") {
+        Component(anomaly_detector, "Anomaly Detector", "Isolation Forest", "Детектор аномалий:\n- Обнаружение в реальном времени\n- Предсказание сбоев\n- Автоматические алерты")
+        Component(auto_scaler, "Auto Scaler", "Predictive ML", "Автоматическое масштабирование:\n- Предсказание нагрузки\n- Проактивное масштабирование\n- Оптимизация ресурсов")
+        Component(circuit_breaker_ai, "Circuit Breaker AI", "ML State Machine", "Умный circuit breaker:\n- Предсказание сбоев\n- Адаптивные пороги\n- Интеллектуальное восстановление")
+        Component(load_balancer_ml, "Load Balancer ML", "Reinforcement Learning", "ML балансировщик нагрузки:\n- Обучение на латентности\n- Адаптивные веса\n- Предсказание доступности")
+    }
+}
+
+System_Boundary(smart_subgraph_internal, "Smart Subgraph - Internal Architecture") {
+    
+    System_Boundary(ai_resolver_layer, "AI Resolver Layer") {
+        Component(personalized_resolver, "Personalized Resolver", "ML Personalization", "Персонализированные резолверы:\n- Пользовательские предпочтения\n- Контекстная адаптация\n- Динамическая оптимизация")
+        Component(predictive_dataloader, "Predictive DataLoader", "ML Prefetching", "Предиктивный DataLoader:\n- Предсказание следующих запросов\n- Интеллектуальная предзагрузка\n- Оптимизация batch размеров")
+        Component(adaptive_caching, "Adaptive Caching", "ML Cache Strategy", "Адаптивное кеширование:\n- Динамическое TTL\n- Предсказание инвалидации\n- Персонализированный кеш")
+    }
+    
+    System_Boundary(ml_business_logic, "ML Business Logic") {
+        Component(recommendation_engine, "Recommendation Engine", "Collaborative Filtering", "Движок рекомендаций:\n- Персонализированные предложения\n- Real-time обучение\n- A/B тестирование алгоритмов")
+        Component(content_moderator, "Content Moderator", "NLP + Computer Vision", "ML модератор контента:\n- Автоматическая модерация\n- Детекция токсичности\n- Классификация контента")
+        Component(fraud_detector, "Fraud Detector", "Anomaly Detection", "Детектор мошенничества:\n- Поведенческий анализ\n- Детекция аномалий\n- Real-time скоринг")
+        Component(quality_scorer, "Quality Scorer", "ML Quality Model", "Оценщик качества:\n- Скоринг объявлений\n- Предсказание конверсий\n- Автоматическое ранжирование")
+    }
+    
+    System_Boundary(intelligent_data_access, "Intelligent Data Access") {
+        Component(query_optimizer_db, "DB Query Optimizer", "ML Query Planner", "ML оптимизатор БД запросов:\n- Предсказание execution plan\n- Адаптивные индексы\n- Динамическая оптимизация")
+        Component(cache_manager_ai, "Cache Manager AI", "ML Cache Policy", "Умный менеджер кеша:\n- Предсказание паттернов доступа\n- Оптимальные стратегии eviction\n- Автоматическая предзагрузка")
+        Component(connection_pool_ai, "Connection Pool AI", "ML Resource Management", "Интеллектуальный пул соединений:\n- Предсказание нагрузки\n- Динамическое масштабирование\n- Оптимизация таймаутов")
+    }
+}
+
+System_Boundary(ml_infrastructure, "ML Infrastructure Components") {
+    
+    System_Boundary(model_serving, "Model Serving Layer") {
+        Component(model_server, "Model Server", "TorchServe/TensorFlow Serving", "Сервер ML моделей:\n- Версионирование моделей\n- A/B тестирование моделей\n- Автоматическое масштабирование")
+        Component(feature_pipeline, "Feature Pipeline", "Real-time Feature Engineering", "Пайплайн признаков:\n- Real-time feature extraction\n- Feature transformation\n- Консистентность онлайн/офлайн")
+        Component(model_monitor, "Model Monitor", "ML Monitoring", "Мониторинг моделей:\n- Drift detection\n- Performance degradation\n- Автоматическое переобучение")
+    }
+    
+    System_Boundary(data_processing, "Data Processing Layer") {
+        Component(stream_processor, "Stream Processor", "Apache Flink", "Обработчик потоков:\n- Real-time feature computation\n- Event aggregation\n- ML pipeline triggers")
+        Component(batch_processor, "Batch Processor", "Apache Spark", "Batch обработка:\n- Исторический анализ\n- Model training data\n- Feature backfill")
+        Component(feature_store_client, "Feature Store Client", "Feast Client", "Клиент Feature Store:\n- Online feature serving\n- Feature consistency\n- Low-latency access")
+    }
+}
+
+' Client to Gateway AI
+Rel(client, request_classifier, "GraphQL запросы", "HTTPS")
+
+' AI Request Processing Flow
+Rel(request_classifier, query_optimizer_ml, "Классификация запроса", "Function call")
+Rel(query_optimizer_ml, adaptive_rate_limiter, "Оптимизированный запрос", "Function call")
+Rel(adaptive_rate_limiter, intelligent_auth, "Rate limit check", "Function call")
+
+' ML Query Planning Flow
+Rel(intelligent_auth, performance_predictor_engine, "Предсказание производительности", "gRPC")
+Rel(performance_predictor_engine, execution_planner, "Performance prediction", "Function call")
+Rel(execution_planner, cache_predictor, "Execution plan", "Function call")
+Rel(cache_predictor, routing_intelligence, "Cache strategy", "Function call")
+
+' A/B Testing Flow
+Rel(routing_intelligence, experiment_manager, "Получение экспериментов", "HTTP/REST")
+Rel(experiment_manager, user_segmentation, "User segmentation", "Function call")
+Rel(user_segmentation, variant_selector, "Segment assignment", "Function call")
+Rel(variant_selector, metrics_analyzer, "Variant selection", "Function call")
+
+' Real-time Optimization
+Rel(routing_intelligence, anomaly_detector, "System metrics", "Function call")
+Rel(anomaly_detector, auto_scaler, "Anomaly detection", "Function call")
+Rel(auto_scaler, circuit_breaker_ai, "Scaling decisions", "Function call")
+Rel(circuit_breaker_ai, load_balancer_ml, "Circuit state", "Function call")
+
+' Gateway to Subgraph AI
+Rel(load_balancer_ml, personalized_resolver, "Intelligent routing", "HTTP/GraphQL")
+
+' Smart Subgraph AI Flow
+Rel(personalized_resolver, predictive_dataloader, "Personalized queries", "Function call")
+Rel(predictive_dataloader, adaptive_caching, "Data loading", "Function call")
+
+' ML Business Logic
+Rel(adaptive_caching, recommendation_engine, "Cached data", "Function call")
+Rel(recommendation_engine, content_moderator, "Recommendations", "Function call")
+Rel(content_moderator, fraud_detector, "Moderated content", "Function call")
+Rel(fraud_detector, quality_scorer, "Fraud analysis", "Function call")
+
+' Intelligent Data Access
+Rel(quality_scorer, query_optimizer_db, "Quality scores", "Function call")
+Rel(query_optimizer_db, cache_manager_ai, "Optimized queries", "Function call")
+Rel(cache_manager_ai, connection_pool_ai, "Cache operations", "Function call")
+
+' ML Infrastructure Integration
+Rel(performance_predictor_engine, model_server, "Model inference", "gRPC")
+Rel(recommendation_engine, model_server, "Recommendation models", "gRPC")
+Rel(content_moderator, model_server, "Moderation models", "gRPC")
+Rel(fraud_detector, model_server, "Fraud detection models", "gRPC")
+
+Rel(personalized_resolver, feature_pipeline, "Feature extraction", "HTTP/REST")
+Rel(predictive_dataloader, feature_pipeline, "Prediction features", "HTTP/REST")
+Rel(adaptive_caching, feature_pipeline, "Cache features", "HTTP/REST")
+
+Rel(model_server, model_monitor, "Model performance", "HTTP")
+Rel(feature_pipeline, model_monitor, "Feature drift", "HTTP")
+
+' Data Processing Integration
+Rel(request_classifier, stream_processor, "Request events", "Kafka")
+Rel(metrics_analyzer, stream_processor, "Experiment metrics", "Kafka")
+Rel(anomaly_detector, stream_processor, "Anomaly events", "Kafka")
+
+Rel(stream_processor, batch_processor, "Aggregated events", "Kafka")
+Rel(batch_processor, feature_store_client, "Batch features", "HTTP/REST")
+Rel(feature_pipeline, feature_store_client, "Online features", "gRPC")
+
+' Feedback Loops for Continuous Learning
+Rel(metrics_analyzer, performance_predictor_engine, "Performance feedback", "HTTP")
+Rel(load_balancer_ml, routing_intelligence, "Routing feedback", "Function call")
+Rel(model_monitor, auto_scaler, "Model performance alerts", "HTTP")
+
+SHOW_LEGEND()
+@enduml

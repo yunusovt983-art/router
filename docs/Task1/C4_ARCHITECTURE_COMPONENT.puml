@@ -1,0 +1,99 @@
+@startuml Task1_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru GraphQL Federation - Component Diagram (Task 1: Infrastructure Components)
+
+Container(developer, "Developer", "Person", "Разработчик использующий систему")
+
+System_Boundary(workspace, "Cargo Workspace") {
+    Component(workspace_config, "Workspace Config", "Cargo.toml", "Конфигурация workspace\n- Управление членами\n- Общие зависимости\n- Resolver настройки")
+    
+    System_Boundary(shared_crate, "Shared Crate") {
+        Component(shared_types, "Common Types", "Rust module", "Общие типы данных\n- User ID\n- Error types\n- GraphQL scalars")
+        
+        Component(auth_utils, "Auth Utils", "Rust module", "Утилиты аутентификации\n- JWT validation\n- Permission checks\n- Context extraction")
+        
+        Component(error_handling, "Error Handling", "Rust module", "Обработка ошибок\n- Custom error types\n- GraphQL error conversion\n- Logging integration")
+        
+        Component(common_utils, "Common Utils", "Rust module", "Вспомогательные функции\n- Validation helpers\n- Date/time utils\n- String processing")
+    }
+    
+    System_Boundary(apollo_router_crate, "Apollo Router Crate") {
+        Component(router_config, "Router Config", "router.yaml", "Конфигурация роутера\n- Subgraph endpoints\n- Telemetry settings\n- Security headers")
+        
+        Component(supergraph_schema, "Supergraph Schema", "GraphQL SDL", "Композитная схема\n- Федеративные директивы\n- Type definitions\n- Schema validation")
+        
+        Component(router_dockerfile, "Router Dockerfile", "Docker", "Контейнеризация роутера\n- Multi-stage build\n- Security hardening\n- Runtime optimization")
+    }
+    
+    System_Boundary(subgraph_crates, "Subgraph Crates") {
+        Component(ugc_dockerfile, "UGC Dockerfile", "Docker", "UGC контейнер\n- Rust compilation\n- Database drivers\n- Runtime dependencies")
+        
+        Component(users_dockerfile, "Users Dockerfile", "Docker", "Users контейнер\n- Auth libraries\n- Security features\n- Performance tuning")
+        
+        Component(offers_dockerfile, "Offers Dockerfile", "Docker", "Offers контейнер\n- Search capabilities\n- Data processing\n- Cache integration")
+    }
+}
+
+System_Boundary(docker_infrastructure, "Docker Infrastructure") {
+    Component(docker_compose, "Docker Compose", "YAML", "Сервисная оркестрация\n- Service definitions\n- Network configuration\n- Volume management\n- Environment variables")
+    
+    Component(postgres_service, "PostgreSQL Service", "Docker service", "База данных\n- Data persistence\n- Connection pooling\n- Backup volumes")
+    
+    Component(redis_service, "Redis Service", "Docker service", "Кеш и сессии\n- Memory optimization\n- Persistence config\n- Network access")
+}
+
+System_Boundary(development_tools, "Development Tools") {
+    Component(makefile, "Makefile", "Make", "Автоматизация команд\n- Build targets\n- Test execution\n- Docker management\n- Cleanup tasks")
+    
+    Component(dev_setup_script, "Dev Setup Script", "Bash", "Настройка среды\n- Dependency checks\n- Environment setup\n- Database migration\n- Service startup")
+    
+    Component(dev_stop_script, "Dev Stop Script", "Bash", "Остановка сервисов\n- Graceful shutdown\n- Cleanup operations\n- Resource management")
+    
+    Component(env_config, "Environment Config", ".env", "Переменные окружения\n- Database URLs\n- API keys\n- Feature flags\n- Debug settings")
+}
+
+System_Boundary(monitoring_config, "Monitoring Configuration") {
+    Component(prometheus_config, "Prometheus Config", "YAML", "Конфигурация метрик\n- Scrape targets\n- Retention policies\n- Alert rules")
+    
+    Component(jaeger_config, "Jaeger Config", "YAML", "Конфигурация трассировки\n- Sampling rates\n- Export endpoints\n- Trace storage")
+}
+
+' Relationships
+Rel(developer, makefile, "Выполняет команды", "CLI")
+Rel(developer, dev_setup_script, "Настраивает среду", "CLI")
+Rel(developer, workspace_config, "Управляет проектом", "Cargo")
+
+Rel(workspace_config, shared_crate, "Включает в workspace", "Cargo dependency")
+Rel(workspace_config, apollo_router_crate, "Включает в workspace", "Cargo dependency")
+Rel(workspace_config, subgraph_crates, "Включает в workspace", "Cargo dependency")
+
+Rel(apollo_router_crate, shared_types, "Использует общие типы", "Rust import")
+Rel(apollo_router_crate, auth_utils, "Использует аутентификацию", "Rust import")
+Rel(apollo_router_crate, error_handling, "Обрабатывает ошибки", "Rust import")
+
+Rel(subgraph_crates, shared_types, "Использует общие типы", "Rust import")
+Rel(subgraph_crates, auth_utils, "Использует аутентификацию", "Rust import")
+Rel(subgraph_crates, error_handling, "Обрабатывает ошибки", "Rust import")
+Rel(subgraph_crates, common_utils, "Использует утилиты", "Rust import")
+
+Rel(docker_compose, router_dockerfile, "Собирает образ", "Docker build")
+Rel(docker_compose, ugc_dockerfile, "Собирает образ", "Docker build")
+Rel(docker_compose, users_dockerfile, "Собирает образ", "Docker build")
+Rel(docker_compose, offers_dockerfile, "Собирает образ", "Docker build")
+
+Rel(docker_compose, postgres_service, "Управляет сервисом", "Docker orchestration")
+Rel(docker_compose, redis_service, "Управляет сервисом", "Docker orchestration")
+
+Rel(makefile, docker_compose, "Управляет контейнерами", "Docker CLI")
+Rel(dev_setup_script, docker_compose, "Запускает сервисы", "Docker CLI")
+Rel(dev_stop_script, docker_compose, "Останавливает сервисы", "Docker CLI")
+
+Rel(dev_setup_script, env_config, "Читает конфигурацию", "File system")
+Rel(docker_compose, env_config, "Использует переменные", "Environment")
+
+Rel(router_config, prometheus_config, "Настраивает метрики", "Configuration")
+Rel(router_config, jaeger_config, "Настраивает трассировку", "Configuration")
+
+SHOW_LEGEND()
+@enduml

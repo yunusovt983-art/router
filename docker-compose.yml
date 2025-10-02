@@ -1,0 +1,253 @@
+services:
+  # Apollo Router
+  apollo-router:
+    image: ghcr.io/apollographql/router:v1.33.0
+    ports:
+      - "4000:4000"
+      - "9090:9090"  # Prometheus metrics
+    volumes:
+      - ./router.yaml:/dist/config/router.yaml
+      - ./supergraph.graphql:/dist/config/supergraph.graphql
+      - ./scripts/router-entrypoint.sh:/usr/local/bin/router-entrypoint.sh
+      - ./schemas:/dist/schemas
+    environment:
+      - APOLLO_ROUTER_CONFIG_PATH=/dist/config/router.yaml
+      - APOLLO_ROUTER_SUPERGRAPH_PATH=/dist/config/supergraph.graphql
+      - APOLLO_ROUTER_LOG=info
+      - APOLLO_ROUTER_VALIDATION_ENABLED=true
+      - APOLLO_ROUTER_STARTUP_DELAY=10
+      - ENVIRONMENT=development
+    entrypoint: ["/usr/local/bin/router-entrypoint.sh"]
+    depends_on:
+      - ugc-subgraph
+      - users-subgraph
+      - offers-subgraph
+      - catalog-subgraph
+      - search-subgraph
+    networks:
+      - federation-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # UGC Subgraph
+  ugc-subgraph:
+    build:
+      context: .
+      dockerfile: ugc-subgraph/Dockerfile
+    ports:
+      - "4001:4001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@ugc-postgres:5432/ugc_db
+      - RUST_LOG=info
+      - JWT_SECRET=your-jwt-secret-key
+    depends_on:
+      - ugc-postgres
+    networks:
+      - federation-network
+
+  # Users Subgraph
+  users-subgraph:
+    build:
+      context: .
+      dockerfile: users-subgraph/Dockerfile
+    ports:
+      - "4002:4002"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@users-postgres:5432/users_db
+      - RUST_LOG=info
+      - JWT_SECRET=your-jwt-secret-key
+    depends_on:
+      - users-postgres
+    networks:
+      - federation-network
+
+  # Catalog Subgraph
+  catalog-subgraph:
+    build:
+      context: .
+      dockerfile: catalog-subgraph/Dockerfile
+    ports:
+      - "4003:4003"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@catalog-postgres:5432/catalog_db
+      - RUST_LOG=info
+      - JWT_SECRET=your-jwt-secret-key
+    depends_on:
+      - catalog-postgres
+    networks:
+      - federation-network
+
+  # Offers Subgraph
+  offers-subgraph:
+    build:
+      context: .
+      dockerfile: offers-subgraph/Dockerfile
+    ports:
+      - "4004:4004"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@offers-postgres:5432/offers_db
+      - RUST_LOG=info
+      - JWT_SECRET=your-jwt-secret-key
+    depends_on:
+      - offers-postgres
+    networks:
+      - federation-network
+
+  # Search Subgraph
+  search-subgraph:
+    build:
+      context: .
+      dockerfile: search-subgraph/Dockerfile
+    ports:
+      - "4005:4005"
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - RUST_LOG=info
+      - JWT_SECRET=your-jwt-secret-key
+    depends_on:
+      - elasticsearch
+    networks:
+      - federation-network
+
+  # PostgreSQL for UGC
+  ugc-postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=ugc_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ugc_postgres_data:/var/lib/postgresql/data
+      - ./ugc-subgraph/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - federation-network
+
+  # PostgreSQL for Users
+  users-postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=users_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - users_postgres_data:/var/lib/postgresql/data
+      - ./users-subgraph/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5433:5432"
+    networks:
+      - federation-network
+
+  # PostgreSQL for Catalog
+  catalog-postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=catalog_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - catalog_postgres_data:/var/lib/postgresql/data
+      - ./catalog-subgraph/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5434:5432"
+    networks:
+      - federation-network
+
+  # PostgreSQL for Offers
+  offers-postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=offers_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - offers_postgres_data:/var/lib/postgresql/data
+      - ./offers-subgraph/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5435:5432"
+    networks:
+      - federation-network
+
+  # Elasticsearch for Search
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - federation-network
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - federation-network
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.49
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # HTTP collector
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - federation-network
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - federation-network
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:10.1.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - federation-network
+
+volumes:
+  ugc_postgres_data:
+  users_postgres_data:
+  catalog_postgres_data:
+  offers_postgres_data:
+  elasticsearch_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  federation-network:
+    driver: bridge

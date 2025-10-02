@@ -1,0 +1,119 @@
+@startuml Task10_Deployment_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title Auto.ru Federation - Deployment Diagram (Task 10: Testing Infrastructure Deployment)
+
+Deployment_Node(github_cloud, "GitHub Cloud", "GitHub + Actions Runner") {
+    
+    Deployment_Node(ci_cd_pipeline, "CI/CD Pipeline", "GitHub Actions + Runners") {
+        
+        Deployment_Node(unit_test_runner, "Unit Test Runner", "GitHub Actions Runner") {
+            Container(unit_test_job, "Unit Test Job", "Rust + Cargo Test", "Unit тесты:\n- Fast execution\n- Mock dependencies\n- Isolated testing\n- Coverage collection")
+        }
+        
+        Deployment_Node(integration_test_runner, "Integration Test Runner", "GitHub Actions Runner + Services") {
+            Container(integration_test_job, "Integration Test Job", "Rust + Testcontainers", "Интеграционные тесты:\n- Database integration\n- Service communication\n- Real dependencies\n- Transaction testing")
+            Container(postgres_test_service, "PostgreSQL Test Service", "PostgreSQL + Docker", "Тестовая БД:\n- Schema migrations\n- Test data seeding\n- Transaction isolation\n- Performance testing")
+            Container(redis_test_service, "Redis Test Service", "Redis + Docker", "Тестовый кеш:\n- Cache testing\n- Performance validation\n- Memory management\n- Cluster simulation")
+        }
+        
+        Deployment_Node(contract_test_runner, "Contract Test Runner", "GitHub Actions Runner") {
+            Container(contract_test_job, "Contract Test Job", "Rust + Pact", "Contract тесты:\n- API contract validation\n- Schema compatibility\n- Breaking change detection\n- Provider verification")
+            Container(pact_broker_service, "Pact Broker Service", "Pact Broker + Docker", "Брокер контрактов:\n- Contract storage\n- Version management\n- Compatibility matrix\n- Deployment validation")
+        }
+        
+        Deployment_Node(e2e_test_runner, "E2E Test Runner", "GitHub Actions Runner + Full Stack") {
+            Container(e2e_test_job, "E2E Test Job", "Rust + Full Environment", "End-to-End тесты:\n- User journey testing\n- Multi-service scenarios\n- Performance testing\n- Chaos engineering")
+            Container(full_test_environment, "Full Test Environment", "Docker Compose + Services", "Полное окружение:\n- All services running\n- Real integrations\n- Network simulation\n- Load balancing")
+        }
+    }
+    
+    Deployment_Node(test_reporting_infrastructure, "Test Reporting Infrastructure", "GitHub + External Services") {
+        Container(test_results_aggregator, "Test Results Aggregator", "GitHub Actions + Custom", "Агрегация результатов:\n- Multi-job result collection\n- Coverage aggregation\n- Performance metrics\n- Quality scoring")
+        Container(coverage_reporter, "Coverage Reporter", "Codecov + Coveralls", "Отчеты покрытия:\n- Coverage visualization\n- Trend tracking\n- PR integration\n- Quality gates")
+        Container(performance_tracker, "Performance Tracker", "Custom + GitHub Pages", "Отслеживание производительности:\n- Benchmark history\n- Regression detection\n- Performance trends\n- Alert generation")
+    }
+}
+
+Deployment_Node(local_development, "Local Development Environment", "Developer Machine") {
+    
+    Deployment_Node(local_test_environment, "Local Test Environment", "Docker Compose + Local Services") {
+        Container(local_postgres, "Local PostgreSQL", "PostgreSQL + Docker", "Локальная БД для тестов:\n- Fast startup\n- Test data isolation\n- Migration testing\n- Performance profiling")
+        Container(local_redis, "Local Redis", "Redis + Docker", "Локальный кеш для тестов:\n- Cache testing\n- Performance validation\n- Memory analysis\n- Cluster simulation")
+        Container(local_mock_services, "Local Mock Services", "Wiremock + Docker", "Локальные моки:\n- API simulation\n- Response configuration\n- Latency testing\n- Failure injection")
+    }
+    
+    Deployment_Node(development_tools, "Development Tools", "IDE + Testing Tools") {
+        Container(ide_test_runner, "IDE Test Runner", "VS Code + Rust Analyzer", "IDE интеграция:\n- Test execution\n- Debug support\n- Coverage visualization\n- Quick feedback")
+        Container(local_benchmark_runner, "Local Benchmark Runner", "Criterion + HTML Reports", "Локальные бенчмарки:\n- Performance measurement\n- Regression detection\n- Optimization validation\n- Report generation")
+    }
+}
+
+Deployment_Node(staging_environment, "Staging Test Environment", "AWS + Kubernetes") {
+    
+    Deployment_Node(staging_test_cluster, "Staging Test Cluster", "EKS + Test Services") {
+        Container(staging_ugc_service, "Staging UGC Service", "Rust + Full Features", "Staging сервис:\n- Production-like setup\n- Real integrations\n- Performance testing\n- Load validation")
+        Container(staging_database, "Staging Database", "RDS PostgreSQL", "Staging БД:\n- Production data subset\n- Performance testing\n- Migration validation\n- Backup testing")
+        Container(staging_cache, "Staging Cache", "ElastiCache Redis", "Staging кеш:\n- Cache performance\n- Invalidation testing\n- Memory optimization\n- Cluster validation")
+    }
+    
+    Deployment_Node(staging_monitoring, "Staging Monitoring", "CloudWatch + Custom") {
+        Container(test_metrics_collector, "Test Metrics Collector", "Prometheus + Custom", "Сбор метрик тестов:\n- Test execution metrics\n- Performance data\n- Error tracking\n- Quality metrics")
+        Container(staging_alerts, "Staging Alerts", "CloudWatch + SNS", "Алерты staging:\n- Test failure alerts\n- Performance degradation\n- Quality gate failures\n- System health")
+    }
+}
+
+Deployment_Node(production_testing, "Production Testing Environment", "AWS + Monitoring") {
+    
+    Deployment_Node(production_monitoring, "Production Test Monitoring", "CloudWatch + Grafana") {
+        Container(production_test_metrics, "Production Test Metrics", "CloudWatch + Custom Metrics", "Production метрики:\n- Synthetic testing\n- Health checks\n- Performance monitoring\n- User experience metrics")
+        Container(canary_testing, "Canary Testing", "AWS CodeDeploy + Custom", "Canary тестирование:\n- Gradual rollout\n- A/B testing\n- Performance comparison\n- Rollback automation")
+    }
+    
+    Deployment_Node(synthetic_testing, "Synthetic Testing", "CloudWatch Synthetics") {
+        Container(synthetic_monitors, "Synthetic Monitors", "CloudWatch Synthetics + Puppeteer", "Синтетические тесты:\n- User journey simulation\n- API availability\n- Performance monitoring\n- Geographic testing")
+    }
+}
+
+' Developer workflow
+Person(developers, "Developers", "Разрабатывают и тестируют код")
+Person(qa_team, "QA Team", "Создают и выполняют тесты")
+Person(devops_team, "DevOps Team", "Управляют тестовой инфраструктурой")
+
+Rel(developers, ide_test_runner, "Локальная разработка", "IDE integration")
+Rel(developers, local_postgres, "Локальное тестирование", "Database testing")
+Rel(qa_team, full_test_environment, "E2E тестирование", "Manual testing")
+
+' CI/CD test execution flow
+Rel(unit_test_job, postgres_test_service, "Database тесты", "Container integration")
+Rel(integration_test_job, redis_test_service, "Cache тесты", "Redis integration")
+Rel(contract_test_job, pact_broker_service, "Contract validation", "Pact integration")
+Rel(e2e_test_job, full_test_environment, "Full stack testing", "Complete environment")
+
+' Test result flow
+Rel(unit_test_job, test_results_aggregator, "Unit test results", "Result collection")
+Rel(integration_test_job, test_results_aggregator, "Integration results", "Result aggregation")
+Rel(contract_test_job, coverage_reporter, "Contract coverage", "Coverage reporting")
+Rel(e2e_test_job, performance_tracker, "Performance data", "Performance tracking")
+
+' Local development flow
+Rel(ide_test_runner, local_postgres, "Local DB testing", "Database operations")
+Rel(local_benchmark_runner, local_redis, "Cache benchmarks", "Performance testing")
+Rel(ide_test_runner, local_mock_services, "Mock testing", "Service simulation")
+
+' Staging validation
+Rel(staging_ugc_service, staging_database, "Staging DB testing", "Production-like testing")
+Rel(staging_ugc_service, staging_cache, "Cache validation", "Performance testing")
+Rel(test_metrics_collector, staging_alerts, "Test monitoring", "Alert generation")
+
+' Production testing
+Rel(synthetic_monitors, production_test_metrics, "Synthetic data", "Monitoring integration")
+Rel(canary_testing, production_test_metrics, "Canary metrics", "Performance comparison")
+
+' Cross-environment data flow
+Rel(test_results_aggregator, staging_test_cluster, "Test promotion", "Staging validation")
+Rel(performance_tracker, canary_testing, "Performance baselines", "Canary comparison")
+Rel(coverage_reporter, production_monitoring, "Quality metrics", "Production quality")
+
+SHOW_LEGEND()
+@enduml

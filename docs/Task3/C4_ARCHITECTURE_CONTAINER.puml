@@ -1,0 +1,101 @@
+@startuml Task3_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Auto.ru Federation Integration & Monitoring - Container Diagram (Task 3: System Integration)
+
+Person(developer, "Разработчик", "Интегрирует системы")
+Person(devops, "DevOps", "Настраивает мониторинг")
+
+System_Boundary(integration_system, "Integration & Monitoring System") {
+    Container(integration_api, "Integration API", "Node.js, Express", "REST API для управления\nинтеграциями и конфигурацией")
+    
+    Container(monitoring_dashboard, "Monitoring Dashboard", "React, TypeScript", "Web интерфейс для мониторинга\nи управления федерацией")
+    
+    Container(metrics_aggregator, "Metrics Aggregator", "Go, Prometheus Client", "Сбор и агрегация метрик\nот всех подграфов")
+    
+    Container(trace_analyzer, "Trace Analyzer", "Python, Jaeger SDK", "Анализ трассировок\nи выявление bottlenecks")
+    
+    Container(config_manager, "Config Manager", "Rust, YAML", "Управление конфигурациями\nфедеративных подграфов")
+    
+    Container(test_orchestrator, "Test Orchestrator", "TypeScript, Jest", "Оркестрация интеграционных\nтестов федерации")
+}
+
+System_Boundary(federation_layer, "Federation Layer") {
+    Container(apollo_gateway, "Apollo Gateway", "Node.js, Apollo Federation", "Федеративный роутер\nс расширенной телеметрией")
+    
+    Container(schema_registry, "Schema Registry", "Apollo Studio", "Реестр схем подграфов\nи управление версиями")
+    
+    Container(federation_cache, "Federation Cache", "Redis Cluster", "Кеширование результатов\nфедеративных запросов")
+}
+
+System_Boundary(subgraphs_layer, "Subgraphs Layer") {
+    Container(ugc_service, "UGC Service", "Rust, async-graphql", "Подграф UGC с метриками\nи трассировкой")
+    
+    Container(users_service, "Users Service", "Node.js, Apollo Server", "Подграф пользователей\nс мониторингом")
+    
+    Container(offers_service, "Offers Service", "Java, Spring GraphQL", "Подграф объявлений\nс телеметрией")
+}
+
+System_Boundary(monitoring_stack, "Monitoring Stack") {
+    ContainerDb(prometheus_db, "Prometheus", "Time Series DB", "Хранение метрик\nпроизводительности")
+    
+    Container(grafana_ui, "Grafana", "Visualization", "Дашборды и алерты\nмониторинга")
+    
+    ContainerDb(jaeger_storage, "Jaeger Storage", "Cassandra/Elasticsearch", "Хранение трассировок\nи spans")
+    
+    ContainerDb(logs_storage, "Logs Storage", "Elasticsearch", "Централизованное хранение\nлогов системы")
+}
+
+System_Boundary(infrastructure, "Infrastructure") {
+    Container(k8s_operator, "K8s Operator", "Go, Kubernetes API", "Автоматизация деплоя\nи масштабирования")
+    
+    Container(service_mesh, "Service Mesh", "Istio", "Управление трафиком\nи безопасностью")
+    
+    Container(load_balancer, "Load Balancer", "NGINX/Envoy", "Балансировка нагрузки\nи SSL termination")
+}
+
+' User interactions
+Rel(developer, monitoring_dashboard, "Просматривает метрики\nи настраивает интеграции", "HTTPS")
+Rel(devops, integration_api, "Управляет конфигурациями\nчерез API", "HTTPS/REST")
+
+' Integration system internal
+Rel(monitoring_dashboard, integration_api, "Получает данные\nмониторинга", "HTTPS/REST")
+Rel(integration_api, config_manager, "Управляет конфигурациями\nподграфов", "gRPC")
+Rel(integration_api, test_orchestrator, "Запускает интеграционные\nтесты", "HTTP/API")
+
+Rel(metrics_aggregator, prometheus_db, "Собирает метрики\nот подграфов", "HTTP/Prometheus")
+Rel(trace_analyzer, jaeger_storage, "Анализирует трассировки\nпроизводительности", "HTTP/Jaeger API")
+
+' Federation layer
+Rel(apollo_gateway, schema_registry, "Получает схемы\nподграфов", "HTTP/GraphQL")
+Rel(apollo_gateway, federation_cache, "Кеширует результаты\nзапросов", "Redis Protocol")
+
+Rel(config_manager, apollo_gateway, "Обновляет конфигурацию\nроутера", "HTTP/Config API")
+
+' Subgraphs connections
+Rel(apollo_gateway, ugc_service, "Федеративные запросы\nк UGC", "HTTP/GraphQL")
+Rel(apollo_gateway, users_service, "Федеративные запросы\nк Users", "HTTP/GraphQL")
+Rel(apollo_gateway, offers_service, "Федеративные запросы\nк Offers", "HTTP/GraphQL")
+
+' Monitoring connections
+Rel(ugc_service, metrics_aggregator, "Отправляет метрики\nUGC операций", "HTTP/Metrics")
+Rel(users_service, metrics_aggregator, "Отправляет метрики\nпользователей", "HTTP/Metrics")
+Rel(offers_service, metrics_aggregator, "Отправляет метрики\nобъявлений", "HTTP/Metrics")
+
+Rel(ugc_service, jaeger_storage, "Отправляет трассировки\nUGC запросов", "HTTP/Jaeger")
+Rel(users_service, jaeger_storage, "Отправляет трассировки\nUsers запросов", "HTTP/Jaeger")
+Rel(offers_service, jaeger_storage, "Отправляет трассировки\nOffers запросов", "HTTP/Jaeger")
+
+Rel(prometheus_db, grafana_ui, "Предоставляет данные\nдля визуализации", "PromQL")
+Rel(logs_storage, grafana_ui, "Предоставляет логи\nдля анализа", "Elasticsearch API")
+
+' Infrastructure
+Rel(k8s_operator, ugc_service, "Управляет деплоем\nUGC сервиса", "K8s API")
+Rel(k8s_operator, users_service, "Управляет деплоем\nUsers сервиса", "K8s API")
+Rel(k8s_operator, offers_service, "Управляет деплоем\nOffers сервиса", "K8s API")
+
+Rel(service_mesh, apollo_gateway, "Управляет трафиком\nи безопасностью", "Envoy Proxy")
+Rel(load_balancer, apollo_gateway, "Балансирует нагрузку\nна роутер", "HTTP/HTTPS")
+
+SHOW_LEGEND()
+@enduml

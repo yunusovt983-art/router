@@ -1,0 +1,114 @@
+groups:
+  - name: ugc-subgraph-alerts
+    rules:
+      # High error rate alert
+      - alert: UGCSubgraphHighErrorRate
+        expr: rate(graphql_errors_total{service="ugc-subgraph"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: ugc-subgraph
+        annotations:
+          summary: "UGC Subgraph has high error rate"
+          description: "UGC Subgraph error rate is {{ $value }} errors per second for more than 2 minutes"
+
+      # High response time alert
+      - alert: UGCSubgraphHighLatency
+        expr: histogram_quantile(0.95, rate(graphql_request_duration_seconds_bucket{service="ugc-subgraph"}[5m])) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          service: ugc-subgraph
+        annotations:
+          summary: "UGC Subgraph has high response time"
+          description: "UGC Subgraph 95th percentile latency is {{ $value }}s for more than 5 minutes"
+
+      # Database connection issues
+      - alert: UGCSubgraphDatabaseErrors
+        expr: rate(db_errors_total{service="ugc-subgraph"}[5m]) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          service: ugc-subgraph
+        annotations:
+          summary: "UGC Subgraph database errors"
+          description: "UGC Subgraph database error rate is {{ $value }} errors per second"
+
+      # Circuit breaker opened
+      - alert: UGCSubgraphCircuitBreakerOpen
+        expr: circuit_breaker_state{service="ugc-subgraph"} == 1
+        for: 0m
+        labels:
+          severity: warning
+          service: ugc-subgraph
+        annotations:
+          summary: "UGC Subgraph circuit breaker opened"
+          description: "Circuit breaker for {{ $labels.service_name }} is open"
+
+      # External service high error rate
+      - alert: UGCSubgraphExternalServiceErrors
+        expr: rate(external_errors_total{service="ugc-subgraph"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: ugc-subgraph
+        annotations:
+          summary: "UGC Subgraph external service errors"
+          description: "External service error rate is {{ $value }} errors per second"
+
+      # Low review creation rate (business metric)
+      - alert: UGCSubgraphLowReviewCreationRate
+        expr: rate(reviews_created_total{service="ugc-subgraph"}[1h]) < 0.01
+        for: 30m
+        labels:
+          severity: info
+          service: ugc-subgraph
+        annotations:
+          summary: "UGC Subgraph low review creation rate"
+          description: "Review creation rate is {{ $value }} reviews per second over the last hour"
+
+      # Service down
+      - alert: UGCSubgraphDown
+        expr: up{job="ugc-subgraph"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: ugc-subgraph
+        annotations:
+          summary: "UGC Subgraph is down"
+          description: "UGC Subgraph has been down for more than 1 minute"
+
+  - name: apollo-router-alerts
+    rules:
+      # Router high error rate
+      - alert: ApolloRouterHighErrorRate
+        expr: rate(apollo_router_http_requests_total{status=~"5.."}[5m]) / rate(apollo_router_http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: apollo-router
+        annotations:
+          summary: "Apollo Router has high error rate"
+          description: "Apollo Router error rate is {{ $value | humanizePercentage }} for more than 2 minutes"
+
+      # Router high latency
+      - alert: ApolloRouterHighLatency
+        expr: histogram_quantile(0.95, rate(apollo_router_http_request_duration_seconds_bucket[5m])) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          service: apollo-router
+        annotations:
+          summary: "Apollo Router has high latency"
+          description: "Apollo Router 95th percentile latency is {{ $value }}s for more than 5 minutes"
+
+      # Router down
+      - alert: ApolloRouterDown
+        expr: up{job="apollo-router"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: apollo-router
+        annotations:
+          summary: "Apollo Router is down"
+          description: "Apollo Router has been down for more than 1 minute"

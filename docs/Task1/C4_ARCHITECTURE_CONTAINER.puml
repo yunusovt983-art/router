@@ -1,0 +1,83 @@
+@startuml Task1_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Auto.ru GraphQL Federation - Container Diagram (Task 1: Infrastructure Setup)
+
+Person(developer, "Разработчик", "Использует локальную среду разработки")
+
+System_Boundary(docker_environment, "Docker Development Environment") {
+    Container(apollo_router, "Apollo Router", "Rust, Axum", "Федеративный GraphQL роутер\n- Композиция схем\n- Маршрутизация запросов\n- Телеметрия")
+    
+    Container(ugc_subgraph, "UGC Subgraph", "Rust, async-graphql", "Сервис пользовательского контента\n- Отзывы\n- Рейтинги\n- Модерация")
+    
+    Container(users_subgraph, "Users Subgraph", "Rust, async-graphql", "Сервис пользователей\n- Аутентификация\n- Профили\n- Роли")
+    
+    Container(offers_subgraph, "Offers Subgraph", "Rust, async-graphql", "Сервис объявлений\n- Автомобили\n- Предложения\n- Поиск")
+    
+    Container(shared_lib, "Shared Library", "Rust crate", "Общие компоненты\n- Типы данных\n- Утилиты аутентификации\n- Обработка ошибок")
+}
+
+ContainerDb(postgres, "PostgreSQL", "PostgreSQL 15", "Основная база данных\n- Пользователи\n- Отзывы\n- Объявления")
+
+ContainerDb(redis, "Redis", "Redis 7", "Кеш и сессии\n- Временные данные\n- Сессии пользователей\n- Кеш запросов")
+
+System_Boundary(monitoring, "Monitoring & Observability") {
+    Container(prometheus, "Prometheus", "Metrics DB", "Сбор и хранение метрик\n- Производительность\n- Бизнес-метрики")
+    
+    Container(jaeger, "Jaeger", "Tracing", "Distributed tracing\n- Трассировка запросов\n- Анализ производительности")
+}
+
+System_Boundary(build_tools, "Development Tools") {
+    Container(cargo_workspace, "Cargo Workspace", "Rust", "Система сборки\n- Управление зависимостями\n- Компиляция\n- Тестирование")
+    
+    Container(docker_compose, "Docker Compose", "YAML", "Оркестрация контейнеров\n- Локальная разработка\n- Управление сервисами")
+    
+    Container(dev_scripts, "Development Scripts", "Bash", "Автоматизация\n- Настройка среды\n- Миграции БД\n- Утилиты")
+}
+
+Rel(developer, apollo_router, "GraphQL запросы", "HTTP:4000")
+Rel(developer, cargo_workspace, "Сборка и тестирование", "CLI")
+Rel(developer, docker_compose, "Управление сервисами", "CLI")
+Rel(developer, dev_scripts, "Автоматизация", "CLI")
+
+Rel(apollo_router, ugc_subgraph, "Федеративные запросы", "HTTP:4001")
+Rel(apollo_router, users_subgraph, "Федеративные запросы", "HTTP:4002")
+Rel(apollo_router, offers_subgraph, "Федеративные запросы", "HTTP:4003")
+
+Rel(ugc_subgraph, shared_lib, "Использует общий код", "Rust crate")
+Rel(users_subgraph, shared_lib, "Использует общий код", "Rust crate")
+Rel(offers_subgraph, shared_lib, "Использует общий код", "Rust crate")
+Rel(apollo_router, shared_lib, "Использует общий код", "Rust crate")
+
+Rel(ugc_subgraph, postgres, "SQL запросы", "TCP:5432")
+Rel(users_subgraph, postgres, "SQL запросы", "TCP:5432")
+Rel(offers_subgraph, postgres, "SQL запросы", "TCP:5432")
+
+Rel(ugc_subgraph, redis, "Кеширование", "TCP:6379")
+Rel(users_subgraph, redis, "Сессии", "TCP:6379")
+Rel(offers_subgraph, redis, "Кеширование", "TCP:6379")
+
+Rel(apollo_router, prometheus, "Метрики", "HTTP")
+Rel(ugc_subgraph, prometheus, "Метрики", "HTTP")
+Rel(users_subgraph, prometheus, "Метрики", "HTTP")
+Rel(offers_subgraph, prometheus, "Метрики", "HTTP")
+
+Rel(apollo_router, jaeger, "Трассировки", "HTTP")
+Rel(ugc_subgraph, jaeger, "Трассировки", "HTTP")
+Rel(users_subgraph, jaeger, "Трассировки", "HTTP")
+Rel(offers_subgraph, jaeger, "Трассировки", "HTTP")
+
+Rel(cargo_workspace, apollo_router, "Компиляция", "Build")
+Rel(cargo_workspace, ugc_subgraph, "Компиляция", "Build")
+Rel(cargo_workspace, users_subgraph, "Компиляция", "Build")
+Rel(cargo_workspace, offers_subgraph, "Компиляция", "Build")
+
+Rel(docker_compose, apollo_router, "Оркестрация", "Docker")
+Rel(docker_compose, ugc_subgraph, "Оркестрация", "Docker")
+Rel(docker_compose, users_subgraph, "Оркестрация", "Docker")
+Rel(docker_compose, offers_subgraph, "Оркестрация", "Docker")
+Rel(docker_compose, postgres, "Оркестрация", "Docker")
+Rel(docker_compose, redis, "Оркестрация", "Docker")
+
+SHOW_LEGEND()
+@enduml

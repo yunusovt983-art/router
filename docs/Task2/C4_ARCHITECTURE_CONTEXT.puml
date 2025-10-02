@@ -1,0 +1,40 @@
+@startuml Task2_Context_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Auto.ru UGC Subgraph - Context Diagram (Task 2: UGC Implementation)
+
+Person(user, "Пользователь Auto.ru", "Создает и читает отзывы о автомобилях")
+Person(moderator, "Модератор", "Модерирует пользовательский контент")
+Person(developer, "Разработчик", "Разрабатывает и тестирует UGC функциональность")
+
+System_Boundary(ugc_system, "UGC Subgraph System") {
+    System(ugc_subgraph, "UGC Subgraph", "GraphQL сервис для управления\nпользовательским контентом\n(отзывы, рейтинги)")
+}
+
+System_Ext(apollo_router, "Apollo Router", "Федеративный GraphQL роутер\nМаршрутизирует запросы к UGC")
+System_Ext(users_subgraph, "Users Subgraph", "Сервис управления пользователями\nАутентификация и профили")
+System_Ext(offers_subgraph, "Offers Subgraph", "Сервис объявлений\nИнформация о автомобилях")
+
+System_Ext(postgres, "PostgreSQL", "Реляционная база данных\nХранение отзывов и рейтингов")
+System_Ext(redis, "Redis Cache", "In-memory кеш\nКеширование агрегированных данных")
+
+System_Ext(prometheus, "Prometheus", "Система мониторинга\nСбор метрик UGC сервиса")
+System_Ext(jaeger, "Jaeger", "Distributed tracing\nТрассировка GraphQL запросов")
+
+Rel(user, apollo_router, "Отправляет GraphQL запросы\nдля работы с отзывами", "HTTPS/GraphQL")
+Rel(moderator, apollo_router, "Модерирует отзывы\nчерез GraphQL API", "HTTPS/GraphQL")
+Rel(developer, ugc_subgraph, "Разрабатывает и тестирует\nUGC функциональность", "HTTP/GraphQL")
+
+Rel(apollo_router, ugc_subgraph, "Маршрутизирует запросы\nк UGC подграфу", "HTTP/GraphQL")
+
+Rel_Back(ugc_subgraph, users_subgraph, "Получает информацию\nо пользователях", "HTTP/GraphQL Federation")
+Rel_Back(ugc_subgraph, offers_subgraph, "Получает информацию\nо объявлениях", "HTTP/GraphQL Federation")
+
+Rel(ugc_subgraph, postgres, "Сохраняет и читает\nотзывы и рейтинги", "SQL/TCP")
+Rel(ugc_subgraph, redis, "Кеширует агрегированные\nданные и сессии", "Redis Protocol")
+
+Rel(ugc_subgraph, prometheus, "Отправляет метрики\nпроизводительности", "HTTP")
+Rel(ugc_subgraph, jaeger, "Отправляет трассировки\nGraphQL операций", "HTTP")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,79 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.5", import: ["@key", "@extends", "@external", "@requires", "@provides"])
+
+type Review @key(fields: "id") {
+  id: ID!
+  offerId: ID!
+  authorId: ID!
+  rating: Int!
+  text: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isModerated: Boolean!
+  
+  # Federation relationships
+  offer: Offer!
+  author: User!
+}
+
+extend type Offer @key(fields: "id") {
+  id: ID! @external
+  reviews(first: Int, after: String): ReviewConnection!
+  averageRating: Float
+  reviewsCount: Int!
+}
+
+extend type User @key(fields: "id") {
+  id: ID! @external
+  reviews(first: Int, after: String): ReviewConnection!
+}
+
+type ReviewConnection {
+  edges: [ReviewEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ReviewEdge {
+  node: Review!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+input CreateReviewInput {
+  offerId: ID!
+  rating: Int!
+  text: String!
+}
+
+input UpdateReviewInput {
+  rating: Int
+  text: String
+}
+
+input ReviewsFilter {
+  offerId: ID
+  authorId: ID
+  minRating: Int
+  maxRating: Int
+  moderatedOnly: Boolean
+}
+
+scalar DateTime
+
+type Query {
+  review(id: ID!): Review
+  reviews(filter: ReviewsFilter, first: Int, after: String): ReviewConnection!
+}
+
+type Mutation {
+  createReview(input: CreateReviewInput!): Review!
+  updateReview(id: ID!, input: UpdateReviewInput!): Review!
+  deleteReview(id: ID!): Boolean!
+  moderateReview(id: ID!, approved: Boolean!): Review!
+}

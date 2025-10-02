@@ -1,0 +1,54 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "prometheus-alerts.yml"
+
+scrape_configs:
+  # Apollo Router metrics
+  - job_name: 'apollo-router'
+    static_configs:
+      - targets: ['apollo-router:9090']
+    scrape_interval: 5s
+    metrics_path: /metrics
+
+  # UGC Subgraph metrics
+  - job_name: 'ugc-subgraph'
+    static_configs:
+      - targets: ['ugc-subgraph:4001']
+    scrape_interval: 5s
+    metrics_path: /metrics
+
+  # Users Subgraph metrics
+  - job_name: 'users-subgraph'
+    static_configs:
+      - targets: ['users-subgraph:4002']
+    scrape_interval: 5s
+    metrics_path: /metrics
+
+  # Offers Subgraph metrics
+  - job_name: 'offers-subgraph'
+    static_configs:
+      - targets: ['offers-subgraph:4004']
+    scrape_interval: 5s
+    metrics_path: /metrics
+
+  # Catalog Subgraph metrics
+  - job_name: 'catalog-subgraph'
+    static_configs:
+      - targets: ['catalog-subgraph:4003']
+    scrape_interval: 5s
+    metrics_path: /metrics
+
+  # Search Subgraph metrics
+  - job_name: 'search-subgraph'
+    static_configs:
+      - targets: ['search-subgraph:4005']
+    scrape_interval: 5s
+    metrics_path: /metrics
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

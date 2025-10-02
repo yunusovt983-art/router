@@ -1,0 +1,105 @@
+@startuml Task1_Code_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru GraphQL Federation - Code Level Diagram (Task 1: Shared Library Structure)
+
+System_Boundary(shared_crate, "Shared Crate - Internal Structure") {
+    
+    System_Boundary(types_module, "Types Module (src/types.rs)") {
+        Component(user_id, "UserId", "struct", "Типизированный ID пользователя\n- Валидация UUID\n- Сериализация/десериализация\n- Display trait")
+        
+        Component(offer_id, "OfferId", "struct", "Типизированный ID объявления\n- Валидация UUID\n- GraphQL Scalar\n- Database mapping")
+        
+        Component(review_id, "ReviewId", "struct", "Типизированный ID отзыва\n- Валидация UUID\n- Индексирование\n- Связи с другими типами")
+        
+        Component(pagination, "Pagination", "struct", "Пагинация запросов\n- Cursor-based\n- Limit validation\n- Connection helpers")
+    }
+    
+    System_Boundary(auth_module, "Auth Module (src/auth.rs)") {
+        Component(jwt_service, "JwtService", "struct", "JWT обработка\n- Token validation\n- Claims extraction\n- Signature verification")
+        
+        Component(user_context, "UserContext", "struct", "Контекст пользователя\n- User ID\n- Roles\n- Permissions\n- Session data")
+        
+        Component(auth_middleware, "AuthMiddleware", "struct", "Middleware аутентификации\n- Header extraction\n- Token validation\n- Context injection")
+        
+        Component(permission_guard, "PermissionGuard", "struct", "Guard разрешений\n- Role checking\n- Permission validation\n- GraphQL integration")
+    }
+    
+    System_Boundary(errors_module, "Errors Module (src/errors.rs)") {
+        Component(ugc_error, "UgcError", "enum", "Ошибки UGC сервиса\n- Validation errors\n- Database errors\n- Business logic errors")
+        
+        Component(auth_error, "AuthError", "enum", "Ошибки аутентификации\n- Invalid token\n- Expired token\n- Insufficient permissions")
+        
+        Component(graphql_error_ext, "GraphQLErrorExt", "trait", "Расширения GraphQL ошибок\n- Error codes\n- User-friendly messages\n- Logging integration")
+        
+        Component(error_handler, "ErrorHandler", "struct", "Централизованная обработка\n- Error mapping\n- Logging\n- Metrics collection")
+    }
+    
+    System_Boundary(utils_module, "Utils Module (src/utils.rs)") {
+        Component(validation, "Validation", "mod", "Валидация данных\n- Input sanitization\n- Format checking\n- Business rules")
+        
+        Component(datetime_utils, "DateTimeUtils", "mod", "Утилиты времени\n- Timezone handling\n- Format conversion\n- Duration calculations")
+        
+        Component(string_utils, "StringUtils", "mod", "Обработка строк\n- Sanitization\n- Normalization\n- Encoding/decoding")
+        
+        Component(crypto_utils, "CryptoUtils", "mod", "Криптографические утилиты\n- Hashing\n- Random generation\n- Secure comparison")
+    }
+}
+
+System_Boundary(workspace_structure, "Workspace File Structure") {
+    Component(cargo_toml, "Cargo.toml", "TOML", "Workspace configuration\n[workspace]\nmembers = [\n  \"crates/apollo-router\",\n  \"crates/ugc-subgraph\",\n  \"crates/users-subgraph\",\n  \"crates/offers-subgraph\",\n  \"crates/shared\"\n]\nresolver = \"2\"")
+    
+    Component(shared_cargo, "shared/Cargo.toml", "TOML", "Shared crate dependencies\n[dependencies]\nasync-graphql = \"7.0\"\ntokio = \"1.0\"\nserde = \"1.0\"\njsonwebtoken = \"9.0\"\nuuid = \"1.0\"")
+    
+    Component(lib_rs, "shared/src/lib.rs", "Rust", "Crate entry point\npub mod auth;\npub mod errors;\npub mod types;\npub mod utils;\n\n// Re-exports\npub use auth::*;\npub use errors::*;\npub use types::*;")
+}
+
+System_Boundary(docker_structure, "Docker Configuration Structure") {
+    Component(docker_compose_yml, "docker-compose.yml", "YAML", "Service orchestration\nversion: '3.8'\nservices:\n  postgres: {...}\n  redis: {...}\n  apollo-router: {...}\n  ugc-subgraph: {...}")
+    
+    Component(router_dockerfile, "apollo-router/Dockerfile", "Docker", "Multi-stage build\nFROM rust:1.75 as builder\nWORKDIR /app\nCOPY . .\nRUN cargo build --release\n\nFROM debian:bookworm-slim\nCOPY --from=builder /app/target/release/apollo-router /usr/local/bin/\nEXPOSE 4000\nCMD [\"apollo-router\"]")
+    
+    Component(subgraph_dockerfile, "*/Dockerfile", "Docker", "Subgraph containers\nFROM rust:1.75 as builder\n# Build process\nFROM debian:bookworm-slim\n# Runtime setup\nEXPOSE {port}\nCMD [\"{service}\"]")
+}
+
+System_Boundary(automation_scripts, "Automation Scripts Structure") {
+    Component(makefile, "Makefile", "Make", "Build automation\n.PHONY: dev build test\ndev:\n\t./scripts/dev-setup.sh\nbuild:\n\tcargo build --release\ntest:\n\tcargo test --workspace")
+    
+    Component(dev_setup, "scripts/dev-setup.sh", "Bash", "Environment setup\n#!/bin/bash\nset -e\necho \"🚀 Setting up development environment\"\n# Docker checks\n# Service startup\n# Database migration")
+    
+    Component(env_example, ".env.example", "Environment", "Configuration template\nDATABASE_URL=postgresql://...\nREDIS_URL=redis://...\nJWT_SECRET=...\nRUST_LOG=info")
+}
+
+' Relationships between modules
+Rel(user_context, user_id, "Uses", "Type reference")
+Rel(auth_middleware, jwt_service, "Uses", "Token validation")
+Rel(permission_guard, user_context, "Uses", "Permission checking")
+
+Rel(ugc_error, graphql_error_ext, "Implements", "Error conversion")
+Rel(auth_error, graphql_error_ext, "Implements", "Error conversion")
+Rel(error_handler, ugc_error, "Handles", "Error processing")
+Rel(error_handler, auth_error, "Handles", "Error processing")
+
+Rel(validation, string_utils, "Uses", "String processing")
+Rel(jwt_service, crypto_utils, "Uses", "Signature verification")
+Rel(auth_middleware, datetime_utils, "Uses", "Token expiry")
+
+' Workspace relationships
+Rel(cargo_toml, shared_cargo, "Includes", "Workspace member")
+Rel(shared_cargo, lib_rs, "Defines", "Crate structure")
+Rel(lib_rs, types_module, "Exports", "Public API")
+Rel(lib_rs, auth_module, "Exports", "Public API")
+Rel(lib_rs, errors_module, "Exports", "Public API")
+Rel(lib_rs, utils_module, "Exports", "Public API")
+
+' Docker relationships
+Rel(docker_compose_yml, router_dockerfile, "Builds", "Container image")
+Rel(docker_compose_yml, subgraph_dockerfile, "Builds", "Container images")
+
+' Automation relationships
+Rel(makefile, dev_setup, "Executes", "Environment setup")
+Rel(dev_setup, docker_compose_yml, "Uses", "Service management")
+Rel(dev_setup, env_example, "Reads", "Configuration")
+
+SHOW_LEGEND()
+@enduml

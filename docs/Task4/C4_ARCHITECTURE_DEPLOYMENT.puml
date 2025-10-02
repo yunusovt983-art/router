@@ -1,0 +1,264 @@
+@startuml Task4_Deployment_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title Auto.ru Federation - Deployment Diagram (Task 4: Production-Ready Infrastructure)
+
+Deployment_Node(aws_cloud, "AWS Cloud", "Amazon Web Services") {
+    
+    Deployment_Node(vpc, "Production VPC", "Virtual Private Cloud") {
+        
+        Deployment_Node(public_subnet_1, "Public Subnet 1", "us-east-1a") {
+            Deployment_Node(alb, "Application Load Balancer", "AWS ALB") {
+                Container(load_balancer, "ALB", "Layer 7 Load Balancer", "SSL termination\nHealth checks\nSticky sessions")
+            }
+            
+            Deployment_Node(nat_gateway_1, "NAT Gateway 1", "AWS NAT Gateway") {
+                Container(nat_1, "NAT-1", "Network Address Translation", "Outbound internet access\nfor private subnets")
+            }
+        }
+        
+        Deployment_Node(public_subnet_2, "Public Subnet 2", "us-east-1b") {
+            Deployment_Node(nat_gateway_2, "NAT Gateway 2", "AWS NAT Gateway") {
+                Container(nat_2, "NAT-2", "Network Address Translation", "Outbound internet access\nfor private subnets")
+            }
+        }
+        
+        Deployment_Node(private_subnet_1, "Private Subnet 1", "us-east-1a") {
+            
+            Deployment_Node(eks_nodegroup_1, "EKS Node Group 1", "Kubernetes Worker Nodes") {
+                Deployment_Node(gateway_pod_1, "Gateway Pod 1", "Kubernetes Pod") {
+                    Container(apollo_gateway_1, "Apollo Gateway", "Node.js Container", "Primary Gateway instance\nQuery planning & execution\nCaching & rate limiting")
+                }
+                
+                Deployment_Node(user_pod_1, "User Service Pod 1", "Kubernetes Pod") {
+                    Container(user_service_1, "User Subgraph", "Node.js Container", "User management service\nAuthentication & profiles\nDataLoader optimization")
+                }
+                
+                Deployment_Node(offer_pod_1, "Offer Service Pod 1", "Kubernetes Pod") {
+                    Container(offer_service_1, "Offer Subgraph", "Node.js Container", "Offer management service\nSearch & filtering\nImage processing")
+                }
+                
+                Deployment_Node(review_pod_1, "Review Service Pod 1", "Kubernetes Pod") {
+                    Container(review_service_1, "Review Subgraph", "Node.js Container", "Review management service\nModeration & rating\nReal-time aggregation")
+                }
+            }
+            
+            Deployment_Node(rds_primary, "RDS Primary", "PostgreSQL 15") {
+                ContainerDb(postgres_primary, "PostgreSQL Primary", "Relational Database", "Primary database\nACID transactions\nOptimized indexes\nPartitioning")
+            }
+            
+            Deployment_Node(elasticache_primary, "ElastiCache Primary", "Redis 7") {
+                ContainerDb(redis_primary, "Redis Primary", "In-Memory Database", "Primary cache cluster\nSession storage\nQuery plan cache\nRate limiting")
+            }
+            
+            Deployment_Node(elasticsearch_master, "Elasticsearch Master", "OpenSearch") {
+                ContainerDb(es_master, "ES Master Node", "Search Engine", "Cluster coordination\nIndex management\nQuery routing")
+            }
+        }
+        
+        Deployment_Node(private_subnet_2, "Private Subnet 2", "us-east-1b") {
+            
+            Deployment_Node(eks_nodegroup_2, "EKS Node Group 2", "Kubernetes Worker Nodes") {
+                Deployment_Node(gateway_pod_2, "Gateway Pod 2", "Kubernetes Pod") {
+                    Container(apollo_gateway_2, "Apollo Gateway", "Node.js Container", "Secondary Gateway instance\nHigh availability\nLoad distribution")
+                }
+                
+                Deployment_Node(user_pod_2, "User Service Pod 2", "Kubernetes Pod") {
+                    Container(user_service_2, "User Subgraph", "Node.js Container", "User service replica\nRead operations\nLoad balancing")
+                }
+                
+                Deployment_Node(offer_pod_2, "Offer Service Pod 2", "Kubernetes Pod") {
+                    Container(offer_service_2, "Offer Subgraph", "Node.js Container", "Offer service replica\nSearch queries\nHorizontal scaling")
+                }
+                
+                Deployment_Node(review_pod_2, "Review Service Pod 2", "Kubernetes Pod") {
+                    Container(review_service_2, "Review Subgraph", "Node.js Container", "Review service replica\nAnalytics queries\nRead scaling")
+                }
+            }
+            
+            Deployment_Node(rds_replica_1, "RDS Read Replica 1", "PostgreSQL 15") {
+                ContainerDb(postgres_replica_1, "PostgreSQL Replica 1", "Read Replica", "Read-only replica\nAnalytics queries\nReporting workloads")
+            }
+            
+            Deployment_Node(elasticache_replica, "ElastiCache Replica", "Redis 7") {
+                ContainerDb(redis_replica, "Redis Replica", "In-Memory Database", "Read replica\nCache distribution\nFailover support")
+            }
+            
+            Deployment_Node(elasticsearch_data_1, "Elasticsearch Data 1", "OpenSearch") {
+                ContainerDb(es_data_1, "ES Data Node 1", "Search Engine", "Data storage\nSearch execution\nIndex sharding")
+            }
+        }
+        
+        Deployment_Node(private_subnet_3, "Private Subnet 3", "us-east-1c") {
+            
+            Deployment_Node(rds_replica_2, "RDS Read Replica 2", "PostgreSQL 15") {
+                ContainerDb(postgres_replica_2, "PostgreSQL Replica 2", "Read Replica", "Read-only replica\nUser queries\nLoad distribution")
+            }
+            
+            Deployment_Node(elasticsearch_data_2, "Elasticsearch Data 2", "OpenSearch") {
+                ContainerDb(es_data_2, "ES Data Node 2", "Search Engine", "Data storage\nSearch execution\nReplication")
+            }
+            
+            Deployment_Node(monitoring_cluster, "Monitoring Cluster", "EKS Monitoring") {
+                Deployment_Node(prometheus_pod, "Prometheus Pod", "Kubernetes Pod") {
+                    Container(prometheus, "Prometheus", "Monitoring Container", "Metrics collection\nTime-series storage\nAlerting rules")
+                }
+                
+                Deployment_Node(grafana_pod, "Grafana Pod", "Kubernetes Pod") {
+                    Container(grafana, "Grafana", "Visualization Container", "Dashboards\nVisualization\nAlerting UI")
+                }
+                
+                Deployment_Node(jaeger_pod, "Jaeger Pod", "Kubernetes Pod") {
+                    Container(jaeger, "Jaeger", "Tracing Container", "Distributed tracing\nPerformance analysis\nBottleneck detection")
+                }
+            }
+        }
+    }
+    
+    Deployment_Node(s3_storage, "S3 Storage", "Object Storage") {
+        Container(s3_bucket, "S3 Bucket", "Object Storage", "Image storage\nStatic assets\nBackups\nLogs archive")
+    }
+    
+    Deployment_Node(cloudfront, "CloudFront CDN", "Content Delivery Network") {
+        Container(cdn_distribution, "CDN Distribution", "Global CDN", "Global content delivery\nEdge caching\nDDoS protection")
+    }
+    
+    Deployment_Node(route53, "Route 53", "DNS Service") {
+        Container(dns_service, "DNS", "Managed DNS", "Domain resolution\nHealth checks\nFailover routing")
+    }
+}
+
+Deployment_Node(external_services, "External Services", "Third-party Services") {
+    
+    Deployment_Node(notification_provider, "Notification Provider", "SendGrid/SES") {
+        System_Ext(email_service, "Email Service", "Transactional emails\nMarketing campaigns\nDelivery tracking")
+        System_Ext(sms_service, "SMS Service", "SMS notifications\nVerification codes\nAlerts")
+    }
+    
+    Deployment_Node(payment_provider, "Payment Provider", "Stripe/PayPal") {
+        System_Ext(payment_gateway, "Payment Gateway", "Payment processing\nFraud detection\nSubscription management")
+    }
+    
+    Deployment_Node(analytics_provider, "Analytics Provider", "Google Analytics") {
+        System_Ext(analytics_service, "Analytics Service", "User behavior tracking\nConversion analytics\nA/B testing")
+    }
+}
+
+Deployment_Node(testing_infrastructure, "Testing Infrastructure", "CI/CD & Testing") {
+    
+    Deployment_Node(github_actions, "GitHub Actions", "CI/CD Pipeline") {
+        Container(ci_pipeline, "CI/CD Pipeline", "Automated Pipeline", "Code testing\nBuild & deploy\nQuality gates")
+    }
+    
+    Deployment_Node(k6_cloud, "K6 Cloud", "Load Testing") {
+        Container(load_testing, "Load Testing", "Performance Testing", "Automated load tests\nPerformance monitoring\nCapacity planning")
+    }
+    
+    Deployment_Node(chaos_engineering, "Chaos Engineering", "Resilience Testing") {
+        Container(chaos_monkey, "Chaos Monkey", "Fault Injection", "Failure simulation\nResilience testing\nDisaster recovery")
+    }
+}
+
+' Internet and User Traffic
+Person(users, "Users", "End users accessing the system")
+Rel(users, dns_service, "DNS resolution", "DNS")
+Rel(dns_service, cdn_distribution, "Route to CDN", "DNS CNAME")
+Rel(cdn_distribution, load_balancer, "Origin requests", "HTTPS")
+
+' Load Balancer to Gateways
+Rel(load_balancer, apollo_gateway_1, "Primary traffic", "HTTP/HTTPS")
+Rel(load_balancer, apollo_gateway_2, "Failover traffic", "HTTP/HTTPS")
+
+' Gateway to Subgraphs (Cross-AZ)
+Rel(apollo_gateway_1, user_service_1, "User queries", "HTTP/GraphQL")
+Rel(apollo_gateway_1, user_service_2, "Load balanced", "HTTP/GraphQL")
+Rel(apollo_gateway_1, offer_service_1, "Offer queries", "HTTP/GraphQL")
+Rel(apollo_gateway_1, offer_service_2, "Load balanced", "HTTP/GraphQL")
+Rel(apollo_gateway_1, review_service_1, "Review queries", "HTTP/GraphQL")
+Rel(apollo_gateway_1, review_service_2, "Load balanced", "HTTP/GraphQL")
+
+Rel(apollo_gateway_2, user_service_1, "User queries", "HTTP/GraphQL")
+Rel(apollo_gateway_2, user_service_2, "Load balanced", "HTTP/GraphQL")
+Rel(apollo_gateway_2, offer_service_1, "Offer queries", "HTTP/GraphQL")
+Rel(apollo_gateway_2, offer_service_2, "Load balanced", "HTTP/GraphQL")
+Rel(apollo_gateway_2, review_service_1, "Review queries", "HTTP/GraphQL")
+Rel(apollo_gateway_2, review_service_2, "Load balanced", "HTTP/GraphQL")
+
+' Database Connections (Primary/Replica Split)
+Rel(user_service_1, postgres_primary, "Write operations", "PostgreSQL")
+Rel(user_service_2, postgres_replica_2, "Read operations", "PostgreSQL")
+Rel(offer_service_1, postgres_primary, "Write operations", "PostgreSQL")
+Rel(offer_service_2, postgres_replica_1, "Read operations", "PostgreSQL")
+Rel(review_service_1, postgres_primary, "Write operations", "PostgreSQL")
+Rel(review_service_2, postgres_replica_1, "Read operations", "PostgreSQL")
+
+' Database Replication
+Rel(postgres_primary, postgres_replica_1, "Streaming replication", "PostgreSQL")
+Rel(postgres_primary, postgres_replica_2, "Streaming replication", "PostgreSQL")
+
+' Cache Connections
+Rel(apollo_gateway_1, redis_primary, "Query plan cache", "Redis")
+Rel(apollo_gateway_2, redis_primary, "Query plan cache", "Redis")
+Rel(user_service_1, redis_primary, "User cache", "Redis")
+Rel(user_service_2, redis_replica, "Cache reads", "Redis")
+Rel(offer_service_1, redis_primary, "Offer cache", "Redis")
+Rel(offer_service_2, redis_replica, "Cache reads", "Redis")
+
+' Cache Replication
+Rel(redis_primary, redis_replica, "Redis replication", "Redis")
+
+' Search Connections
+Rel(offer_service_1, es_master, "Index operations", "HTTP/REST")
+Rel(offer_service_2, es_data_1, "Search queries", "HTTP/REST")
+Rel(review_service_1, es_master, "Index operations", "HTTP/REST")
+Rel(review_service_2, es_data_2, "Search queries", "HTTP/REST")
+
+' Elasticsearch Cluster
+Rel(es_master, es_data_1, "Cluster coordination", "Elasticsearch")
+Rel(es_master, es_data_2, "Cluster coordination", "Elasticsearch")
+Rel(es_data_1, es_data_2, "Data replication", "Elasticsearch")
+
+' File Storage
+Rel(offer_service_1, s3_bucket, "Image upload", "AWS S3 API")
+Rel(offer_service_2, s3_bucket, "Image retrieval", "AWS S3 API")
+Rel(cdn_distribution, s3_bucket, "Origin fetch", "AWS S3 API")
+
+' External Services
+Rel(user_service_1, email_service, "User notifications", "HTTPS/REST")
+Rel(user_service_1, sms_service, "SMS verification", "HTTPS/REST")
+Rel(apollo_gateway_1, payment_gateway, "Payment processing", "HTTPS/REST")
+Rel(apollo_gateway_2, payment_gateway, "Payment processing", "HTTPS/REST")
+Rel(apollo_gateway_1, analytics_service, "Usage tracking", "HTTPS")
+Rel(apollo_gateway_2, analytics_service, "Usage tracking", "HTTPS")
+
+' Monitoring Connections
+Rel(apollo_gateway_1, prometheus, "Metrics", "HTTP")
+Rel(apollo_gateway_2, prometheus, "Metrics", "HTTP")
+Rel(user_service_1, prometheus, "Metrics", "HTTP")
+Rel(user_service_2, prometheus, "Metrics", "HTTP")
+Rel(offer_service_1, prometheus, "Metrics", "HTTP")
+Rel(offer_service_2, prometheus, "Metrics", "HTTP")
+Rel(review_service_1, prometheus, "Metrics", "HTTP")
+Rel(review_service_2, prometheus, "Metrics", "HTTP")
+
+Rel(prometheus, grafana, "Metrics visualization", "HTTP")
+
+Rel(apollo_gateway_1, jaeger, "Distributed traces", "HTTP")
+Rel(apollo_gateway_2, jaeger, "Distributed traces", "HTTP")
+Rel(user_service_1, jaeger, "Service traces", "HTTP")
+Rel(offer_service_1, jaeger, "Service traces", "HTTP")
+Rel(review_service_1, jaeger, "Service traces", "HTTP")
+
+' Testing Infrastructure
+Rel(ci_pipeline, apollo_gateway_1, "Deployment", "Kubernetes API")
+Rel(load_testing, apollo_gateway_1, "Load tests", "HTTP/GraphQL")
+Rel(chaos_monkey, apollo_gateway_1, "Chaos tests", "Various")
+
+' Network Access
+Rel(nat_1, email_service, "Outbound HTTPS", "HTTPS")
+Rel(nat_1, sms_service, "Outbound HTTPS", "HTTPS")
+Rel(nat_2, payment_gateway, "Outbound HTTPS", "HTTPS")
+Rel(nat_2, analytics_service, "Outbound HTTPS", "HTTPS")
+
+SHOW_LEGEND()
+@enduml

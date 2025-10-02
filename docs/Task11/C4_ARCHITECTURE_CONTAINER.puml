@@ -1,0 +1,108 @@
+@startuml Task11_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Auto.ru Federation - Container Diagram (Task 11: Subgraph Stubs Architecture)
+
+Person(developer, "Developer", "Разрабатывает заглушки подграфов")
+Person(tester, "Tester", "Тестирует федеративную интеграцию")
+
+System_Boundary(federation_gateway, "Federation Gateway Layer") {
+    Container(apollo_router, "Apollo Router", "Apollo Router + YAML Config", "Федеративный шлюз:\n- Query planning и execution\n- Schema composition\n- Request routing\n- Response aggregation\n- CORS и security headers")
+    Container(supergraph_schema, "Supergraph Schema", "GraphQL SDL + Federation", "Композитная схема:\n- Объединение всех подграфов\n- Federation directives\n- Type extensions\n- Entity relationships")
+}
+
+System_Boundary(users_subgraph_container, "Users Subgraph (Stub)") {
+    Container(users_graphql_api, "Users GraphQL API", "Rust + async-graphql + Axum", "GraphQL API пользователей:\n- User entity с @key directive\n- Query резолверы (user, users)\n- Mutation заглушки\n- Federation entity resolver")
+    Container(users_mock_service, "Users Mock Service", "Rust + In-Memory Store", "Сервис моковых данных:\n- Хранение пользователей в памяти\n- CRUD операции с моками\n- Генерация тестовых данных\n- Поиск по ID и фильтрация")
+    Container(users_health_check, "Users Health Check", "Rust + JSON API", "Мониторинг состояния:\n- Health endpoint\n- Service status\n- Version information\n- Readiness probe")
+}
+
+System_Boundary(offers_subgraph_container, "Offers Subgraph (Stub)") {
+    Container(offers_graphql_api, "Offers GraphQL API", "Rust + async-graphql + Axum", "GraphQL API объявлений:\n- Offer и Car entities\n- Query резолверы с фильтрацией\n- CRUD Mutation операции\n- Federation связи с Users")
+    Container(offers_mock_service, "Offers Mock Service", "Rust + In-Memory Store", "Сервис объявлений:\n- Моковые данные автомобилей\n- Связи Offer -> User\n- Фильтрация по параметрам\n- Пагинация результатов")
+    Container(offers_health_check, "Offers Health Check", "Rust + JSON API", "Мониторинг состояния:\n- Health endpoint\n- Service metrics\n- Database connectivity\n- Performance indicators")
+}
+
+System_Boundary(existing_ugc_container, "Existing UGC Subgraph") {
+    Container(ugc_graphql_api, "UGC GraphQL API", "Rust + async-graphql + PostgreSQL", "Полнофункциональный API:\n- Review entity с бизнес-логикой\n- Интеграция с PostgreSQL\n- Federation связи\n- Модерация и валидация")
+}
+
+System_Boundary(mock_data_layer, "Mock Data Management") {
+    Container(users_data_generator, "Users Data Generator", "Rust + Faker", "Генерация пользователей:\n- Реалистичные имена и email\n- Российские номера телефонов\n- Временные метки\n- Уникальные идентификаторы")
+    Container(offers_data_generator, "Offers Data Generator", "Rust + Faker", "Генерация объявлений:\n- Автомобильные данные\n- Цены и характеристики\n- Связи с пользователями\n- Географические данные")
+    Container(data_relationship_manager, "Data Relationship Manager", "Rust + Custom Logic", "Управление связями:\n- User -> Offer relationships\n- Offer -> Review connections\n- Data consistency\n- Referential integrity")
+}
+
+System_Boundary(federation_testing_layer, "Federation Testing Layer") {
+    Container(federation_test_runner, "Federation Test Runner", "Rust + async-graphql-test", "Тестирование федерации:\n- Cross-subgraph queries\n- Entity resolution testing\n- Schema composition validation\n- Performance benchmarks")
+    Container(contract_validator, "Contract Validator", "Rust + Pact", "Валидация контрактов:\n- API contract testing\n- Schema compatibility\n- Breaking change detection\n- Consumer-driven tests")
+    Container(integration_test_suite, "Integration Test Suite", "Rust + Testcontainers", "Интеграционные тесты:\n- Multi-subgraph scenarios\n- End-to-end workflows\n- Data flow validation\n- Error handling tests")
+}
+
+System_Boundary(development_infrastructure, "Development Infrastructure") {
+    Container(docker_orchestrator, "Docker Orchestrator", "Docker Compose + Networks", "Контейнерная оркестрация:\n- Service discovery\n- Network isolation\n- Volume management\n- Health monitoring")
+    Container(schema_validator, "Schema Validator", "Apollo CLI + Custom", "Валидация схем:\n- Federation compliance\n- Schema composition\n- Breaking change analysis\n- Documentation generation")
+    Container(development_proxy, "Development Proxy", "Nginx + Load Balancer", "Прокси для разработки:\n- Request routing\n- Load balancing\n- SSL termination\n- CORS handling")
+}
+
+' User interactions
+Rel(developer, users_graphql_api, "Разработка Users API", "GraphQL schema\nRust code")
+Rel(developer, offers_graphql_api, "Разработка Offers API", "GraphQL schema\nRust code")
+Rel(tester, federation_test_runner, "Тестирование федерации", "Test execution\nValidation")
+
+' Apollo Router federation
+Rel(apollo_router, supergraph_schema, "Использует композитную схему", "Schema introspection\nQuery planning")
+Rel(apollo_router, users_graphql_api, "Маршрутизация User запросов", "HTTP GraphQL\nEntity resolution")
+Rel(apollo_router, offers_graphql_api, "Маршрутизация Offer запросов", "HTTP GraphQL\nQuery execution")
+Rel(apollo_router, ugc_graphql_api, "Маршрутизация Review запросов", "HTTP GraphQL\nFederation queries")
+
+' Users subgraph internal flow
+Rel(users_graphql_api, users_mock_service, "Получение данных пользователей", "Service calls\nData retrieval")
+Rel(users_mock_service, users_data_generator, "Генерация моковых данных", "Data seeding\nUser creation")
+Rel(users_graphql_api, users_health_check, "Мониторинг состояния", "Health status\nMetrics collection")
+
+' Offers subgraph internal flow
+Rel(offers_graphql_api, offers_mock_service, "Получение данных объявлений", "Service calls\nCRUD operations")
+Rel(offers_mock_service, offers_data_generator, "Генерация объявлений", "Data seeding\nOffer creation")
+Rel(offers_graphql_api, offers_health_check, "Мониторинг состояния", "Health status\nPerformance metrics")
+
+' Cross-subgraph federation relationships
+Rel(offers_mock_service, users_mock_service, "Связь Offer -> User", "User ID resolution\nSeller information")
+Rel(ugc_graphql_api, users_graphql_api, "Federation User lookup", "Entity resolution\nAuthor information")
+Rel(ugc_graphql_api, offers_graphql_api, "Federation Offer lookup", "Entity resolution\nOffer details")
+
+' Data relationship management
+Rel(data_relationship_manager, users_data_generator, "Координация пользователей", "User ID management\nData consistency")
+Rel(data_relationship_manager, offers_data_generator, "Координация объявлений", "Offer-User relationships\nData integrity")
+Rel(users_mock_service, data_relationship_manager, "Синхронизация данных", "User updates\nRelationship maintenance")
+Rel(offers_mock_service, data_relationship_manager, "Синхронизация данных", "Offer updates\nRelationship validation")
+
+' Federation testing integration
+Rel(federation_test_runner, apollo_router, "Тестирование федеративных запросов", "GraphQL queries\nAssertion validation")
+Rel(contract_validator, users_graphql_api, "Валидация Users контрактов", "API testing\nSchema compliance")
+Rel(contract_validator, offers_graphql_api, "Валидация Offers контрактов", "API testing\nSchema compliance")
+Rel(integration_test_suite, apollo_router, "End-to-end тестирование", "Complete scenarios\nWorkflow validation")
+
+' Schema composition and validation
+Rel(supergraph_schema, schema_validator, "Валидация композиции", "Schema analysis\nFederation compliance")
+Rel(schema_validator, users_graphql_api, "Валидация Users схемы", "Schema validation\nDirective checking")
+Rel(schema_validator, offers_graphql_api, "Валидация Offers схемы", "Schema validation\nFederation compliance")
+
+' Development infrastructure
+Rel(docker_orchestrator, users_graphql_api, "Контейнеризация Users", "Container management\nService discovery")
+Rel(docker_orchestrator, offers_graphql_api, "Контейнеризация Offers", "Container management\nNetwork setup")
+Rel(docker_orchestrator, apollo_router, "Оркестрация Router", "Container orchestration\nLoad balancing")
+Rel(development_proxy, apollo_router, "Прокси запросов", "Request forwarding\nLoad distribution")
+
+' Health monitoring and observability
+Rel(users_health_check, docker_orchestrator, "Health reporting", "Container health\nReadiness status")
+Rel(offers_health_check, docker_orchestrator, "Health reporting", "Service health\nLiveness probe")
+Rel(apollo_router, development_proxy, "Router metrics", "Performance data\nRequest statistics")
+
+' Testing data flow
+Rel(federation_test_runner, users_data_generator, "Тестовые пользователи", "Test data setup\nScenario preparation")
+Rel(federation_test_runner, offers_data_generator, "Тестовые объявления", "Test data setup\nScenario data")
+Rel(integration_test_suite, data_relationship_manager, "Тестовые связи", "Relationship setup\nData consistency")
+
+SHOW_LEGEND()
+@enduml

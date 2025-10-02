@@ -1,0 +1,36 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.5", import: ["@key", "@provides", "@external"])
+
+type Offer @key(fields: "id") {
+  id: ID!
+  title: String!
+  description: String!
+  price: Int!
+  currency: String!
+  year: Int!
+  mileage: Int!
+  location: String!
+  sellerId: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isActive: Boolean!
+  
+  # Federation relationships
+  seller: User! @provides(fields: "name")
+}
+
+extend type User @key(fields: "id") {
+  id: ID! @external
+  name: String! @external
+}
+
+scalar DateTime
+
+type Query {
+  offer(id: ID!): Offer
+  offers: [Offer!]!
+  offersBySeller(sellerId: ID!): [Offer!]!
+}
+
+type Mutation {
+  placeholder: String
+}

@@ -1,0 +1,185 @@
+@startuml Task14_Code_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Task 14: Performance Optimization - Code Level Diagram (DataLoader & Cache)
+
+Component_Boundary(dataloader_system, "DataLoader System") {
+    class DataLoaderManager {
+        +review_loader: ReviewDataLoader
+        +rating_loader: RatingDataLoader
+        +new() -> Self
+        +get_review_loader() -> &ReviewDataLoader
+        +get_rating_loader() -> &RatingDataLoader
+    }
+    
+    class ReviewDataLoader {
+        -batch_fn: BatchFn<ReviewId, Review>
+        -cache: HashMap<ReviewId, Review>
+        +new(repository: ReviewRepository) -> Self
+        +load(id: ReviewId) -> Future<Review>
+        +load_many(ids: Vec<ReviewId>) -> Future<Vec<Review>>
+        +clear_cache()
+    }
+    
+    class RatingDataLoader {
+        -batch_fn: BatchFn<OfferId, OfferRating>
+        -cache: HashMap<OfferId, OfferRating>
+        +new(repository: RatingRepository) -> Self
+        +load(offer_id: OfferId) -> Future<OfferRating>
+        +load_many(offer_ids: Vec<OfferId>) -> Future<Vec<OfferRating>>
+        +clear_cache()
+    }
+}
+
+Component_Boundary(cache_system, "Multi-Level Cache System") {
+    class CacheManager {
+        -l1_cache: MemoryCache
+        -l2_cache: RedisCache
+        -circuit_breaker: CircuitBreaker
+        +new(redis_config: RedisConfig) -> Self
+        +get<T>(key: &str) -> Future<Option<T>>
+        +set<T>(key: &str, value: T, ttl: Duration) -> Future<Result<()>>
+        +invalidate(pattern: &str) -> Future<Result<()>>
+        +get_stats() -> CacheStats
+    }
+    
+    class MemoryCache {
+        -cache: Arc<RwLock<HashMap<String, CacheEntry>>>
+        -max_size: usize
+        +new(max_size: usize) -> Self
+        +get<T>(key: &str) -> Option<T>
+        +set<T>(key: &str, value: T, ttl: Duration)
+        +remove(key: &str) -> bool
+        +clear()
+        +size() -> usize
+    }
+    
+    class RedisCache {
+        -client: redis::Client
+        -connection_pool: Pool<Connection>
+        +new(url: &str, pool_size: u32) -> Result<Self>
+        +get<T>(key: &str) -> Future<Result<Option<T>>>
+        +set<T>(key: &str, value: T, ttl: Duration) -> Future<Result<()>>
+        +delete(key: &str) -> Future<Result<bool>>
+        +exists(key: &str) -> Future<Result<bool>>
+        +invalidate_pattern(pattern: &str) -> Future<Result<u64>>
+    }
+    
+    class CircuitBreaker {
+        -state: Arc<Mutex<CircuitState>>
+        -failure_threshold: u32
+        -recovery_timeout: Duration
+        +new(failure_threshold: u32, recovery_timeout: Duration) -> Self
+        +call<F, T>(operation: F) -> Future<Result<T>>
+        +is_open() -> bool
+        +reset()
+    }
+}
+
+Component_Boundary(query_analysis, "Query Analysis System") {
+    class QueryComplexityAnalyzer {
+        -max_depth: u32
+        -max_complexity: u32
+        -field_complexity_map: HashMap<String, u32>
+        +new(config: QueryLimitsConfig) -> Self
+        +analyze_query(query: &str) -> Result<QueryAnalysis>
+        +calculate_complexity(selection_set: &SelectionSet) -> u32
+        +check_depth(selection_set: &SelectionSet, current_depth: u32) -> Result<()>
+    }
+    
+    class RateLimitService {
+        -limits: HashMap<UserId, RateLimit>
+        -redis_client: RedisCache
+        +new(redis_client: RedisCache) -> Self
+        +check_rate_limit(user_id: UserId) -> Future<Result<bool>>
+        +increment_counter(user_id: UserId) -> Future<Result<()>>
+        +get_remaining_requests(user_id: UserId) -> Future<Result<u32>>
+        +reset_user_limit(user_id: UserId) -> Future<Result<()>>
+    }
+    
+    class QueryAnalysis {
+        +depth: u32
+        +complexity: u32
+        +estimated_cost: u32
+        +field_count: u32
+        +is_valid: bool
+        +violations: Vec<String>
+    }
+}
+
+Component_Boundary(repositories, "Repository Layer") {
+    class ReviewRepository {
+        -pool: PgPool
+        +new(pool: PgPool) -> Self
+        +find_by_ids(ids: Vec<ReviewId>) -> Future<Result<Vec<Review>>>
+        +find_by_offer_id(offer_id: OfferId) -> Future<Result<Vec<Review>>>
+        +find_by_author_id(author_id: UserId) -> Future<Result<Vec<Review>>>
+        +create(review: CreateReview) -> Future<Result<Review>>
+        +update(id: ReviewId, review: UpdateReview) -> Future<Result<Review>>
+        +delete(id: ReviewId) -> Future<Result<bool>>
+    }
+    
+    class RatingRepository {
+        -pool: PgPool
+        +new(pool: PgPool) -> Self
+        +find_by_offer_ids(offer_ids: Vec<OfferId>) -> Future<Result<Vec<OfferRating>>>
+        +calculate_rating(offer_id: OfferId) -> Future<Result<OfferRating>>
+        +update_rating_cache(offer_id: OfferId) -> Future<Result<()>>
+    }
+}
+
+Component_Boundary(metrics, "Metrics & Monitoring") {
+    class MetricsCollector {
+        -registry: prometheus::Registry
+        -cache_hits: Counter
+        -cache_misses: Counter
+        -query_duration: Histogram
+        -dataloader_batch_size: Histogram
+        +new() -> Self
+        +record_cache_hit(cache_type: &str)
+        +record_cache_miss(cache_type: &str)
+        +record_query_duration(duration: Duration)
+        +record_dataloader_batch(size: usize)
+        +get_metrics() -> String
+    }
+}
+
+' Relationships
+DataLoaderManager --> ReviewDataLoader : manages
+DataLoaderManager --> RatingDataLoader : manages
+ReviewDataLoader --> ReviewRepository : uses
+RatingDataLoader --> RatingRepository : uses
+
+CacheManager --> MemoryCache : L1 cache
+CacheManager --> RedisCache : L2 cache
+CacheManager --> CircuitBreaker : protects Redis calls
+
+QueryComplexityAnalyzer --> QueryAnalysis : produces
+RateLimitService --> RedisCache : stores counters
+
+ReviewRepository --> MetricsCollector : reports metrics
+RatingRepository --> MetricsCollector : reports metrics
+CacheManager --> MetricsCollector : reports cache metrics
+DataLoaderManager --> MetricsCollector : reports batch metrics
+
+note right of DataLoaderManager
+  Coordinates all DataLoader instances
+  Provides request-scoped batching
+  Prevents N+1 query problems
+end note
+
+note right of CacheManager
+  Multi-level caching strategy:
+  L1: In-memory (fast, request-scoped)
+  L2: Redis (shared, persistent)
+  Circuit breaker prevents cascade failures
+end note
+
+note right of QueryComplexityAnalyzer
+  Prevents expensive queries:
+  - Depth limiting (max 10 levels)
+  - Complexity scoring (max 1000 points)
+  - Field-based cost calculation
+end note
+
+@enduml

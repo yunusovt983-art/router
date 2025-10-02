@@ -1,0 +1,36 @@
+@startuml C4_Context_Task13
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Task 13: Migration Strategy Implementation - Context Diagram
+
+Person(legacy_client, "Legacy REST Client", "Existing applications using REST API")
+Person(new_client, "GraphQL Client", "New applications using GraphQL API")
+Person(developer, "Developer", "Manages migration process and feature flags")
+Person(ops_engineer, "Operations Engineer", "Monitors migration progress and handles incidents")
+
+System_Boundary(migration_system, "Migration System") {
+    System(migration_service, "Migration Service", "Manages gradual transition from REST to GraphQL")
+    System(feature_flags, "Feature Flag System", "Controls rollout and A/B testing")
+    System(monitoring, "Migration Monitoring", "Tracks migration progress and performance")
+}
+
+System_Ext(ugc_graphql, "UGC GraphQL API", "Target GraphQL federation service")
+System_Ext(legacy_rest, "Legacy REST API", "Original REST endpoints (deprecated)")
+System_Ext(redis_cache, "Redis Cache", "Feature flag caching and session storage")
+System_Ext(metrics_system, "Metrics & Alerting", "Prometheus, Grafana, AlertManager")
+
+Rel(legacy_client, migration_service, "Makes REST requests", "HTTP/REST")
+Rel(new_client, migration_service, "Makes GraphQL requests", "HTTP/GraphQL")
+Rel(developer, feature_flags, "Manages flags", "CLI/API")
+Rel(ops_engineer, monitoring, "Monitors progress", "Dashboard/Alerts")
+
+Rel(migration_service, ugc_graphql, "Routes to GraphQL", "GraphQL queries/mutations")
+Rel(migration_service, legacy_rest, "Fallback to REST", "HTTP/REST")
+Rel(migration_service, feature_flags, "Checks flags", "Internal API")
+Rel(feature_flags, redis_cache, "Caches flags", "Redis protocol")
+Rel(monitoring, metrics_system, "Sends metrics", "Prometheus metrics")
+
+SHOW_LEGEND()
+@enduml

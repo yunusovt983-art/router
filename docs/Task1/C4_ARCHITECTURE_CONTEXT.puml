@@ -1,0 +1,40 @@
+@startuml Task1_Context_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Auto.ru GraphQL Federation - Context Diagram (Task 1: Infrastructure Setup)
+
+Person(developer, "Разработчик", "Разрабатывает и тестирует GraphQL API")
+Person(devops, "DevOps инженер", "Настраивает и поддерживает инфраструктуру")
+
+System_Boundary(federation_system, "Auto.ru GraphQL Federation System") {
+    System(apollo_router, "Apollo Router", "Федеративный GraphQL роутер\nОбъединяет подграфы в единую схему")
+    System(ugc_subgraph, "UGC Subgraph", "Подграф пользовательского контента\nОтзывы и рейтинги")
+    System(users_subgraph, "Users Subgraph", "Подграф пользователей\nАутентификация и профили")
+    System(offers_subgraph, "Offers Subgraph", "Подграф объявлений\nАвтомобили и предложения")
+}
+
+System_Ext(postgres, "PostgreSQL", "Реляционная база данных\nХранение структурированных данных")
+System_Ext(redis, "Redis", "In-memory кеш\nСессии и временные данные")
+System_Ext(prometheus, "Prometheus", "Система мониторинга\nСбор метрик")
+System_Ext(jaeger, "Jaeger", "Distributed tracing\nТрассировка запросов")
+
+Rel(developer, apollo_router, "Отправляет GraphQL запросы", "HTTP/GraphQL")
+Rel(devops, federation_system, "Настраивает и мониторит", "Docker/K8s")
+
+Rel(apollo_router, ugc_subgraph, "Маршрутизирует запросы", "HTTP/GraphQL")
+Rel(apollo_router, users_subgraph, "Маршрутизирует запросы", "HTTP/GraphQL")
+Rel(apollo_router, offers_subgraph, "Маршрутизирует запросы", "HTTP/GraphQL")
+
+Rel(ugc_subgraph, postgres, "Читает/записывает данные", "SQL")
+Rel(users_subgraph, postgres, "Читает/записывает данные", "SQL")
+Rel(offers_subgraph, postgres, "Читает/записывает данные", "SQL")
+
+Rel(ugc_subgraph, redis, "Кеширует данные", "Redis Protocol")
+Rel(users_subgraph, redis, "Кеширует сессии", "Redis Protocol")
+Rel(offers_subgraph, redis, "Кеширует данные", "Redis Protocol")
+
+Rel(apollo_router, prometheus, "Отправляет метрики", "HTTP")
+Rel(apollo_router, jaeger, "Отправляет трассировки", "HTTP")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,126 @@
+@startuml Task6_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Auto.ru Federation - Container Diagram (Task 6: Authentication & Authorization Architecture)
+
+Person(user, "Пользователь", "Использует систему")
+Person(admin, "Администратор", "Управляет системой")
+
+System_Boundary(authenticated_federation, "Authenticated Federation System") {
+    
+    System_Boundary(gateway_layer, "Gateway Layer with Authentication") {
+        Container(apollo_router_auth, "Apollo Router with Auth", "Rust, JWT validation", "Федеративный роутер с:\n- JWT валидацией\n- Rhai скриптами для auth\n- Передачей пользовательского контекста\n- Rate limiting на уровне роутера")
+        Container(auth_middleware, "Auth Middleware", "Rust, Axum middleware", "Middleware для аутентификации:\n- Извлечение JWT из заголовков\n- Валидация токенов\n- Добавление UserContext\n- Обработка ошибок аутентификации")
+    }
+    
+    System_Boundary(auth_services, "Authentication Services") {
+        Container(auth_service, "Authentication Service", "Rust, JWT + OAuth2", "Центральный сервис аутентификации:\n- JWT создание и валидация\n- OAuth2 интеграция\n- Управление сессиями\n- Ротация ключей")
+        Container(user_management, "User Management Service", "Rust, RBAC", "Управление пользователями:\n- Роли и разрешения\n- Профили пользователей\n- Группы и иерархии\n- Делегирование прав")
+        Container(session_manager, "Session Manager", "Rust, Redis", "Управление сессиями:\n- Активные сессии\n- Истечение токенов\n- Принудительный logout\n- Concurrent sessions control")
+    }
+    
+    System_Boundary(secured_subgraphs, "Secured Subgraphs") {
+        Container(ugc_service_auth, "UGC Service (Secured)", "Rust, async-graphql + Guards", "UGC сервис с защитой:\n- RoleGuard для операций\n- GDPR compliance\n- Content moderation auth\n- Audit logging")
+        Container(user_service_auth, "User Service (Secured)", "Rust, async-graphql + Guards", "User сервис с защитой:\n- Доступ к персональным данным\n- Self-service операции\n- Admin операции\n- Privacy controls")
+        Container(offer_service_auth, "Offer Service (Secured)", "Rust, async-graphql + Guards", "Offer сервис с защитой:\n- Авторизация CRUD операций\n- Ownership validation\n- Business rules enforcement\n- Rate limiting per user")
+    }
+    
+    System_Boundary(security_layer, "Security Layer") {
+        Container(rate_limiter_service, "Rate Limiter", "Rust, Redis", "Защита от злоупотреблений:\n- Per-user rate limiting\n- IP-based limiting\n- Adaptive thresholds\n- DDoS protection")
+        Container(audit_service, "Security Audit Service", "Rust, Elasticsearch", "Аудит безопасности:\n- Логирование событий\n- Threat detection\n- Compliance reporting\n- Forensic analysis")
+        Container(gdpr_service, "GDPR Compliance Service", "Rust, Privacy engine", "GDPR соответствие:\n- Data access control\n- Right to be forgotten\n- Consent management\n- Data portability")
+    }
+}
+
+System_Boundary(auth_infrastructure, "Authentication Infrastructure") {
+    
+    System_Boundary(caching_layer, "Caching Layer") {
+        Container(redis_auth_cache, "Redis Auth Cache", "Redis 7.0", "Кеширование аутентификации:\n- JWT token cache\n- User context cache\n- Session storage\n- Rate limiting counters")
+        Container(redis_session_store, "Redis Session Store", "Redis 7.0", "Хранилище сессий:\n- Active sessions\n- Refresh tokens\n- Temporary data\n- Distributed locks")
+    }
+    
+    System_Boundary(database_layer, "Database Layer") {
+        ContainerDb(postgres_auth, "PostgreSQL Auth DB", "PostgreSQL 15", "База данных аутентификации:\n- Users и roles\n- Permissions\n- OAuth2 clients\n- Audit trails")
+        ContainerDb(postgres_user_data, "PostgreSQL User Data", "PostgreSQL 15", "Пользовательские данные:\n- Profiles\n- Preferences\n- GDPR consents\n- Privacy settings")
+    }
+    
+    System_Boundary(search_analytics, "Search & Analytics") {
+        Container(elasticsearch_audit, "Elasticsearch Audit", "Elasticsearch 8.0", "Аудит и аналитика:\n- Security events\n- Access logs\n- Threat intelligence\n- Compliance reports")
+        Container(kibana_security, "Kibana Security", "Kibana 8.0", "Визуализация безопасности:\n- Security dashboards\n- Threat analysis\n- Compliance monitoring\n- Incident investigation")
+    }
+}
+
+System_Boundary(external_integrations, "External Integrations") {
+    Container(oauth2_providers, "OAuth2 Providers", "External APIs", "Внешние провайдеры:\n- Google OAuth2\n- GitHub OAuth2\n- VK OAuth2\n- Corporate SSO")
+    Container(jwks_endpoint, "JWKS Endpoint", "External Service", "JWT Key Service:\n- Public keys\n- Key rotation\n- Algorithm validation\n- Certificate chain")
+}
+
+System_Boundary(monitoring_security, "Security Monitoring") {
+    Container(prometheus_auth, "Prometheus Auth", "Prometheus + Security rules", "Мониторинг аутентификации:\n- Auth metrics\n- Security alerts\n- Performance monitoring\n- SLA tracking")
+    Container(grafana_auth, "Grafana Auth", "Grafana + Security dashboards", "Дашборды безопасности:\n- Real-time monitoring\n- Security KPIs\n- Incident dashboards\n- Compliance reports")
+    Container(jaeger_auth, "Jaeger Auth", "Jaeger + Auth tracing", "Трассировка аутентификации:\n- Auth flow tracing\n- Performance analysis\n- Error tracking\n- Dependency mapping")
+}
+
+' User interactions
+Rel(user, apollo_router_auth, "GraphQL запросы с JWT", "HTTPS")
+Rel(admin, apollo_router_auth, "Admin операции", "HTTPS")
+
+' Gateway authentication flow
+Rel(apollo_router_auth, auth_middleware, "Обработка аутентификации", "Function call")
+Rel(auth_middleware, auth_service, "JWT валидация", "gRPC")
+Rel(auth_service, user_management, "Получение ролей и разрешений", "gRPC")
+Rel(auth_service, session_manager, "Управление сессиями", "gRPC")
+
+' Gateway to secured subgraphs
+Rel(apollo_router_auth, ugc_service_auth, "Федеративные запросы + UserContext", "HTTP/GraphQL")
+Rel(apollo_router_auth, user_service_auth, "Запросы пользователей + Auth", "HTTP/GraphQL")
+Rel(apollo_router_auth, offer_service_auth, "Запросы объявлений + Auth", "HTTP/GraphQL")
+
+' Security layer integration
+Rel(apollo_router_auth, rate_limiter_service, "Rate limiting проверки", "gRPC")
+Rel(ugc_service_auth, audit_service, "Аудит UGC операций", "gRPC")
+Rel(user_service_auth, audit_service, "Аудит пользовательских операций", "gRPC")
+Rel(offer_service_auth, audit_service, "Аудит операций с объявлениями", "gRPC")
+
+Rel(user_service_auth, gdpr_service, "GDPR проверки", "gRPC")
+Rel(ugc_service_auth, gdpr_service, "Контроль персональных данных", "gRPC")
+
+' Authentication services data access
+Rel(auth_service, redis_auth_cache, "Кеширование JWT и контекста", "Redis Protocol")
+Rel(session_manager, redis_session_store, "Управление сессиями", "Redis Protocol")
+Rel(user_management, postgres_auth, "Пользователи и роли", "PostgreSQL")
+Rel(user_service_auth, postgres_user_data, "Пользовательские данные", "PostgreSQL")
+
+' Rate limiting and caching
+Rel(rate_limiter_service, redis_auth_cache, "Счетчики rate limiting", "Redis Protocol")
+Rel(ugc_service_auth, redis_auth_cache, "Кеширование разрешений", "Redis Protocol")
+Rel(user_service_auth, redis_auth_cache, "Кеширование профилей", "Redis Protocol")
+Rel(offer_service_auth, redis_auth_cache, "Кеширование авторизации", "Redis Protocol")
+
+' Audit and analytics
+Rel(audit_service, elasticsearch_audit, "Индексирование событий", "HTTP/REST")
+Rel(gdpr_service, elasticsearch_audit, "GDPR события", "HTTP/REST")
+Rel(rate_limiter_service, elasticsearch_audit, "События rate limiting", "HTTP/REST")
+
+Rel(elasticsearch_audit, kibana_security, "Визуализация аудита", "HTTP")
+
+' External integrations
+Rel(auth_service, oauth2_providers, "OAuth2 аутентификация", "HTTPS/OAuth2")
+Rel(auth_service, jwks_endpoint, "Получение публичных ключей", "HTTPS/REST")
+
+' Monitoring integration
+Rel(auth_service, prometheus_auth, "Метрики аутентификации", "HTTP")
+Rel(rate_limiter_service, prometheus_auth, "Метрики rate limiting", "HTTP")
+Rel(audit_service, prometheus_auth, "Метрики безопасности", "HTTP")
+Rel(ugc_service_auth, prometheus_auth, "Метрики UGC auth", "HTTP")
+Rel(user_service_auth, prometheus_auth, "Метрики user auth", "HTTP")
+Rel(offer_service_auth, prometheus_auth, "Метрики offer auth", "HTTP")
+
+Rel(prometheus_auth, grafana_auth, "Визуализация метрик", "HTTP")
+
+Rel(apollo_router_auth, jaeger_auth, "Трассировка запросов", "HTTP")
+Rel(auth_service, jaeger_auth, "Трассировка аутентификации", "HTTP")
+Rel(ugc_service_auth, jaeger_auth, "Трассировка UGC операций", "HTTP")
+
+SHOW_LEGEND()
+@enduml

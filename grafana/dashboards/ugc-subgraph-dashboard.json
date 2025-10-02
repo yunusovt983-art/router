@@ -1,0 +1,157 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "UGC Subgraph Metrics",
+    "tags": ["auto-ru", "graphql", "federation"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "HTTP Request Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{service=\"ugc-subgraph\"}[5m])",
+            "legendFormat": "Requests/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "HTTP Request Duration",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service=\"ugc-subgraph\"}[5m]))",
+            "legendFormat": "95th percentile"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "GraphQL Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(graphql_requests_total{service=\"ugc-subgraph\"}[5m])",
+            "legendFormat": "GraphQL Requests/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Reviews Created",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(reviews_created_total{service=\"ugc-subgraph\"}[5m])",
+            "legendFormat": "Reviews/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 16}
+      },
+      {
+        "id": 5,
+        "title": "Active Reviews",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "active_reviews_total{service=\"ugc-subgraph\"}",
+            "legendFormat": "Active Reviews"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Average Rating",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "average_rating{service=\"ugc-subgraph\"}",
+            "legendFormat": "Average Rating"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 1,
+            "max": 5
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "Database Query Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(db_query_duration_seconds_bucket{service=\"ugc-subgraph\"}[5m]))",
+            "legendFormat": "50th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(db_query_duration_seconds_bucket{service=\"ugc-subgraph\"}[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(db_query_duration_seconds_bucket{service=\"ugc-subgraph\"}[5m]))",
+            "legendFormat": "99th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 8,
+        "title": "External Service Errors",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(external_errors_total{service=\"ugc-subgraph\"}[5m])",
+            "legendFormat": "External Errors/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+      },
+      {
+        "id": 9,
+        "title": "Circuit Breaker Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "circuit_breaker_state{service=\"ugc-subgraph\"}",
+            "legendFormat": "{{service_name}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"options": {"0": {"text": "Closed"}}, "type": "value"},
+              {"options": {"1": {"text": "Open"}}, "type": "value"},
+              {"options": {"2": {"text": "Half-Open"}}, "type": "value"}
+            ]
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s"
+  }
+}

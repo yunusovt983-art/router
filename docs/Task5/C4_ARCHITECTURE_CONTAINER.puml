@@ -1,0 +1,142 @@
+@startuml Task5_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Auto.ru Federation - Container Diagram (Task 5: AI-Driven Continuous Improvement Architecture)
+
+Person(user, "Пользователь", "Использует систему")
+Person(data_scientist, "Data Scientist", "Анализирует данные")
+Person(sre_engineer, "SRE Engineer", "Управляет системой")
+
+System_Boundary(intelligent_federation, "Intelligent Federation System") {
+    
+    System_Boundary(adaptive_gateway_layer, "Adaptive Gateway Layer") {
+        Container(apollo_gateway_ai, "Apollo Gateway AI", "Node.js, TensorFlow.js", "Адаптивный Gateway с ML:\n- Предсказание производительности\n- Динамическая маршрутизация\n- A/B тестирование запросов\n- Автоматическая оптимизация")
+        Container(query_analyzer, "Query Analyzer", "Python, scikit-learn", "Анализатор GraphQL запросов:\n- Извлечение признаков\n- Предсказание сложности\n- Рекомендации по оптимизации")
+        Container(routing_optimizer, "Routing Optimizer", "Go, ML models", "ML-оптимизатор маршрутизации:\n- Предсказание нагрузки\n- Балансировка на основе ML\n- Адаптивные таймауты")
+    }
+    
+    System_Boundary(smart_subgraphs_layer, "Smart Subgraphs Layer") {
+        Container(user_subgraph_ai, "User Subgraph AI", "Rust, Candle ML", "Интеллектуальный User сервис:\n- Персонализация запросов\n- ML кеширование\n- Предиктивная загрузка")
+        Container(offer_subgraph_ai, "Offer Subgraph AI", "Rust, Candle ML", "Умный Offer сервис:\n- ML поиск и ранжирование\n- Динамическая индексация\n- Предсказание популярности")
+        Container(review_subgraph_ai, "Review Subgraph AI", "Rust, Candle ML", "Интеллектуальный Review сервис:\n- ML модерация контента\n- Предсказание качества отзывов\n- Автоматическая агрегация")
+    }
+    
+    System_Boundary(ml_optimization_layer, "ML Optimization Layer") {
+        Container(performance_predictor, "Performance Predictor", "Python, PyTorch", "ML предсказатель производительности:\n- Модель времени выполнения\n- Предсказание ресурсов\n- Оптимизация запросов")
+        Container(auto_optimizer, "Auto Optimizer", "Python, Ray", "Автоматический оптимизатор:\n- Анализ узких мест\n- Генерация оптимизаций\n- Автоматическое применение")
+        Container(anomaly_detector, "Anomaly Detector", "Python, Isolation Forest", "Детектор аномалий:\n- Обнаружение проблем\n- Предсказание сбоев\n- Автоматические алерты")
+    }
+    
+    System_Boundary(ab_testing_layer, "A/B Testing Layer") {
+        Container(experiment_engine, "Experiment Engine", "Java, Spring Boot", "Движок экспериментов:\n- Управление A/B тестами\n- Сегментация пользователей\n- Статистический анализ")
+        Container(feature_flags, "Feature Flags Service", "Go, Redis", "Управление feature flags:\n- Динамическое включение функций\n- Градуальный rollout\n- Автоматический rollback")
+        Container(metrics_collector, "Metrics Collector", "Go, ClickHouse", "Сборщик метрик экспериментов:\n- Бизнес-метрики\n- Конверсии\n- Пользовательское поведение")
+    }
+}
+
+System_Boundary(ai_infrastructure, "AI Infrastructure") {
+    
+    System_Boundary(ml_platform, "ML Platform") {
+        Container(model_registry, "Model Registry", "MLflow", "Реестр ML моделей:\n- Версионирование моделей\n- A/B тестирование моделей\n- Автоматический деплой")
+        Container(feature_store, "Feature Store", "Feast", "Хранилище признаков:\n- Онлайн/офлайн признаки\n- Feature engineering\n- Консистентность данных")
+        Container(training_pipeline, "Training Pipeline", "Kubeflow", "Пайплайн обучения:\n- Автоматическое переобучение\n- Валидация моделей\n- Мониторинг качества")
+    }
+    
+    System_Boundary(data_platform, "Data Platform") {
+        Container(stream_processor, "Stream Processor", "Apache Kafka, Flink", "Обработка потоков данных:\n- Реальное время метрики\n- Feature extraction\n- Агрегация событий")
+        Container(data_warehouse, "Data Warehouse", "ClickHouse", "Хранилище аналитических данных:\n- Исторические метрики\n- Пользовательские события\n- ML training data")
+        Container(real_time_db, "Real-time DB", "Apache Druid", "База данных реального времени:\n- OLAP запросы\n- Быстрая аналитика\n- Дашборды")
+    }
+    
+    System_Boundary(monitoring_ai, "AI Monitoring") {
+        Container(prometheus_ai, "Prometheus AI", "Prometheus + ML", "Система метрик с AI:\n- Предсказание трендов\n- Автоматические алерты\n- Корреляционный анализ")
+        Container(grafana_ai, "Grafana AI", "Grafana + ML plugins", "Дашборды с AI:\n- Автоматические инсайты\n- Предсказательная аналитика\n- Рекомендации по оптимизации")
+        Container(jaeger_ai, "Jaeger AI", "Jaeger + ML analysis", "Трассировка с AI:\n- Анализ паттернов\n- Предсказание проблем\n- Автоматическая корреляция")
+    }
+}
+
+System_Boundary(intelligent_storage, "Intelligent Storage Layer") {
+    Container(postgres_ai, "PostgreSQL AI", "PostgreSQL + ML extensions", "Умная база данных:\n- ML-оптимизированные индексы\n- Предсказание запросов\n- Автоматическая настройка")
+    Container(redis_ai, "Redis AI", "Redis + RedisAI", "Интеллектуальный кеш:\n- ML предсказание паттернов\n- Динамическое TTL\n- Автоматическая предзагрузка")
+    Container(elasticsearch_ai, "Elasticsearch AI", "Elasticsearch + ML", "Поиск с машинным обучением:\n- Learning to Rank\n- Персонализация результатов\n- Автоматическая оптимизация")
+}
+
+System_Boundary(orchestration_ai, "AI Orchestration") {
+    Container(kubernetes_ai, "Kubernetes AI", "K8s + AI Operators", "Оркестрация с AI:\n- Предиктивное масштабирование\n- Автоматическое размещение\n- ML-оптимизация ресурсов")
+    Container(istio_ai, "Istio AI", "Istio + ML policies", "Service mesh с AI:\n- Интеллектуальная маршрутизация\n- Адаптивные circuit breakers\n- ML-балансировка нагрузки")
+}
+
+' User interactions
+Rel(user, apollo_gateway_ai, "GraphQL запросы", "HTTPS")
+Rel(data_scientist, model_registry, "Управление ML моделями", "REST API")
+Rel(sre_engineer, grafana_ai, "Мониторинг с AI инсайтами", "Web UI")
+
+' Gateway layer interactions
+Rel(apollo_gateway_ai, query_analyzer, "Анализ запросов", "gRPC")
+Rel(apollo_gateway_ai, routing_optimizer, "ML маршрутизация", "gRPC")
+Rel(query_analyzer, performance_predictor, "Предсказание производительности", "gRPC")
+
+' Gateway to subgraphs with AI routing
+Rel(routing_optimizer, user_subgraph_ai, "Интеллектуальная маршрутизация", "HTTP/GraphQL")
+Rel(routing_optimizer, offer_subgraph_ai, "ML-оптимизированные запросы", "HTTP/GraphQL")
+Rel(routing_optimizer, review_subgraph_ai, "Адаптивная балансировка", "HTTP/GraphQL")
+
+' ML optimization interactions
+Rel(performance_predictor, auto_optimizer, "ML предсказания", "gRPC")
+Rel(auto_optimizer, apollo_gateway_ai, "Автоматические оптимизации", "HTTP/REST")
+Rel(anomaly_detector, prometheus_ai, "Детекция аномалий", "HTTP")
+
+' A/B testing interactions
+Rel(apollo_gateway_ai, experiment_engine, "Получение экспериментов", "HTTP/REST")
+Rel(experiment_engine, feature_flags, "Управление флагами", "gRPC")
+Rel(user_subgraph_ai, metrics_collector, "Метрики экспериментов", "HTTP")
+Rel(offer_subgraph_ai, metrics_collector, "Бизнес-метрики", "HTTP")
+Rel(review_subgraph_ai, metrics_collector, "Пользовательские метрики", "HTTP")
+
+' ML platform interactions
+Rel(performance_predictor, model_registry, "Загрузка моделей", "REST API")
+Rel(auto_optimizer, feature_store, "Получение признаков", "gRPC")
+Rel(training_pipeline, data_warehouse, "Обучающие данные", "SQL")
+
+' Data platform interactions
+Rel(apollo_gateway_ai, stream_processor, "Потоковые метрики", "Kafka")
+Rel(user_subgraph_ai, stream_processor, "События пользователей", "Kafka")
+Rel(stream_processor, data_warehouse, "Агрегированные данные", "ClickHouse Protocol")
+Rel(metrics_collector, real_time_db, "Реальное время метрики", "HTTP")
+
+' Storage interactions with AI
+Rel(user_subgraph_ai, postgres_ai, "ML-оптимизированные запросы", "PostgreSQL")
+Rel(offer_subgraph_ai, postgres_ai, "Интеллектуальные индексы", "PostgreSQL")
+Rel(review_subgraph_ai, postgres_ai, "Предиктивные запросы", "PostgreSQL")
+
+Rel(user_subgraph_ai, redis_ai, "Персонализированное кеширование", "Redis Protocol")
+Rel(offer_subgraph_ai, redis_ai, "ML предсказание паттернов", "Redis Protocol")
+Rel(review_subgraph_ai, redis_ai, "Динамическое TTL", "Redis Protocol")
+
+Rel(offer_subgraph_ai, elasticsearch_ai, "Персонализированный поиск", "HTTP/REST")
+Rel(review_subgraph_ai, elasticsearch_ai, "ML ранжирование", "HTTP/REST")
+
+' Monitoring AI interactions
+Rel(apollo_gateway_ai, prometheus_ai, "AI-метрики", "HTTP")
+Rel(user_subgraph_ai, prometheus_ai, "ML производительность", "HTTP")
+Rel(offer_subgraph_ai, prometheus_ai, "Интеллектуальные метрики", "HTTP")
+Rel(review_subgraph_ai, prometheus_ai, "AI качество", "HTTP")
+
+Rel(prometheus_ai, grafana_ai, "ML визуализация", "HTTP")
+Rel(apollo_gateway_ai, jaeger_ai, "AI трассировка", "HTTP")
+
+' Orchestration AI
+Rel(kubernetes_ai, user_subgraph_ai, "Предиктивное масштабирование", "Kubernetes API")
+Rel(kubernetes_ai, offer_subgraph_ai, "ML размещение подов", "Kubernetes API")
+Rel(kubernetes_ai, review_subgraph_ai, "Автоматическая оптимизация", "Kubernetes API")
+
+Rel(istio_ai, apollo_gateway_ai, "Интеллектуальная маршрутизация", "Envoy API")
+Rel(istio_ai, routing_optimizer, "ML политики трафика", "Envoy API")
+
+' Feedback loops for continuous learning
+Rel(prometheus_ai, training_pipeline, "Метрики для переобучения", "HTTP")
+Rel(jaeger_ai, anomaly_detector, "Трассировки для анализа", "HTTP")
+Rel(grafana_ai, auto_optimizer, "Инсайты для оптимизации", "HTTP")
+
+SHOW_LEGEND()
+@enduml

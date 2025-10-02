@@ -1,0 +1,221 @@
+@startuml Task6_Deployment_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title Auto.ru Federation - Deployment Diagram (Task 6: Authentication & Authorization Production Infrastructure)
+
+Deployment_Node(aws_cloud_auth, "AWS Cloud Authentication Platform", "Amazon Web Services + Security Services") {
+    
+    Deployment_Node(production_vpc_auth, "Production VPC with Security", "Virtual Private Cloud + WAF") {
+        
+        Deployment_Node(public_subnet_auth_1, "Public Subnet Auth-1", "us-east-1a") {
+            Deployment_Node(alb_auth, "ALB with Auth", "AWS ALB + WAF") {
+                Container(load_balancer_auth, "Auth Load Balancer", "ALB + JWT validation", "Интеллектуальная балансировка:\n- JWT pre-validation\n- Rate limiting на ALB\n- WAF protection\n- SSL termination")
+            }
+            
+            Deployment_Node(api_gateway_auth, "API Gateway Auth", "AWS API Gateway + Authorizers") {
+                Container(api_gw_auth, "API Gateway with Lambda Auth", "AWS API Gateway", "API Gateway с авторизацией:\n- Lambda authorizers\n- JWT validation\n- Rate limiting\n- Request/response transformation")
+            }
+        }
+        
+        Deployment_Node(private_subnet_auth_1, "Private Subnet Auth-1", "us-east-1a") {
+            
+            Deployment_Node(eks_auth_cluster_1, "EKS Auth Cluster 1", "Kubernetes + RBAC") {
+                Deployment_Node(apollo_gateway_auth_pod_1, "Apollo Gateway Auth Pod 1", "Kubernetes Pod + Security") {
+                    Container(apollo_gateway_auth_1, "Apollo Gateway with Auth", "Rust + JWT validation", "Федеративный Gateway с аутентификацией:\n- JWT middleware\n- Rhai auth scripts\n- User context propagation\n- Security headers")
+                }
+                
+                Deployment_Node(auth_service_pod_1, "Auth Service Pod 1", "Kubernetes Pod") {
+                    Container(auth_service_1, "Authentication Service", "Rust + JWT + OAuth2", "Центральный сервис аутентификации:\n- JWT issuing/validation\n- OAuth2 integration\n- Session management\n- Key rotation")
+                }
+                
+                Deployment_Node(ugc_auth_pod_1, "UGC Auth Service Pod 1", "Kubernetes Pod") {
+                    Container(ugc_service_auth_1, "UGC Service (Secured)", "Rust + GraphQL Guards", "UGC сервис с защитой:\n- Role-based guards\n- GDPR compliance\n- Rate limiting\n- Audit logging")
+                }
+                
+                Deployment_Node(user_auth_pod_1, "User Auth Service Pod 1", "Kubernetes Pod") {
+                    Container(user_service_auth_1, "User Service (Secured)", "Rust + Privacy controls", "User сервис с защитой:\n- Personal data protection\n- Consent management\n- Access controls\n- Privacy by design")
+                }
+            }
+            
+            Deployment_Node(rds_auth_primary, "RDS Auth Primary", "PostgreSQL 15 + Security") {
+                ContainerDb(postgres_auth_primary, "PostgreSQL Auth Primary", "PostgreSQL + RLS", "База данных аутентификации:\n- Row Level Security (RLS)\n- Encrypted at rest\n- Audit logging\n- Backup encryption")
+            }
+            
+            Deployment_Node(elasticache_auth_primary, "ElastiCache Auth Primary", "Redis 7 + Auth") {
+                ContainerDb(redis_auth_primary, "Redis Auth Primary", "Redis + AUTH + TLS", "Кеш аутентификации:\n- JWT token cache\n- Session storage\n- Rate limiting counters\n- TLS encryption")
+            }
+        }
+        
+        Deployment_Node(private_subnet_auth_2, "Private Subnet Auth-2", "us-east-1b") {
+            
+            Deployment_Node(eks_auth_cluster_2, "EKS Auth Cluster 2", "Kubernetes + RBAC") {
+                Deployment_Node(apollo_gateway_auth_pod_2, "Apollo Gateway Auth Pod 2", "Kubernetes Pod + Security") {
+                    Container(apollo_gateway_auth_2, "Apollo Gateway with Auth", "Rust + JWT validation", "Резервный Auth Gateway:\n- Failover с состоянием\n- Синхронизация сессий\n- Distributed auth")
+                }
+                
+                Deployment_Node(security_audit_pod, "Security Audit Pod", "Kubernetes Pod") {
+                    Container(audit_service, "Security Audit Service", "Rust + Elasticsearch", "Сервис аудита безопасности:\n- Event logging\n- Threat detection\n- Compliance reporting\n- Forensic analysis")
+                }
+                
+                Deployment_Node(rate_limiter_pod, "Rate Limiter Pod", "Kubernetes Pod") {
+                    Container(rate_limiter_service, "Rate Limiting Service", "Rust + Redis", "Сервис ограничения скорости:\n- Distributed rate limiting\n- Adaptive thresholds\n- DDoS protection\n- Quota management")
+                }
+                
+                Deployment_Node(gdpr_compliance_pod, "GDPR Compliance Pod", "Kubernetes Pod") {
+                    Container(gdpr_service, "GDPR Compliance Service", "Rust + Privacy engine", "Сервис соответствия GDPR:\n- Data classification\n- Consent management\n- Right to erasure\n- Privacy controls")
+                }
+            }
+            
+            Deployment_Node(elasticsearch_auth_cluster, "Elasticsearch Auth Cluster", "Elasticsearch + Security") {
+                ContainerDb(elasticsearch_auth_master, "Elasticsearch Auth Master", "Elasticsearch + X-Pack", "Поиск и аудит с безопасностью:\n- Security events indexing\n- Audit trail storage\n- Threat intelligence\n- Compliance reporting")
+            }
+        }
+        
+        Deployment_Node(private_subnet_auth_3, "Private Subnet Auth-3", "us-east-1c") {
+            
+            Deployment_Node(security_services_cluster, "Security Services Cluster", "EKS + Security tools") {
+                Deployment_Node(oauth2_service_pod, "OAuth2 Service Pod", "Kubernetes Pod") {
+                    Container(oauth2_service, "OAuth2 Integration Service", "Rust + OAuth2 clients", "OAuth2 интеграция:\n- Multiple provider support\n- Token exchange\n- User mapping\n- Social login")
+                }
+                
+                Deployment_Node(jwks_service_pod, "JWKS Service Pod", "Kubernetes Pod") {
+                    Container(jwks_service, "JWKS Management Service", "Rust + Cryptography", "Управление ключами JWT:\n- Key generation\n- Key rotation\n- JWKS endpoint\n- Certificate management")
+                }
+            }
+            
+            Deployment_Node(backup_services, "Backup Services", "AWS Backup + Encryption") {
+                Container(backup_manager, "Encrypted Backup Manager", "AWS Backup", "Управление резервными копиями:\n- Encrypted backups\n- Point-in-time recovery\n- Cross-region replication\n- Compliance retention")
+            }
+        }
+    }
+    
+    Deployment_Node(security_services_region, "Security Services Region", "AWS Security Services") {
+        
+        Deployment_Node(cognito_platform, "Cognito Platform", "AWS Cognito") {
+            Container(cognito_user_pool, "Cognito User Pool", "Managed Identity Provider", "Управляемый провайдер идентификации:\n- User registration/login\n- MFA support\n- Social identity providers\n- SAML/OIDC federation")
+            Container(cognito_identity_pool, "Cognito Identity Pool", "Federated Identities", "Федеративные идентификации:\n- Temporary AWS credentials\n- Role-based access\n- Anonymous access\n- Cross-platform identity")
+        }
+        
+        Deployment_Node(secrets_manager_platform, "Secrets Manager Platform", "AWS Secrets Manager") {
+            Container(secrets_manager, "Secrets Manager", "Encrypted Secrets Storage", "Управление секретами:\n- JWT signing keys\n- OAuth2 client secrets\n- Database credentials\n- API keys rotation")
+        }
+        
+        Deployment_Node(kms_platform, "KMS Platform", "AWS KMS") {
+            Container(kms_service, "Key Management Service", "Hardware Security Modules", "Управление ключами шифрования:\n- JWT signing keys\n- Database encryption keys\n- Application-level encryption\n- Audit trail")
+        }
+        
+        Deployment_Node(waf_platform, "WAF Platform", "AWS WAF") {
+            Container(waf_service, "Web Application Firewall", "Layer 7 Protection", "Защита веб-приложений:\n- SQL injection protection\n- XSS protection\n- Rate limiting\n- Geo-blocking")
+        }
+    }
+    
+    Deployment_Node(monitoring_security_platform, "Security Monitoring Platform", "AWS Security + Observability") {
+        
+        Deployment_Node(cloudtrail_platform, "CloudTrail Platform", "AWS CloudTrail") {
+            Container(cloudtrail_service, "CloudTrail Audit", "API Audit Logging", "Аудит API вызовов:\n- All AWS API calls\n- Authentication events\n- Authorization decisions\n- Compliance logging")
+        }
+        
+        Deployment_Node(guardduty_platform, "GuardDuty Platform", "AWS GuardDuty") {
+            Container(guardduty_service, "GuardDuty Threat Detection", "ML-based Threat Detection", "Обнаружение угроз:\n- Malicious activity detection\n- Compromised instances\n- Cryptocurrency mining\n- Data exfiltration")
+        }
+        
+        Deployment_Node(security_hub_platform, "Security Hub Platform", "AWS Security Hub") {
+            Container(security_hub_service, "Security Hub", "Centralized Security Findings", "Центральная панель безопасности:\n- Security findings aggregation\n- Compliance status\n- Security score\n- Automated remediation")
+        }
+    }
+    
+    Deployment_Node(observability_platform, "Observability Platform", "Monitoring + Alerting") {
+        
+        Deployment_Node(prometheus_auth_cluster, "Prometheus Auth Cluster", "Prometheus + Security rules") {
+            Container(prometheus_auth, "Prometheus Auth", "Prometheus + Auth metrics", "Мониторинг аутентификации:\n- Auth success/failure rates\n- Token validation latency\n- Rate limiting metrics\n- Security event counts")
+        }
+        
+        Deployment_Node(grafana_auth_cluster, "Grafana Auth Cluster", "Grafana + Security dashboards") {
+            Container(grafana_auth, "Grafana Auth", "Grafana + Security visualizations", "Дашборды безопасности:\n- Real-time auth metrics\n- Security incident dashboards\n- Compliance reports\n- Threat visualization")
+        }
+        
+        Deployment_Node(jaeger_auth_cluster, "Jaeger Auth Cluster", "Jaeger + Auth tracing") {
+            Container(jaeger_auth, "Jaeger Auth", "Jaeger + Security tracing", "Трассировка аутентификации:\n- Auth flow tracing\n- JWT validation traces\n- OAuth2 flow tracing\n- Performance analysis")
+        }
+    }
+}
+
+Deployment_Node(external_auth_providers, "External Auth Providers", "Third-party Identity Providers") {
+    Container(google_oauth, "Google OAuth2", "Google Identity Platform", "Google аутентификация:\n- OAuth2/OIDC\n- Social login\n- Enterprise SSO\n- MFA support")
+    Container(github_oauth, "GitHub OAuth2", "GitHub Identity", "GitHub аутентификация:\n- Developer accounts\n- Organization SSO\n- Team management\n- Repository access")
+    Container(corporate_sso, "Corporate SSO", "SAML/OIDC Provider", "Корпоративная аутентификация:\n- SAML 2.0\n- OIDC\n- LDAP integration\n- Multi-tenant support")
+}
+
+' Internet and User Traffic with Authentication
+Person(users_auth, "Authenticated Users", "Пользователи с JWT токенами")
+Rel(users_auth, waf_service, "Защищенные запросы", "HTTPS")
+Rel(waf_service, load_balancer_auth, "Фильтрованный трафик", "HTTPS")
+
+' Load Balancer to Gateway
+Rel(load_balancer_auth, apollo_gateway_auth_1, "Аутентифицированные запросы", "HTTP/HTTPS")
+Rel(load_balancer_auth, apollo_gateway_auth_2, "Failover запросы", "HTTP/HTTPS")
+
+' Gateway to Auth Services
+Rel(apollo_gateway_auth_1, auth_service_1, "JWT валидация", "gRPC/TLS")
+Rel(apollo_gateway_auth_2, auth_service_1, "JWT валидация", "gRPC/TLS")
+Rel(auth_service_1, oauth2_service, "OAuth2 интеграция", "HTTP/TLS")
+Rel(auth_service_1, jwks_service, "Получение ключей", "HTTP/TLS")
+
+' Gateway to Secured Subgraphs
+Rel(apollo_gateway_auth_1, ugc_service_auth_1, "Защищенные GraphQL запросы", "HTTP/GraphQL")
+Rel(apollo_gateway_auth_1, user_service_auth_1, "Запросы с пользовательским контекстом", "HTTP/GraphQL")
+Rel(apollo_gateway_auth_2, ugc_service_auth_1, "Failover запросы", "HTTP/GraphQL")
+Rel(apollo_gateway_auth_2, user_service_auth_1, "Failover запросы", "HTTP/GraphQL")
+
+' Security Services Integration
+Rel(apollo_gateway_auth_1, audit_service, "События безопасности", "gRPC/TLS")
+Rel(apollo_gateway_auth_1, rate_limiter_service, "Проверка лимитов", "gRPC/TLS")
+Rel(ugc_service_auth_1, gdpr_service, "GDPR проверки", "gRPC/TLS")
+Rel(user_service_auth_1, gdpr_service, "Контроль приватности", "gRPC/TLS")
+
+' Database Connections with Security
+Rel(auth_service_1, postgres_auth_primary, "Аутентификация данные", "PostgreSQL/TLS")
+Rel(user_service_auth_1, postgres_auth_primary, "Пользовательские данные", "PostgreSQL/TLS")
+Rel(ugc_service_auth_1, postgres_auth_primary, "UGC данные", "PostgreSQL/TLS")
+
+' Cache Connections with Security
+Rel(auth_service_1, redis_auth_primary, "JWT кеш", "Redis/TLS")
+Rel(rate_limiter_service, redis_auth_primary, "Rate limiting счетчики", "Redis/TLS")
+Rel(ugc_service_auth_1, redis_auth_primary, "Кеш разрешений", "Redis/TLS")
+
+' Audit and Search
+Rel(audit_service, elasticsearch_auth_master, "Индексирование событий", "HTTP/TLS")
+Rel(gdpr_service, elasticsearch_auth_master, "GDPR события", "HTTP/TLS")
+
+' AWS Security Services Integration
+Rel(auth_service_1, cognito_user_pool, "Федеративная аутентификация", "AWS API")
+Rel(oauth2_service, cognito_identity_pool, "Временные credentials", "AWS API")
+Rel(auth_service_1, secrets_manager, "Получение секретов", "AWS API")
+Rel(jwks_service, kms_service, "Управление ключами", "AWS API")
+
+' External OAuth2 Providers
+Rel(oauth2_service, google_oauth, "Google OAuth2", "HTTPS/OAuth2")
+Rel(oauth2_service, github_oauth, "GitHub OAuth2", "HTTPS/OAuth2")
+Rel(oauth2_service, corporate_sso, "Corporate SSO", "HTTPS/SAML")
+
+' Security Monitoring
+Rel(apollo_gateway_auth_1, cloudtrail_service, "API аудит", "AWS CloudTrail")
+Rel(auth_service_1, guardduty_service, "Threat detection", "AWS GuardDuty")
+Rel(audit_service, security_hub_service, "Security findings", "AWS Security Hub")
+
+' Observability Integration
+Rel(apollo_gateway_auth_1, prometheus_auth, "Auth метрики", "HTTP")
+Rel(auth_service_1, prometheus_auth, "Service метрики", "HTTP")
+Rel(audit_service, prometheus_auth, "Security метрики", "HTTP")
+Rel(rate_limiter_service, prometheus_auth, "Rate limiting метрики", "HTTP")
+
+Rel(prometheus_auth, grafana_auth, "Визуализация метрик", "HTTP")
+Rel(apollo_gateway_auth_1, jaeger_auth, "Auth трассировка", "HTTP")
+Rel(auth_service_1, jaeger_auth, "Service трассировка", "HTTP")
+
+' Backup and Recovery
+Rel(postgres_auth_primary, backup_manager, "Encrypted backups", "AWS Backup")
+Rel(elasticsearch_auth_master, backup_manager, "Audit log backups", "AWS Backup")
+
+SHOW_LEGEND()
+@enduml

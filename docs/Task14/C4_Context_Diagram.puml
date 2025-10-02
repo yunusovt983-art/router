@@ -1,0 +1,29 @@
+@startuml Task14_Context_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Task 14: Performance Optimization - System Context Diagram
+
+Person(client, "GraphQL Client", "Frontend applications, mobile apps")
+Person(admin, "System Administrator", "Monitors performance and manages system")
+
+System_Boundary(ugc_system, "UGC GraphQL Federation") {
+    System(ugc_subgraph, "UGC Subgraph", "GraphQL subgraph with performance optimizations")
+}
+
+System_Ext(users_service, "Users Service", "External user management service")
+System_Ext(offers_service, "Offers Service", "External offers management service")
+System_Ext(redis, "Redis Cache", "Distributed caching layer")
+System_Ext(postgres, "PostgreSQL", "Primary database")
+System_Ext(monitoring, "Monitoring System", "Metrics collection and alerting")
+
+Rel(client, ugc_subgraph, "Sends GraphQL queries", "HTTPS/GraphQL")
+Rel(ugc_subgraph, users_service, "Fetches user data", "HTTP/REST")
+Rel(ugc_subgraph, offers_service, "Fetches offer data", "HTTP/REST")
+Rel(ugc_subgraph, redis, "Cache operations", "Redis Protocol")
+Rel(ugc_subgraph, postgres, "Database queries", "PostgreSQL")
+Rel(ugc_subgraph, monitoring, "Sends metrics", "HTTP/Prometheus")
+Rel(admin, monitoring, "Views performance metrics", "HTTPS")
+Rel(admin, ugc_subgraph, "Health checks", "HTTPS")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,38 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.5", import: ["@key"])
+
+type Brand @key(fields: "id") {
+  id: ID!
+  name: String!
+  country: String!
+  logoUrl: String
+  foundedYear: Int
+}
+
+type Model @key(fields: "id") {
+  id: ID!
+  name: String!
+  brandId: ID!
+  bodyType: String!
+  fuelType: String!
+  transmission: String!
+  driveType: String!
+  engineVolume: Float
+  powerHp: Int
+  productionStartYear: Int
+  productionEndYear: Int
+  
+  # Federation relationships
+  brand: Brand
+}
+
+type Query {
+  brand(id: ID!): Brand
+  brands: [Brand!]!
+  model(id: ID!): Model
+  models: [Model!]!
+  modelsByBrand(brandId: ID!): [Model!]!
+}
+
+type Mutation {
+  placeholder: String
+}

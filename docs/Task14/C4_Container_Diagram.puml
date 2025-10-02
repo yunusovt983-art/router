@@ -1,0 +1,47 @@
+@startuml Task14_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Task 14: Performance Optimization - Container Diagram
+
+Person(client, "GraphQL Client", "Frontend applications")
+Person(admin, "Administrator", "System monitoring")
+
+System_Boundary(ugc_federation, "UGC GraphQL Federation System") {
+    Container(graphql_gateway, "GraphQL Gateway", "Apollo Router", "Routes and composes GraphQL queries")
+    
+    Container_Boundary(ugc_subgraph_container, "UGC Subgraph") {
+        Container(graphql_server, "GraphQL Server", "Rust/Async-GraphQL", "Handles GraphQL operations with performance optimizations")
+        Container(dataloader, "DataLoader Service", "Rust", "Batches and caches database queries")
+        Container(cache_service, "Cache Service", "Rust/Redis", "Multi-level caching system")
+        Container(query_analyzer, "Query Analyzer", "Rust", "Analyzes query complexity and enforces limits")
+        Container(rate_limiter, "Rate Limiter", "Rust", "Per-user request throttling")
+    }
+}
+
+ContainerDb(redis_cache, "Redis Cache", "Redis", "L2 distributed cache")
+ContainerDb(postgres_db, "PostgreSQL", "PostgreSQL", "Primary database with optimized indexes")
+
+System_Ext(users_service, "Users Service", "External user management")
+System_Ext(offers_service, "Offers Service", "External offers management")
+System_Ext(monitoring, "Monitoring", "Prometheus/Grafana")
+
+Rel(client, graphql_gateway, "GraphQL queries", "HTTPS")
+Rel(graphql_gateway, graphql_server, "Subgraph queries", "HTTP/GraphQL")
+
+Rel(graphql_server, dataloader, "Batch requests", "In-process")
+Rel(graphql_server, cache_service, "Cache operations", "In-process")
+Rel(graphql_server, query_analyzer, "Query validation", "In-process")
+Rel(graphql_server, rate_limiter, "Rate check", "In-process")
+
+Rel(dataloader, postgres_db, "Batched queries", "PostgreSQL")
+Rel(cache_service, redis_cache, "Cache operations", "Redis Protocol")
+Rel(cache_service, postgres_db, "Cache miss queries", "PostgreSQL")
+
+Rel(graphql_server, users_service, "User data", "HTTP/REST")
+Rel(graphql_server, offers_service, "Offer data", "HTTP/REST")
+Rel(graphql_server, monitoring, "Metrics", "HTTP/Prometheus")
+
+Rel(admin, monitoring, "Performance monitoring", "HTTPS")
+
+SHOW_LEGEND()
+@enduml

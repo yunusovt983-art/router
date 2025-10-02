@@ -1,0 +1,39 @@
+@startuml C4_Context_Task12
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Task 12: Development and Deployment Environment Setup - Context Diagram
+
+Person(developer, "Developer", "Software developer working on Auto.ru GraphQL Federation")
+Person(devops, "DevOps Engineer", "Infrastructure and deployment specialist")
+Person(qa, "QA Engineer", "Quality assurance and testing specialist")
+
+System_Boundary(development_env, "Development Environment") {
+    System(local_dev, "Local Development", "Docker Compose based local development environment")
+    System(ci_cd, "CI/CD Pipeline", "GitHub Actions automated testing and deployment")
+    System(documentation, "Documentation System", "Project documentation and API guides")
+}
+
+System_Ext(github, "GitHub Repository", "Source code repository with version control")
+System_Ext(docker_hub, "Docker Registry", "Container image registry (ECR/Docker Hub)")
+System_Ext(aws_staging, "AWS Staging", "Staging environment on AWS EKS")
+System_Ext(aws_prod, "AWS Production", "Production environment on AWS EKS")
+System_Ext(monitoring, "Monitoring Stack", "Prometheus, Grafana, Jaeger for observability")
+
+Rel(developer, local_dev, "Develops and tests", "Docker Compose")
+Rel(developer, documentation, "Reads and updates", "Markdown/API docs")
+Rel(devops, ci_cd, "Configures and monitors", "GitHub Actions")
+Rel(qa, ci_cd, "Reviews test results", "Automated testing")
+
+Rel(local_dev, github, "Pushes code", "Git")
+Rel(ci_cd, github, "Triggered by", "Git hooks")
+Rel(ci_cd, docker_hub, "Pushes images", "Docker Registry API")
+Rel(ci_cd, aws_staging, "Deploys to", "kubectl/Helm")
+Rel(ci_cd, aws_prod, "Deploys to", "kubectl/Helm")
+
+Rel(aws_staging, monitoring, "Sends metrics", "OpenTelemetry")
+Rel(aws_prod, monitoring, "Sends metrics", "OpenTelemetry")
+
+SHOW_LEGEND()
+@enduml

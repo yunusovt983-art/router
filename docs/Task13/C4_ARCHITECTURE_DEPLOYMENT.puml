@@ -1,0 +1,97 @@
+@startuml C4_Deployment_Task13
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Task 13: Migration Strategy Implementation - Deployment Diagram
+
+Deployment_Node(developer_machine, "Developer Machine", "Local Development Environment") {
+    Deployment_Node(local_docker, "Docker Desktop", "Container Runtime") {
+        Container(local_migration, "Migration Service", "Rust/Docker", "Port 4001")
+        Container(local_redis, "Redis Cache", "Docker", "Port 6379")
+        Container(local_ugc, "UGC GraphQL", "Rust/Docker", "Port 4002")
+    }
+    
+    Deployment_Node(dev_tools, "Development Tools", "Native Applications") {
+        Container(migration_cli, "Migration CLI", "Rust Binary", "Command-line management")
+        Container(config_editor, "Config Editor", "VS Code/Vim", "YAML configuration editing")
+    }
+}
+
+Deployment_Node(aws_staging, "AWS Staging Environment", "EKS Cluster") {
+    Deployment_Node(staging_nodes, "EKS Worker Nodes", "EC2 t3.medium") {
+        Container(staging_migration, "Migration Service", "Kubernetes Pod", "Replicas: 2")
+        Container(staging_ugc, "UGC GraphQL Service", "Kubernetes Pod", "Replicas: 2")
+        Container(staging_legacy, "Legacy REST Service", "Kubernetes Pod", "Replicas: 1")
+    }
+    
+    Deployment_Node(staging_data, "Staging Data Layer", "AWS Managed Services") {
+        ContainerDb(staging_redis, "ElastiCache Redis", "AWS ElastiCache", "cache.t3.micro")
+        ContainerDb(staging_config, "Config Storage", "AWS S3", "Configuration files")
+    }
+    
+    Deployment_Node(staging_monitoring, "Staging Monitoring", "EKS Monitoring Stack") {
+        Container(staging_prometheus, "Prometheus", "Kubernetes Pod", "Metrics collection")
+        Container(staging_grafana, "Grafana", "Kubernetes Pod", "Migration dashboards")
+    }
+}
+
+Deployment_Node(aws_production, "AWS Production Environment", "EKS Cluster") {
+    Deployment_Node(prod_nodes, "EKS Worker Nodes", "EC2 c5.large") {
+        Container(prod_migration, "Migration Service", "Kubernetes Pod", "Replicas: 3")
+        Container(prod_ugc, "UGC GraphQL Service", "Kubernetes Pod", "Replicas: 5")
+        Container(prod_legacy, "Legacy REST Service", "Kubernetes Pod", "Replicas: 2")
+    }
+    
+    Deployment_Node(prod_data, "Production Data Layer", "AWS Managed Services") {
+        ContainerDb(prod_redis, "ElastiCache Redis", "AWS ElastiCache", "cache.r5.large Cluster")
+        ContainerDb(prod_config, "Config Storage", "AWS S3", "Versioned configuration")
+    }
+    
+    Deployment_Node(prod_monitoring, "Production Monitoring", "EKS Monitoring Stack") {
+        Container(prod_prometheus, "Prometheus", "Kubernetes Pod", "HA setup")
+        Container(prod_grafana, "Grafana", "Kubernetes Pod", "Production dashboards")
+        Container(prod_alertmanager, "AlertManager", "Kubernetes Pod", "Migration alerts")
+    }
+}
+
+Deployment_Node(external_services, "External Services", "Third-party Services") {
+    Container(pagerduty, "PagerDuty", "SaaS", "Incident management")
+    Container(datadog, "DataDog", "SaaS", "APM and logging")
+    Container(launchdarkly, "LaunchDarkly", "SaaS", "Feature flag management (optional)")
+}
+
+' Local Development Relationships
+Rel(migration_cli, local_migration, "Manages flags", "HTTP API")
+Rel(local_migration, local_redis, "Cache flags", "Redis protocol")
+Rel(local_migration, local_ugc, "GraphQL requests", "HTTP/GraphQL")
+
+' Staging Environment Relationships
+Rel(staging_migration, staging_ugc, "Routes to GraphQL", "HTTP/GraphQL")
+Rel(staging_migration, staging_legacy, "Fallback to REST", "HTTP/REST")
+Rel(staging_migration, staging_redis, "Cache operations", "Redis protocol")
+Rel(staging_migration, staging_config, "Load configuration", "S3 API")
+Rel(staging_migration, staging_prometheus, "Send metrics", "HTTP/Prometheus")
+
+' Production Environment Relationships
+Rel(prod_migration, prod_ugc, "Routes to GraphQL", "HTTP/GraphQL")
+Rel(prod_migration, prod_legacy, "Fallback to REST", "HTTP/REST")
+Rel(prod_migration, prod_redis, "Cache operations", "Redis protocol")
+Rel(prod_migration, prod_config, "Load configuration", "S3 API")
+Rel(prod_migration, prod_prometheus, "Send metrics", "HTTP/Prometheus")
+
+' Monitoring and Alerting
+Rel(prod_prometheus, prod_alertmanager, "Alert rules", "Internal")
+Rel(prod_alertmanager, pagerduty, "Critical alerts", "Webhook")
+Rel(prod_migration, datadog, "APM traces", "DataDog Agent")
+
+' Cross-environment relationships
+Rel(migration_cli, staging_migration, "Remote management", "HTTPS/API")
+Rel(migration_cli, prod_migration, "Remote management", "HTTPS/API")
+
+' Configuration management
+Rel(config_editor, staging_config, "Update config", "AWS CLI/S3")
+Rel(config_editor, prod_config, "Update config", "AWS CLI/S3")
+
+SHOW_LEGEND()
+@enduml

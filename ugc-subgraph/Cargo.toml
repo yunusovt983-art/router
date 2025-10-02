@@ -1,0 +1,83 @@
+[package]
+name = "ugc-subgraph"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# GraphQL
+async-graphql = { workspace = true, features = ["uuid", "chrono"] }
+async-graphql-axum.workspace = true
+
+# Web framework
+axum.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+
+# Database
+sqlx = { workspace = true, features = ["rust_decimal"] }
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml = "0.9"
+
+# UUID and time
+uuid.workspace = true
+chrono.workspace = true
+rust_decimal.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Tracing
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-opentelemetry.workspace = true
+opentelemetry.workspace = true
+opentelemetry-otlp = "0.16"
+
+# Metrics
+prometheus.workspace = true
+
+# Authentication
+jsonwebtoken.workspace = true
+
+# HTTP client
+reqwest.workspace = true
+
+# Configuration
+config.workspace = true
+
+# Base64 encoding for cursors
+base64 = "0.22"
+
+# Async traits
+async-trait = "0.1"
+
+# Caching
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+moka = { version = "0.12", features = ["future"] }
+
+# CLI dependencies
+clap = { version = "4.4", features = ["derive"] }
+
+[dev-dependencies]
+testcontainers.workspace = true
+rust_decimal_macros = "1.0"
+tokio-test = "0.4"
+mockall = "0.12"
+wiremock = "0.6"
+tempfile = "3.8"
+serial_test = "3.0"
+criterion = { version = "0.5", features = ["html_reports"] }
+pact_consumer = "1.0"
+fake = { version = "2.9", features = ["derive", "chrono", "uuid"] }
+proptest = "1.4"
+
+[[bench]]
+name = "review_benchmarks"
+harness = false

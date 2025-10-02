@@ -1,0 +1,190 @@
+@startuml Task9_Deployment_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title Auto.ru Federation - Deployment Diagram (Task 9: Performance Optimization Infrastructure)
+
+Deployment_Node(aws_cloud_performance, "AWS Cloud Performance Platform", "Amazon Web Services + Performance Stack") {
+    
+    Deployment_Node(production_vpc_performance, "Production VPC with Performance Optimization", "Virtual Private Cloud + Caching") {
+        
+        Deployment_Node(public_subnet_performance_1, "Public Subnet Performance-1", "us-east-1a") {
+            Deployment_Node(alb_performance, "ALB with Performance Optimization", "AWS ALB + Caching") {
+                Container(load_balancer_performance, "Performance Load Balancer", "ALB + CloudFront + Caching", "Load balancer с оптимизацией:\n- Response caching\n- Compression\n- Connection pooling\n- Health-based routing")
+            }
+            
+            Deployment_Node(cloudfront_performance, "CloudFront Performance", "AWS CloudFront + Edge Caching") {
+                Container(cdn_performance, "CDN with Edge Caching", "CloudFront + Lambda@Edge", "CDN с производительностью:\n- Edge caching\n- Query result caching\n- Compression\n- Geographic optimization")
+            }
+        }
+        
+        Deployment_Node(private_subnet_performance_1, "Private Subnet Performance-1", "us-east-1a") {
+            
+            Deployment_Node(eks_performance_cluster_1, "EKS Performance Cluster 1", "Kubernetes + Performance Operators") {
+                Deployment_Node(ugc_performance_pod_1, "UGC Performance Pod 1", "Kubernetes Pod + Full Optimization") {
+                    Container(ugc_service_performance_1, "UGC Service (Performance Optimized)", "Rust + Redis + DataLoader", "UGC сервис с оптимизацией:\n- Redis caching integration\n- DataLoader N+1 optimization\n- Query complexity limiting\n- Rate limiting middleware")
+                }
+                
+                Deployment_Node(redis_cluster_pod_1, "Redis Cluster Pod 1", "Kubernetes Pod + Redis Cluster") {
+                    Container(redis_master_1, "Redis Master", "Redis + Cluster Mode", "Redis master node:\n- Query result caching\n- Session caching\n- Rate limiting data\n- Cache invalidation")
+                    Container(redis_replica_1, "Redis Replica 1", "Redis + Read Replica", "Redis replica:\n- Read scaling\n- Failover support\n- Cache distribution\n- Load balancing")
+                }
+                
+                Deployment_Node(performance_monitor_pod_1, "Performance Monitor Pod 1", "Kubernetes Pod + Monitoring") {
+                    Container(performance_collector_1, "Performance Collector", "Prometheus + Custom Metrics", "Performance метрики:\n- Cache hit rates\n- Query execution time\n- DataLoader efficiency\n- Rate limiting stats")
+                }
+            }
+            
+            Deployment_Node(database_performance_cluster, "Database Performance Cluster", "PostgreSQL + Optimization") {
+                Container(postgres_primary_optimized, "PostgreSQL Primary (Optimized)", "PostgreSQL + Performance Tuning", "Оптимизированная БД:\n- Performance indexes\n- Connection pooling\n- Query optimization\n- Slow query monitoring")
+                Container(postgres_read_replica_1, "PostgreSQL Read Replica 1", "PostgreSQL + Read Scaling", "Read replica для масштабирования:\n- Read query distribution\n- DataLoader optimization\n- Reporting queries\n- Analytics workload")
+            }
+        }
+        
+        Deployment_Node(private_subnet_performance_2, "Private Subnet Performance-2", "us-east-1b") {
+            
+            Deployment_Node(eks_performance_cluster_2, "EKS Performance Cluster 2", "Kubernetes + Cache Management") {
+                Deployment_Node(cache_management_pod, "Cache Management Pod", "Kubernetes Pod + Cache Operations") {
+                    Container(cache_invalidator, "Cache Invalidator Service", "Rust + Event Processing", "Сервис инвалидации кеша:\n- Event-driven invalidation\n- Pattern-based cleanup\n- Cascade invalidation\n- Scheduled maintenance")
+                    Container(cache_warmer, "Cache Warmer Service", "Rust + Background Tasks", "Сервис прогрева кеша:\n- Proactive caching\n- Popular query detection\n- Background refresh\n- Performance optimization")
+                }
+                
+                Deployment_Node(redis_cluster_pod_2, "Redis Cluster Pod 2", "Kubernetes Pod + Redis Cluster") {
+                    Container(redis_master_2, "Redis Master 2", "Redis + Cluster Mode", "Redis master node 2:\n- Sharded data\n- High availability\n- Automatic failover\n- Cross-AZ replication")
+                    Container(redis_replica_2, "Redis Replica 2", "Redis + Read Replica", "Redis replica 2:\n- Load distribution\n- Backup reads\n- Disaster recovery\n- Performance scaling")
+                }
+                
+                Deployment_Node(rate_limiting_pod, "Rate Limiting Pod", "Kubernetes Pod + Rate Control") {
+                    Container(rate_limiter_service, "Rate Limiter Service", "Rust + Token Bucket", "Сервис ограничения запросов:\n- User-based limiting\n- Query complexity limits\n- Dynamic throttling\n- Abuse prevention")
+                    Container(query_analyzer_service, "Query Analyzer Service", "Rust + GraphQL AST", "Анализатор запросов:\n- Complexity calculation\n- Depth analysis\n- Performance prediction\n- Security validation")
+                }
+            }
+            
+            Deployment_Node(apollo_router_performance_cluster, "Apollo Router Performance Cluster", "Kubernetes + Router Optimization") {
+                Deployment_Node(apollo_router_pod_2, "Apollo Router Pod 2", "Kubernetes Pod + Performance Features") {
+                    Container(apollo_router_performance_2, "Apollo Router (Performance)", "Apollo Router + Caching + Rate Limiting", "Apollo Router с оптимизацией:\n- Query plan caching\n- Response caching\n- Rate limiting integration\n- Performance monitoring")
+                }
+            }
+        }
+        
+        Deployment_Node(private_subnet_performance_3, "Private Subnet Performance-3", "us-east-1c") {
+            
+            Deployment_Node(dataloader_optimization_cluster, "DataLoader Optimization Cluster", "Kubernetes + N+1 Prevention") {
+                Deployment_Node(dataloader_service_pod, "DataLoader Service Pod", "Kubernetes Pod + Batch Loading") {
+                    Container(dataloader_coordinator, "DataLoader Coordinator", "Rust + Batch Processing", "Координатор DataLoader:\n- Batch request coordination\n- Request deduplication\n- Load balancing\n- Performance optimization")
+                    Container(connection_pool_manager, "Connection Pool Manager", "Rust + sqlx Pool", "Менеджер пулов подключений:\n- Dynamic pool sizing\n- Health monitoring\n- Load distribution\n- Failover handling")
+                }
+                
+                Deployment_Node(performance_analytics_pod, "Performance Analytics Pod", "Kubernetes Pod + Analytics") {
+                    Container(query_performance_analyzer, "Query Performance Analyzer", "Rust + ML Analytics", "Анализатор производительности:\n- Query pattern analysis\n- Performance prediction\n- Bottleneck detection\n- Optimization recommendations")
+                    Container(cache_optimizer, "Cache Optimizer", "Rust + ML Optimization", "Оптимизатор кеша:\n- Cache strategy optimization\n- TTL optimization\n- Eviction policy tuning\n- Performance analysis")
+                }
+            }
+        }
+    }
+    
+    Deployment_Node(managed_services_performance, "Managed Services Performance", "AWS Managed Performance Services") {
+        
+        Deployment_Node(elasticache_cluster, "ElastiCache Cluster", "AWS ElastiCache + Redis") {
+            Container(elasticache_redis, "ElastiCache Redis", "Managed Redis + Cluster Mode", "Управляемый Redis:\n- Automatic failover\n- Multi-AZ deployment\n- Backup and restore\n- Performance monitoring")
+            Container(elasticache_memcached, "ElastiCache Memcached", "Managed Memcached", "Управляемый Memcached:\n- Session caching\n- Simple key-value cache\n- High throughput\n- Low latency")
+        }
+        
+        Deployment_Node(rds_performance, "RDS Performance", "AWS RDS + Performance Insights") {
+            Container(rds_postgres_optimized, "RDS PostgreSQL (Optimized)", "RDS + Performance Insights", "Управляемая PostgreSQL:\n- Performance Insights\n- Automated backups\n- Read replicas\n- Connection pooling")
+            Container(rds_proxy, "RDS Proxy", "AWS RDS Proxy", "RDS Proxy для оптимизации:\n- Connection pooling\n- Failover handling\n- Security enhancement\n- Performance optimization")
+        }
+        
+        Deployment_Node(cloudwatch_performance, "CloudWatch Performance", "AWS CloudWatch + Custom Metrics") {
+            Container(performance_metrics, "Performance Metrics", "CloudWatch + Custom Dashboards", "Метрики производительности:\n- Cache performance\n- Query execution time\n- DataLoader efficiency\n- Rate limiting stats")
+            Container(performance_alarms, "Performance Alarms", "CloudWatch + SNS", "Алармы производительности:\n- Slow query alerts\n- Cache miss alerts\n- High complexity alerts\n- Resource utilization")
+        }
+    }
+    
+    Deployment_Node(performance_monitoring_region, "Performance Monitoring Region", "Dedicated Monitoring Infrastructure") {
+        
+        Deployment_Node(grafana_performance, "Grafana Performance", "Grafana + Performance Dashboards") {
+            Container(performance_dashboards, "Performance Dashboards", "Grafana + Custom Panels", "Дашборды производительности:\n- Real-time performance\n- Cache analytics\n- Query optimization\n- Resource utilization")
+        }
+        
+        Deployment_Node(jaeger_performance, "Jaeger Performance", "Jaeger + Performance Tracing") {
+            Container(performance_tracing, "Performance Tracing", "Jaeger + Custom Spans", "Трассировка производительности:\n- Query execution traces\n- Cache operation traces\n- DataLoader traces\n- Performance bottlenecks")
+        }
+        
+        Deployment_Node(elasticsearch_performance, "Elasticsearch Performance", "Elasticsearch + Performance Logs") {
+            Container(performance_logs, "Performance Logs", "Elasticsearch + Performance Analysis", "Логи производительности:\n- Slow query logs\n- Cache operation logs\n- Performance events\n- Optimization insights")
+        }
+    }
+}
+
+Deployment_Node(development_performance, "Development Performance Environment", "Local Performance Testing") {
+    
+    Deployment_Node(docker_compose_performance, "Docker Compose Performance", "Local Performance Stack") {
+        Container(local_redis_cluster, "Local Redis Cluster", "Redis + Docker Compose", "Локальный Redis кластер:\n- Multi-node setup\n- Performance testing\n- Cache development\n- Local optimization")
+        Container(local_postgres_optimized, "Local PostgreSQL (Optimized)", "PostgreSQL + Performance Config", "Локальная оптимизированная БД:\n- Performance indexes\n- Query optimization\n- Connection pooling\n- Development testing")
+        Container(local_performance_tools, "Local Performance Tools", "Custom + Monitoring", "Локальные инструменты:\n- Performance profiling\n- Cache testing\n- Load testing\n- Optimization tools")
+    }
+}
+
+' User traffic with performance optimization
+Person(users_performance, "Users", "Получают оптимизированные ответы")
+Person(developers_performance, "Developers", "Оптимизируют производительность")
+Person(sre_performance, "SRE Team", "Мониторят производительность")
+
+Rel(users_performance, cdn_performance, "Быстрые запросы", "HTTPS + Edge Cache")
+Rel(developers_performance, performance_dashboards, "Анализ производительности", "HTTPS")
+Rel(sre_performance, performance_alarms, "Мониторинг алармов", "HTTPS")
+
+' Load balancer performance optimization
+Rel(load_balancer_performance, ugc_service_performance_1, "Оптимизированные запросы", "HTTP + Connection Pooling")
+Rel(cdn_performance, load_balancer_performance, "Edge cached requests", "HTTP + Compression")
+
+' Application performance flow
+Rel(ugc_service_performance_1, redis_master_1, "Cache operations", "Redis Protocol")
+Rel(ugc_service_performance_1, dataloader_coordinator, "Batch loading", "gRPC")
+Rel(ugc_service_performance_1, rate_limiter_service, "Rate limiting", "HTTP")
+
+' Redis cluster performance
+Rel(redis_master_1, redis_replica_1, "Data replication", "Redis Cluster Protocol")
+Rel(redis_master_2, redis_replica_2, "Cross-AZ replication", "Redis Cluster Protocol")
+Rel(redis_master_1, redis_master_2, "Cluster coordination", "Redis Cluster Protocol")
+
+' Cache management
+Rel(cache_invalidator, redis_master_1, "Cache invalidation", "Redis Commands")
+Rel(cache_warmer, redis_master_2, "Cache warming", "Redis Commands")
+Rel(cache_optimizer, redis_master_1, "Cache optimization", "Performance Tuning")
+
+' DataLoader optimization
+Rel(dataloader_coordinator, connection_pool_manager, "Connection management", "Pool Operations")
+Rel(connection_pool_manager, postgres_primary_optimized, "Optimized queries", "PostgreSQL")
+Rel(connection_pool_manager, postgres_read_replica_1, "Read queries", "PostgreSQL")
+
+' Apollo Router performance
+Rel(apollo_router_performance_2, query_analyzer_service, "Query analysis", "gRPC")
+Rel(apollo_router_performance_2, ugc_service_performance_1, "Federated calls", "HTTP + Performance Headers")
+
+' Performance monitoring
+Rel(ugc_service_performance_1, performance_collector_1, "Performance metrics", "Metrics Protocol")
+Rel(redis_master_1, performance_collector_1, "Cache metrics", "Redis INFO")
+Rel(dataloader_coordinator, performance_collector_1, "DataLoader metrics", "Custom Metrics")
+
+' AWS managed services integration
+Rel(ugc_service_performance_1, elasticache_redis, "Managed caching", "Redis Protocol")
+Rel(connection_pool_manager, rds_proxy, "Managed connections", "PostgreSQL")
+Rel(rds_proxy, rds_postgres_optimized, "Optimized DB access", "PostgreSQL")
+
+' Performance analytics
+Rel(query_performance_analyzer, performance_logs, "Performance analysis", "Elasticsearch API")
+Rel(performance_collector_1, performance_metrics, "CloudWatch metrics", "CloudWatch API")
+Rel(performance_metrics, performance_alarms, "Alarm triggers", "SNS")
+
+' Monitoring integration
+Rel(performance_collector_1, performance_dashboards, "Dashboard data", "Prometheus API")
+Rel(ugc_service_performance_1, performance_tracing, "Performance traces", "Jaeger Protocol")
+Rel(cache_invalidator, performance_logs, "Cache events", "Structured Logs")
+
+' Development environment
+Rel(developers_performance, local_redis_cluster, "Local development", "Redis Protocol")
+Rel(developers_performance, local_performance_tools, "Performance testing", "HTTP")
+
+SHOW_LEGEND()
+@enduml

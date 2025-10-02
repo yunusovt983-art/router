@@ -1,0 +1,153 @@
+@startuml Task7_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Auto.ru Federation - Component Diagram (Task 7: Error Handling & Resilience Components)
+
+Container(client, "GraphQL Client", "Apollo Client", "Клиент с error handling")
+
+System_Boundary(error_handling_components, "Error Handling Components") {
+    
+    System_Boundary(error_types, "Error Type System") {
+        Component(ugc_error_enum, "UgcError Enum", "Rust, thiserror", "Типизированные ошибки:\n- Client errors (4xx)\n- Server errors (5xx)\n- Circuit breaker errors\n- Timeout errors\n- Validation errors")
+        Component(error_extensions, "Error Extensions", "Rust, async-graphql", "GraphQL расширения ошибок:\n- Error codes\n- Error categories\n- Retryable flags\n- Context metadata\n- User-friendly messages")
+        Component(error_converter, "Error Converter", "Rust, From traits", "Конвертация ошибок:\n- sqlx::Error -> UgcError\n- reqwest::Error -> UgcError\n- anyhow::Error -> UgcError\n- Custom error mapping")
+    }
+    
+    System_Boundary(logging_components, "Logging Components") {
+        Component(structured_logger, "Structured Logger", "Rust, tracing", "Структурированное логирование:\n- Contextual logging\n- Correlation IDs\n- Error categorization\n- Performance metrics")
+        Component(business_event_logger, "Business Event Logger", "Rust, custom events", "Бизнес-события:\n- User action logging\n- External service calls\n- Recovery events\n- SLA violations")
+        Component(audit_logger, "Audit Logger", "Rust, compliance", "Аудит логирование:\n- Security events\n- Data access logs\n- Error escalations\n- Compliance tracking")
+    }
+    
+    System_Boundary(metrics_components, "Metrics Components") {
+        Component(error_metrics_collector, "Error Metrics Collector", "Rust, prometheus", "Сбор метрик ошибок:\n- Error counters by type\n- Error rate calculations\n- Recovery time tracking\n- SLA compliance metrics")
+        Component(performance_metrics, "Performance Metrics", "Rust, histograms", "Метрики производительности:\n- Request duration\n- Circuit breaker latency\n- Cache hit rates\n- Fallback usage")
+        Component(business_metrics, "Business Metrics", "Rust, custom gauges", "Бизнес-метрики:\n- Feature availability\n- User experience impact\n- Revenue impact\n- Service quality scores")
+    }
+}
+
+System_Boundary(circuit_breaker_components, "Circuit Breaker Components") {
+    
+    System_Boundary(state_management, "State Management") {
+        Component(circuit_state, "Circuit State", "Rust, atomic operations", "Управление состоянием:\n- Closed/Open/HalfOpen states\n- Atomic state transitions\n- Thread-safe operations\n- State persistence")
+        Component(failure_counter, "Failure Counter", "Rust, atomic counters", "Счетчики сбоев:\n- Failure count tracking\n- Success count tracking\n- Time window management\n- Counter reset logic")
+        Component(threshold_manager, "Threshold Manager", "Rust, configuration", "Управление порогами:\n- Failure thresholds\n- Success thresholds\n- Timeout configurations\n- Dynamic threshold updates")
+    }
+    
+    System_Boundary(circuit_logic, "Circuit Logic") {
+        Component(circuit_executor, "Circuit Executor", "Rust, async execution", "Выполнение через CB:\n- Request interception\n- State-based routing\n- Execution coordination\n- Result processing")
+        Component(state_transition_engine, "State Transition Engine", "Rust, state machine", "Переходы состояний:\n- Automatic state changes\n- Condition evaluation\n- Transition logging\n- Recovery detection")
+        Component(health_checker, "Health Checker", "Rust, periodic checks", "Проверка здоровья:\n- Service health monitoring\n- Recovery detection\n- Proactive state changes\n- Health score calculation")
+    }
+    
+    System_Boundary(configuration, "Configuration Management") {
+        Component(circuit_config, "Circuit Config", "Rust, configuration", "Конфигурация CB:\n- Service-specific settings\n- Dynamic reconfiguration\n- Environment-based config\n- Validation rules")
+        Component(policy_engine, "Policy Engine", "Rust, rule engine", "Политики CB:\n- Failure policies\n- Recovery policies\n- Escalation rules\n- Custom conditions")
+    }
+}
+
+System_Boundary(retry_components, "Retry Components") {
+    
+    System_Boundary(retry_logic, "Retry Logic") {
+        Component(retry_executor, "Retry Executor", "Rust, async retry", "Выполнение retry:\n- Attempt coordination\n- Backoff calculation\n- Jitter application\n- Max attempts enforcement")
+        Component(backoff_calculator, "Backoff Calculator", "Rust, exponential backoff", "Расчет задержек:\n- Exponential backoff\n- Jitter algorithms\n- Max delay limits\n- Custom backoff strategies")
+        Component(retry_policy, "Retry Policy", "Rust, policy engine", "Политики retry:\n- Retryable error detection\n- Attempt limits\n- Timeout policies\n- Circuit breaker integration")
+    }
+    
+    System_Boundary(retry_state, "Retry State Management") {
+        Component(attempt_tracker, "Attempt Tracker", "Rust, state tracking", "Отслеживание попыток:\n- Attempt counting\n- Timing tracking\n- Success/failure history\n- Statistics collection")
+        Component(retry_metrics, "Retry Metrics", "Rust, prometheus", "Метрики retry:\n- Retry attempt counts\n- Success rates by attempt\n- Backoff effectiveness\n- Policy performance")
+    }
+}
+
+System_Boundary(fallback_components, "Fallback Components") {
+    
+    System_Boundary(cache_management, "Cache Management") {
+        Component(fallback_cache, "Fallback Cache", "Rust, in-memory cache", "Кеш fallback данных:\n- LRU eviction\n- TTL management\n- Memory limits\n- Cache warming")
+        Component(cache_strategy, "Cache Strategy", "Rust, caching policies", "Стратегии кеширования:\n- Write-through\n- Write-behind\n- Cache-aside\n- Refresh-ahead")
+        Component(cache_invalidation, "Cache Invalidation", "Rust, invalidation logic", "Инвалидация кеша:\n- TTL-based expiration\n- Event-driven invalidation\n- Manual cache clearing\n- Dependency tracking")
+    }
+    
+    System_Boundary(fallback_logic, "Fallback Logic") {
+        Component(fallback_provider, "Fallback Provider", "Rust, data provider", "Провайдер fallback:\n- Cached data retrieval\n- Default value generation\n- Minimal data creation\n- Quality degradation")
+        Component(degradation_controller, "Degradation Controller", "Rust, adaptive logic", "Контроль деградации:\n- Feature flag integration\n- Load-based decisions\n- User tier handling\n- Quality levels")
+        Component(recovery_detector, "Recovery Detector", "Rust, recovery logic", "Детектор восстановления:\n- Service recovery detection\n- Cache refresh triggers\n- Quality restoration\n- Gradual recovery")
+    }
+    
+    System_Boundary(data_sources, "Data Sources") {
+        Component(redis_client, "Redis Client", "Rust, redis client", "Redis клиент:\n- Connection pooling\n- Cluster support\n- Failover handling\n- Pipeline operations")
+        Component(local_storage, "Local Storage", "Rust, in-memory", "Локальное хранилище:\n- Emergency fallback\n- Network failure protection\n- Ultra-fast access\n- Memory management")
+    }
+}
+
+System_Boundary(integration_components, "Integration Components") {
+    
+    System_Boundary(service_clients, "Service Clients") {
+        Component(resilient_http_client, "Resilient HTTP Client", "Rust, reqwest + resilience", "HTTP клиент с resilience:\n- Circuit breaker integration\n- Retry logic\n- Timeout handling\n- Connection pooling")
+        Component(grpc_client, "Resilient gRPC Client", "Rust, tonic + resilience", "gRPC клиент с resilience:\n- Load balancing\n- Health checking\n- Retry policies\n- Circuit protection")
+    }
+    
+    System_Boundary(middleware, "Middleware Components") {
+        Component(error_middleware, "Error Middleware", "Rust, axum middleware", "Error handling middleware:\n- Global error catching\n- Error transformation\n- Response formatting\n- Logging integration")
+        Component(resilience_middleware, "Resilience Middleware", "Rust, tower middleware", "Resilience middleware:\n- Request interception\n- Circuit breaker application\n- Fallback injection\n- Metrics collection")
+    }
+}
+
+' Client to middleware
+Rel(client, error_middleware, "HTTP requests", "HTTPS")
+Rel(error_middleware, resilience_middleware, "Processed requests", "Middleware chain")
+
+' Error handling flow
+Rel(resilience_middleware, ugc_error_enum, "Error creation", "Function calls")
+Rel(ugc_error_enum, error_extensions, "GraphQL extensions", "Trait implementation")
+Rel(ugc_error_enum, error_converter, "Error conversion", "From traits")
+
+' Logging integration
+Rel(ugc_error_enum, structured_logger, "Error logging", "Tracing calls")
+Rel(structured_logger, business_event_logger, "Business events", "Event emission")
+Rel(structured_logger, audit_logger, "Audit events", "Compliance logging")
+
+' Metrics collection
+Rel(ugc_error_enum, error_metrics_collector, "Error metrics", "Counter increments")
+Rel(resilience_middleware, performance_metrics, "Performance data", "Histogram updates")
+Rel(fallback_provider, business_metrics, "Business impact", "Gauge updates")
+
+' Circuit breaker flow
+Rel(resilient_http_client, circuit_executor, "Protected calls", "CB execution")
+Rel(circuit_executor, circuit_state, "State checks", "Atomic reads")
+Rel(circuit_executor, failure_counter, "Counter updates", "Atomic operations")
+Rel(state_transition_engine, circuit_state, "State transitions", "Atomic writes")
+Rel(threshold_manager, state_transition_engine, "Threshold checks", "Configuration")
+
+' Circuit breaker configuration
+Rel(circuit_config, threshold_manager, "Threshold config", "Configuration loading")
+Rel(policy_engine, circuit_executor, "Execution policies", "Policy application")
+Rel(health_checker, state_transition_engine, "Health status", "Recovery signals")
+
+' Retry mechanism
+Rel(circuit_executor, retry_executor, "Retry coordination", "Retry requests")
+Rel(retry_executor, backoff_calculator, "Delay calculation", "Backoff computation")
+Rel(retry_policy, retry_executor, "Retry decisions", "Policy evaluation")
+Rel(attempt_tracker, retry_metrics, "Attempt data", "Metrics emission")
+
+' Fallback integration
+Rel(resilient_http_client, fallback_provider, "Fallback requests", "Cache lookups")
+Rel(fallback_provider, fallback_cache, "Cache access", "Data retrieval")
+Rel(cache_strategy, fallback_cache, "Cache operations", "Strategy application")
+Rel(cache_invalidation, fallback_cache, "Cache cleanup", "Invalidation logic")
+
+' Degradation control
+Rel(degradation_controller, fallback_provider, "Quality control", "Degradation levels")
+Rel(recovery_detector, degradation_controller, "Recovery signals", "Quality restoration")
+
+' Data source integration
+Rel(fallback_cache, redis_client, "Persistent cache", "Redis operations")
+Rel(fallback_cache, local_storage, "Emergency fallback", "Memory access")
+
+' Cross-component integration
+Rel(circuit_executor, fallback_provider, "CB fallback", "Fallback triggers")
+Rel(retry_executor, error_metrics_collector, "Retry metrics", "Attempt tracking")
+Rel(health_checker, recovery_detector, "Health signals", "Recovery coordination")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,110 @@
+@startuml DataLoader_Pattern_Diagram
+!theme plain
+title Task 14: DataLoader Pattern - N+1 Problem Solution
+
+participant "GraphQL Query" as Query
+participant "Offer Resolver" as OfferResolver
+participant "Reviews Resolver" as ReviewsResolver
+participant "DataLoader Manager" as LoaderManager
+participant "Review DataLoader" as ReviewLoader
+participant "Review Repository" as ReviewRepo
+database "PostgreSQL" as DB
+
+note over Query
+    GraphQL Query:
+    {
+      offers {
+        id
+        name
+        reviews {
+          id
+          content
+          rating
+        }
+      }
+    }
+end note
+
+Query -> OfferResolver: resolve offers field
+OfferResolver -> DB: SELECT * FROM offers
+DB -> OfferResolver: [offer1, offer2, offer3]
+
+loop for each offer
+    OfferResolver -> ReviewsResolver: resolve reviews field
+    ReviewsResolver -> LoaderManager: get_review_loader()
+    LoaderManager -> ReviewLoader: load_by_offer_id(offer.id)
+    
+    note right of ReviewLoader
+        DataLoader batches these requests
+        instead of executing immediately
+    end note
+    
+    ReviewLoader -> ReviewLoader: add to batch queue
+end
+
+note over ReviewLoader
+    Batch Processing:
+    - Collects all offer IDs: [1, 2, 3]
+    - Waits for batch timeout (10ms)
+    - Executes single batched query
+end note
+
+ReviewLoader -> ReviewRepo: find_reviews_by_offer_ids([1, 2, 3])
+ReviewRepo -> DB: SELECT * FROM reviews WHERE offer_id = ANY($1)
+DB -> ReviewRepo: all reviews for all offers
+
+note over DB
+    Single Query Instead of N+1:
+    Before: 1 + 3 = 4 queries
+    After: 1 + 1 = 2 queries
+    Performance improvement: 50%
+end note
+
+ReviewRepo -> ReviewLoader: grouped reviews by offer_id
+ReviewLoader -> ReviewLoader: distribute to waiting resolvers
+
+loop for each resolver
+    ReviewLoader -> ReviewsResolver: return reviews for specific offer
+    ReviewsResolver -> OfferResolver: reviews data
+end
+
+OfferResolver -> Query: complete response
+
+' Performance Comparison
+note left of Query
+    Performance Comparison:
+    
+    WITHOUT DataLoader:
+    - Query 1: SELECT * FROM offers
+    - Query 2: SELECT * FROM reviews WHERE offer_id = 1
+    - Query 3: SELECT * FROM reviews WHERE offer_id = 2  
+    - Query 4: SELECT * FROM reviews WHERE offer_id = 3
+    Total: 4 database roundtrips
+    
+    WITH DataLoader:
+    - Query 1: SELECT * FROM offers
+    - Query 2: SELECT * FROM reviews WHERE offer_id = ANY([1,2,3])
+    Total: 2 database roundtrips
+    
+    Improvement: 50% fewer queries
+    Scales linearly: O(1) instead of O(N)
+end note
+
+' Caching Behavior
+note right of ReviewLoader
+    Request-Scoped Caching:
+    
+    1. First request for offer_id=1
+       → Adds to batch, waits
+    
+    2. Second request for offer_id=1 (same request)
+       → Returns from cache immediately
+    
+    3. Batch executes after timeout
+       → Populates cache for all IDs
+    
+    4. Subsequent requests in same GraphQL request
+       → Served from cache (no DB query)
+end note
+
+@enduml

@@ -1,0 +1,452 @@
+# Artillery Load Testing Configuration for Apollo Router Federation
+config:
+  target: 'http://localhost:4000'
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm-up"
+    
+    # Ramp-up phase
+    - duration: 300
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp-up"
+    
+    # Sustained load phase
+    - duration: 600
+      arrivalRate: 50
+      name: "Sustained load"
+    
+    # Peak load phase
+    - duration: 180
+      arrivalRate: 100
+      name: "Peak load"
+    
+    # Cool-down phase
+    - duration: 120
+      arrivalRate: 100
+      rampTo: 10
+      name: "Cool-down"
+  
+  # Global configuration
+  timeout: 30
+  
+  # Custom metrics
+  metrics:
+    - name: "federated_queries"
+      unit: "count"
+    - name: "complex_queries"
+      unit: "count"
+    - name: "mutation_operations"
+      unit: "count"
+    - name: "query_depth"
+      unit: "count"
+  
+  # Payload configuration
+  payload:
+    path: "./test-data.csv"
+    fields:
+      - "offerId"
+      - "userId"
+      - "reviewId"
+  
+  # Variables for testing
+  variables:
+    jwt_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    
+  # HTTP configuration
+  http:
+    timeout: 30
+    pool: 50
+    maxSockets: 50
+
+# Test scenarios
+scenarios:
+  # Scenario 1: Simple GraphQL queries
+  - name: "Simple Queries"
+    weight: 40
+    flow:
+      - post:
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer {{ jwt_token }}"
+          json:
+            query: |
+              query GetReview($id: ID!) {
+                review(id: $id) {
+                  id
+                  rating
+                  text
+                  createdAt
+                  moderationStatus
+                }
+              }
+            variables:
+              id: "{{ reviewId }}"
+          capture:
+            - json: "$.data.review.id"
+              as: "retrievedReviewId"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.review"
+            - not:
+                hasProperty: "errors"
+
+  # Scenario 2: Federated queries spanning multiple subgraphs
+  - name: "Federated Queries"
+    weight: 30
+    flow:
+      - post:
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer {{ jwt_token }}"
+          json:
+            query: |
+              query GetOfferWithReviews($offerId: ID!, $first: Int!) {
+                offer(id: $offerId) {
+                  id
+                  title
+                  price
+                  description
+                  reviews(first: $first) {
+                    edges {
+                      node {
+                        id
+                        rating
+                        text
+                        createdAt
+                        author {
+                          id
+                          name
+                          email
+                        }
+                      }
+                    }
+                    pageInfo {
+                      hasNextPage
+                      endCursor
+                    }
+                  }
+                  averageRating
+                  reviewsCount
+                }
+              }
+            variables:
+              offerId: "{{ offerId }}"
+              first: 10
+          capture:
+            - json: "$.data.offer.reviewsCount"
+              as: "reviewsCount"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.offer"
+            - hasProperty: "data.offer.reviews"
+            - hasProperty: "data.offer.averageRating"
+          afterResponse: |
+            if (response.body.data && response.body.data.offer) {
+              context.vars.federated_queries = (context.vars.federated_queries || 0) + 1;
+            }
+
+  # Scenario 3: Complex nested federated queries
+  - name: "Complex Federated Queries"
+    weight: 20
+    flow:
+      - post:
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer {{ jwt_token }}"
+          json:
+            query: |
+              query ComplexFederatedQuery($first: Int!, $reviewsFirst: Int!) {
+                offers(first: $first) {
+                  edges {
+                    node {
+                      id
+                      title
+                      price
+                      seller {
+                        id
+                        name
+                        rating
+                        reviewsCount
+                      }
+                      reviews(first: $reviewsFirst) {
+                        edges {
+                          node {
+                            id
+                            rating
+                            text
+                            createdAt
+                            author {
+                              id
+                              name
+                              reviews(first: 3) {
+                                edges {
+                                  node {
+                                    id
+                                    rating
+                                    offer {
+                                      id
+                                      title
+                                      price
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      averageRating
+                      category {
+                        id
+                        name
+                        parentCategory {
+                          id
+                          name
+                        }
+                      }
+                    }
+                  }
+                  pageInfo {
+                    hasNextPage
+                    endCursor
+                  }
+                }
+              }
+            variables:
+              first: 5
+              reviewsFirst: 3
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.offers"
+            - contentType: "application/json"
+          afterResponse: |
+            if (response.body.data && response.body.data.offers) {
+              context.vars.complex_queries = (context.vars.complex_queries || 0) + 1;
+              context.vars.query_depth = 6; // This query has depth of 6
+            }
+
+  # Scenario 4: Mutation operations
+  - name: "Mutation Operations"
+    weight: 10
+    flow:
+      - post:
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer {{ jwt_token }}"
+          json:
+            query: |
+              mutation CreateReview($input: CreateReviewInput!) {
+                createReview(input: $input) {
+                  id
+                  rating
+                  text
+                  createdAt
+                  author {
+                    id
+                    name
+                  }
+                  offer {
+                    id
+                    title
+                    averageRating
+                    reviewsCount
+                  }
+                }
+              }
+            variables:
+              input:
+                offerId: "{{ offerId }}"
+                rating: "{{ $randomInt(1, 5) }}"
+                text: "Artillery load test review {{ $randomString() }}"
+          capture:
+            - json: "$.data.createReview.id"
+              as: "newReviewId"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.createReview"
+            - hasProperty: "data.createReview.id"
+          afterResponse: |
+            if (response.body.data && response.body.data.createReview) {
+              context.vars.mutation_operations = (context.vars.mutation_operations || 0) + 1;
+            }
+      
+      # Follow up with a query to test the created review
+      - post:
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer {{ jwt_token }}"
+          json:
+            query: |
+              query GetCreatedReview($id: ID!) {
+                review(id: $id) {
+                  id
+                  rating
+                  text
+                  author {
+                    name
+                  }
+                  offer {
+                    averageRating
+                    reviewsCount
+                  }
+                }
+              }
+            variables:
+              id: "{{ newReviewId }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.review"
+
+# Error handling scenarios
+  - name: "Error Handling Tests"
+    weight: 5
+    flow:
+      # Test invalid query
+      - post:
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer {{ jwt_token }}"
+          json:
+            query: |
+              query InvalidQuery {
+                nonExistentField {
+                  id
+                }
+              }
+          expect:
+            - statusCode: 200
+            - hasProperty: "errors"
+      
+      # Test query with invalid variables
+      - post:
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer {{ jwt_token }}"
+          json:
+            query: |
+              query GetReview($id: ID!) {
+                review(id: $id) {
+                  id
+                  rating
+                }
+              }
+            variables:
+              id: "invalid-uuid-format"
+          expect:
+            - statusCode: 200
+            - hasProperty: "errors"
+      
+      # Test unauthorized access
+      - post:
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+            # No Authorization header
+          json:
+            query: |
+              mutation CreateReview($input: CreateReviewInput!) {
+                createReview(input: $input) {
+                  id
+                }
+              }
+            variables:
+              input:
+                offerId: "{{ offerId }}"
+                rating: 5
+                text: "Unauthorized test"
+          expect:
+            - statusCode: 200
+            - hasProperty: "errors"
+
+# Performance benchmarks
+  - name: "Performance Benchmarks"
+    weight: 10
+    flow:
+      # Benchmark simple query performance
+      - post:
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer {{ jwt_token }}"
+          json:
+            query: |
+              query BenchmarkSimple($id: ID!) {
+                review(id: $id) {
+                  id
+                  rating
+                }
+              }
+            variables:
+              id: "{{ reviewId }}"
+          expect:
+            - statusCode: 200
+            - response_time: 100  # Should respond within 100ms
+      
+      # Benchmark federated query performance
+      - post:
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer {{ jwt_token }}"
+          json:
+            query: |
+              query BenchmarkFederated($offerId: ID!) {
+                offer(id: $offerId) {
+                  id
+                  reviews(first: 5) {
+                    edges {
+                      node {
+                        id
+                        author {
+                          name
+                        }
+                      }
+                    }
+                  }
+                  averageRating
+                }
+              }
+            variables:
+              offerId: "{{ offerId }}"
+          expect:
+            - statusCode: 200
+            - response_time: 500  # Should respond within 500ms
+
+# Health check and introspection
+  - name: "Health and Introspection"
+    weight: 2
+    flow:
+      # Health check
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+      
+      # GraphQL introspection (if enabled)
+      - post:
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              query IntrospectionQuery {
+                __schema {
+                  types {
+                    name
+                    kind
+                  }
+                }
+              }
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.__schema"
